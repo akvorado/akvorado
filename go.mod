@@ -9,6 +9,7 @@ require (
 	github.com/ClickHouse/ch-go v0.73.0
 	github.com/ClickHouse/clickhouse-go/v2 v2.47.0
 	github.com/alecthomas/chroma/v2 v2.23.1
+	github.com/aperturerobotics/protobuf-go-lite v0.16.0
 	github.com/benbjohnson/clock v1.3.5
 	github.com/bio-routing/bio-rd v0.1.10
 	github.com/bits-and-blooms/bitset v1.24.5
@@ -35,7 +36,6 @@ require (
 	github.com/openconfig/gnmic/pkg/api v0.1.11
 	github.com/oschwald/maxminddb-golang/v2 v2.4.1
 	github.com/osrg/gobgp/v4 v4.7.0
-	github.com/planetscale/vtprotobuf v0.6.1-0.20250313105119-ba97887b0a25
 	github.com/prometheus/client_golang v1.24.0
 	github.com/puzpuzpuz/xsync/v4 v4.5.0
 	github.com/redis/go-redis/v9 v9.21.0
@@ -182,15 +182,14 @@ require (
 )
 
 tool (
+	github.com/aperturerobotics/protobuf-go-lite/cmd/protoc-gen-go-lite
 	github.com/dmarkham/enumer
 	github.com/frapposelli/wwhrd
 	github.com/go-delve/delve/cmd/dlv
 	github.com/mgechev/revive
 	github.com/mna/pigeon
-	github.com/planetscale/vtprotobuf/cmd/protoc-gen-go-vtproto
 	go.uber.org/mock/mockgen
 	golang.org/x/tools/cmd/goimports
-	google.golang.org/protobuf/cmd/protoc-gen-go
 	gotest.tools/gotestsum
 	honnef.co/go/tools/cmd/staticcheck
 )

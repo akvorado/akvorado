@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/twmb/franz-go/pkg/kfake"
-	"google.golang.org/protobuf/proto"
 
 	"akvorado/common/constants"
 	"akvorado/common/daemon"
@@ -143,9 +142,9 @@ func TestCoreKafkaOutput(t *testing.T) {
 		Decoder:         pb.RawFlow_DECODER_GOB,
 		TimestampSource: pb.RawFlow_TS_INPUT,
 	}
-	data, err := proto.Marshal(rawFlow)
+	data, err := rawFlow.MarshalVT()
 	if err != nil {
-		t.Fatalf("proto.Marshal() error:\n%+v", err)
+		t.Fatalf("MarshalVT() error:\n%+v", err)
 	}
 	incoming <- data
 

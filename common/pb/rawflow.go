@@ -10,7 +10,7 @@ import (
 	"fmt"
 
 	// Used in generated code, but imported here to pin go.mod output.
-	_ "github.com/planetscale/vtprotobuf/protohelpers"
+	_ "github.com/aperturerobotics/protobuf-go-lite"
 
 	"akvorado/common/helpers/bimap"
 )
@@ -18,6 +18,16 @@ import (
 // Version is the version of the schema. On incompatible changes, this should be
 // bumped.
 var Version = 5
+
+// ResetVT clears the flow but keeps the already allocated buffers. UnmarshalVT
+// appends to them.
+func (m *RawFlow) ResetVT() {
+	payload := m.Payload[:0]
+	sourceAddress := m.SourceAddress[:0]
+	m.Reset()
+	m.Payload = payload
+	m.SourceAddress = sourceAddress
+}
 
 var decoderMap = bimap.New(map[RawFlow_Decoder]string{
 	RawFlow_DECODER_NETFLOW: "netflow",

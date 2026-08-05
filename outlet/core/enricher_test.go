@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/go-viper/mapstructure/v2"
-	"google.golang.org/protobuf/proto"
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
@@ -798,9 +797,9 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 				TimestampSource:  pb.RawFlow_TS_INPUT,
 			}
 
-			data, err := proto.Marshal(rawFlow)
+			data, err := rawFlow.MarshalVT()
 			if err != nil {
-				t.Fatalf("proto.Marshal() error: %v", err)
+				t.Fatalf("MarshalVT() error:\n%+v", err)
 			}
 
 			incoming <- data

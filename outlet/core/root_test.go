@@ -19,8 +19,6 @@ import (
 	"testing/synctest"
 	"time"
 
-	"google.golang.org/protobuf/proto"
-
 	"akvorado/common/constants"
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
@@ -124,9 +122,9 @@ func TestCore(t *testing.T) {
 			TimestampSource: pb.RawFlow_TS_INPUT,
 			RateLimit:       rateLimit,
 		}
-		data, err := proto.Marshal(rawFlow)
+		data, err := rawFlow.MarshalVT()
 		if err != nil {
-			t.Fatalf("proto.Marshal() error:\n%+v", err)
+			t.Fatalf("MarshalVT() error:\n%+v", err)
 		}
 		return data
 	}

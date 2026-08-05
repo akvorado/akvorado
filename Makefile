@@ -20,7 +20,6 @@ GENERATED_JS = \
 	console/frontend/node_modules
 GENERATED_GO = \
 	common/pb/rawflow.pb.go \
-	common/pb/rawflow_vtproto.pb.go \
 	common/schema/definition_gen.go \
 	inlet/flow/input/udp/reuseport_bpfeb.o \
 	inlet/flow/input/udp/reuseport_bpfel.o \
@@ -91,7 +90,7 @@ WWHRD       = go tool wwhrd
 
 $(filter %.go, $(GENERATED_GO) $(GENERATED_TEST_GO)): go.mod
 
-common/pb/rawflow.pb.go common/pb/rawflow_vtproto.pb.go &: .buf.gen.yaml common/pb/rawflow.proto
+common/pb/rawflow.pb.go: .buf.gen.yaml common/pb/rawflow.proto
 	$(call log,compiling protocol buffers $@…)
 	$Q $(BUF) generate --template $(PWD)/.buf.gen.yaml --path $(@:.pb.go=.proto)
 
