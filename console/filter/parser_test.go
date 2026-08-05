@@ -8,6 +8,7 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/common/schema"
+	sb "akvorado/common/sqlbuilder"
 )
 
 func TestValidFilter(t *testing.T) {
@@ -110,6 +111,42 @@ func TestValidFilter(t *testing.T) {
 			Input:   `SrcNetPrefix = 2001:db8::/48`,
 			Output:  `SrcAddr BETWEEN toIPv6('2001:db8::') AND toIPv6('2001:db8:0:ffff:ffff:ffff:ffff:ffff') AND SrcNetMask = 48`,
 			MetaOut: Meta{MainTableRequired: true},
+		},
+		{
+			// The address and the mask must both follow the reversed column.
+			Input:   `SrcNetPrefix = 192.168.0.128/27`,
+			Output:  `DstAddr BETWEEN toIPv6('192.168.0.128') AND toIPv6('192.168.0.159') AND DstNetMask = 27`,
+			MetaIn:  Meta{ReverseDirection: true},
+			MetaOut: Meta{ReverseDirection: true, MainTableRequired: true},
+		},
+		{
+			Input:   `SrcNetPrefix != 192.168.0.128/27`,
+			Output:  `NOT (DstAddr BETWEEN toIPv6('192.168.0.128') AND toIPv6('192.168.0.159') AND DstNetMask = 27)`,
+			MetaIn:  Meta{ReverseDirection: true},
+			MetaOut: Meta{ReverseDirection: true, MainTableRequired: true},
+		},
+		{
+			// The address and the mask must both follow the reverted column.
+			Input:   `SrcNetPrefix = 192.168.0.128/27`,
+			Output:  `DstAddr BETWEEN toIPv6('192.168.0.128') AND toIPv6('192.168.0.159') AND DstNetMask = 27`,
+			MetaIn:  Meta{ReverseDirection: true},
+			MetaOut: Meta{ReverseDirection: true, MainTableRequired: true},
+		},
+		{
+			Input:   `NOT SrcNetPrefix = 192.168.0.128/27`,
+			Output:  `NOT (SrcAddr BETWEEN toIPv6('192.168.0.128') AND toIPv6('192.168.0.159') AND SrcNetMask = 27)`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
+		{
+			Input:   `NOT SrcNetPrefix = 192.168.0.128/27 AND SrcAS = 12322`,
+			Output:  `NOT (SrcAddr BETWEEN toIPv6('192.168.0.128') AND toIPv6('192.168.0.159') AND SrcNetMask = 27) AND SrcAS = 12322`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
+		{
+			Input:   `DstNetPrefix != 192.168.0.128/27`,
+			Output:  `NOT (SrcAddr BETWEEN toIPv6('192.168.0.128') AND toIPv6('192.168.0.159') AND SrcNetMask = 27)`,
+			MetaIn:  Meta{ReverseDirection: true},
+			MetaOut: Meta{ReverseDirection: true, MainTableRequired: true},
 		},
 		{Input: `ExporterGroup= "group"`, Output: `ExporterGroup = 'group'`},
 		{
@@ -338,11 +375,11 @@ func TestValidFilter(t *testing.T) {
 			MetaOut: Meta{MainTableRequired: true},
 		},
 		{
-			Input: `NOT DstPort > 1024 AND SrcPort < 1024`, Output: `NOT DstPort > 1024 AND SrcPort < 1024`,
+			Input: `NOT DstPort > 1024 AND SrcPort < 1024`, Output: `NOT (DstPort > 1024) AND SrcPort < 1024`,
 			MetaOut: Meta{MainTableRequired: true},
 		},
 		{
-			Input: `not DstPort > 1024 and SrcPort < 1024`, Output: `NOT DstPort > 1024 AND SrcPort < 1024`,
+			Input: `not DstPort > 1024 and SrcPort < 1024`, Output: `NOT (DstPort > 1024) AND SrcPort < 1024`,
 			MetaOut: Meta{MainTableRequired: true},
 		},
 		{
@@ -481,9 +518,11 @@ output provider */ = 'telia'`,
 			t.Errorf("Parse(%q) error:\n%+v", tc.Input, err)
 			continue
 		}
-		if diff := helpers.Diff(got.(string), tc.Output); diff != "" {
+		sql := got.(sb.Expr).String()
+		if diff := helpers.Diff(sql, tc.Output); diff != "" {
 			t.Errorf("Parse(%q) (-got, +want):\n%s", tc.Input, diff)
 		}
+		checkWhereParses(t, sql)
 		if diff := helpers.Diff(tc.MetaIn, tc.MetaOut); diff != "" {
 			t.Errorf("Parse(%q) meta (-got, +want):\n%s", tc.Input, diff)
 		}
@@ -512,13 +551,23 @@ func TestValidMaterializedFilter(t *testing.T) {
 			Output:  `SrcNetPrefix = '2001:db8::/48'`,
 			MetaOut: Meta{MainTableRequired: false},
 		},
+		{
+			Input:   `SrcNetPrefix = 192.168.0.128/27`,
+			Output:  `DstNetPrefix = '192.168.0.128/27'`,
+			MetaIn:  Meta{ReverseDirection: true},
+			MetaOut: Meta{ReverseDirection: true},
+		},
 	}
 	for _, tc := range cases {
+		// A materialized prefix column is only worth querying directly once it
+		// is also present outside the main table.
 		s := schema.NewMock(t).EnableAllColumns()
 		cd, _ := s.Schema.LookupColumnByKey(schema.ColumnDstNetPrefix)
 		cd.ClickHouseMaterialized = true
+		cd.ClickHouseMainOnly = false
 		cs, _ := s.Schema.LookupColumnByKey(schema.ColumnSrcNetPrefix)
 		cs.ClickHouseMaterialized = true
+		cs.ClickHouseMainOnly = false
 
 		tc.MetaIn.Schema = s
 		got, err := Parse("", []byte(tc.Input), GlobalStore("meta", &tc.MetaIn))
@@ -526,12 +575,71 @@ func TestValidMaterializedFilter(t *testing.T) {
 			t.Errorf("Parse(%q) error:\n%+v", tc.Input, err)
 			continue
 		}
-		if diff := helpers.Diff(got.(string), tc.Output); diff != "" {
+		sql := got.(sb.Expr).String()
+		if diff := helpers.Diff(sql, tc.Output); diff != "" {
 			t.Errorf("Parse(%q) (-got, +want):\n%s", tc.Input, diff)
 		}
+		checkWhereParses(t, sql)
 		if diff := helpers.Diff(tc.MetaIn, tc.MetaOut); diff != "" {
 			t.Errorf("Parse(%q) meta (-got, +want):\n%s", tc.Input, diff)
 		}
+	}
+}
+
+// TestPrefixFilterMainTableRequired checks a filter on a prefix only asks for
+// the main table when one of the columns it uses lives there.
+func TestPrefixFilterMainTableRequired(t *testing.T) {
+	cases := []struct {
+		Description  string
+		Materialized bool
+		MainOnly     bool
+		Expected     bool
+	}{
+		{
+			// The default schema: the address and the mask are on the main
+			// table only.
+			Description: "address and mask on the main table",
+			MainOnly:    true,
+			Expected:    true,
+		}, {
+			Description: "address and mask on every table",
+			MainOnly:    false,
+			Expected:    false,
+		}, {
+			Description:  "materialized prefix on the main table",
+			Materialized: true,
+			MainOnly:     true,
+			Expected:     true,
+		}, {
+			Description:  "materialized prefix on every table",
+			Materialized: true,
+			MainOnly:     false,
+			Expected:     false,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.Description, func(t *testing.T) {
+			s := schema.NewMock(t).EnableAllColumns()
+			for _, key := range []schema.ColumnKey{
+				schema.ColumnSrcAddr, schema.ColumnSrcNetMask, schema.ColumnSrcNetPrefix,
+			} {
+				column, _ := s.Schema.LookupColumnByKey(key)
+				column.ClickHouseMainOnly = tc.MainOnly
+			}
+			if tc.Materialized {
+				column, _ := s.Schema.LookupColumnByKey(schema.ColumnSrcNetPrefix)
+				column.ClickHouseMaterialized = true
+			}
+
+			meta := Meta{Schema: s}
+			if _, err := Parse("", []byte(`SrcNetPrefix = 192.168.0.128/27`),
+				GlobalStore("meta", &meta)); err != nil {
+				t.Fatalf("Parse() error:\n%+v", err)
+			}
+			if diff := helpers.Diff(meta.MainTableRequired, tc.Expected); diff != "" {
+				t.Errorf("Parse() MainTableRequired (-got, +want):\n%s", diff)
+			}
+		})
 	}
 }
 

@@ -4,10 +4,11 @@
 package console
 
 import (
-	"fmt"
+	"slices"
 	"strings"
 
 	"akvorado/common/schema"
+	sb "akvorado/common/sqlbuilder"
 	"akvorado/console/query"
 )
 
@@ -34,35 +35,30 @@ func (c *Component) fixQueryColumnName(name string) string {
 	return ""
 }
 
-func selectSankeyRowsByLimitType(input graphSankeyHandlerInput, dimensions []string, where string) string {
-	return selectRowsByLimitType(input.graphCommonHandlerInput, dimensions, where)
+func selectSankeyRowsByLimitType(input graphSankeyHandlerInput, dimensions []sb.Expr, where, units sb.Expr) *sb.Query {
+	return selectRowsByLimitType(input.graphCommonHandlerInput, dimensions, where, units)
 }
 
-func selectLineRowsByLimitType(input graphLineHandlerInput, dimensions []string, where string) string {
-	return selectRowsByLimitType(input.graphCommonHandlerInput, dimensions, where)
+func selectLineRowsByLimitType(input graphLineHandlerInput, dimensions []sb.Expr, where, units sb.Expr) *sb.Query {
+	return selectRowsByLimitType(input.graphCommonHandlerInput, dimensions, where, units)
 }
 
-func selectRowsByLimitType(input graphCommonHandlerInput, dimensions []string, where string) string {
-	var rowsType string
-	var source string
-	var orderBy string
+// selectRowsByLimitType builds the query picking the dimension values to
+// display. The other values are grouped as "Other".
+func selectRowsByLimitType(input graphCommonHandlerInput, dimensions []sb.Expr, where, units sb.Expr) *sb.Query {
+	rows := sb.Select(dimensions...).GroupBy(dimensions...).Limit(input.Limit)
 	if input.LimitType == "max" {
-		source = fmt.Sprintf("( SELECT %s AS sum_at_time FROM source WHERE %s GROUP BY %s )",
-			strings.Join(append(dimensions, "{{ .Units }}"), ", "),
-			where,
-			strings.Join(dimensions, ", "),
-		)
-		orderBy = "MAX(sum_at_time)"
-	} else {
-		source = fmt.Sprintf("source WHERE %s", where)
-		orderBy = "{{ .Units }}"
+		// Rank on the highest value reached instead of the total, so a short
+		// burst is not hidden by a steady flow.
+		rows.FromSelect(
+			sb.Select(slices.Concat(dimensions,
+				[]sb.Expr{sb.Alias(units, "sum_at_time")})...).
+				From(sb.Table("source")).
+				Where(where).
+				GroupBy(dimensions...)).
+			OrderBy(sb.Order(
+				sb.Function("MAX", sb.Column("sum_at_time"))).Desc())
+		return rows
 	}
-	rowsType = fmt.Sprintf(
-		"rows AS (SELECT %s FROM %s GROUP BY %s ORDER BY %s DESC LIMIT %d)",
-		strings.Join(dimensions, ", "),
-		source,
-		strings.Join(dimensions, ", "),
-		orderBy,
-		input.Limit)
-	return rowsType
+	return rows.From(sb.Table("source")).Where(where).OrderBy(sb.Order(units).Desc())
 }

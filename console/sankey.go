@@ -12,6 +12,7 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/common/httpserver"
+	sb "akvorado/common/sqlbuilder"
 	"akvorado/console/query"
 )
 
@@ -63,37 +64,12 @@ type sankeyToSQL1Options struct {
 	rowsColumns []query.Column
 }
 
-func (input graphSankeyHandlerInput) toSQL1(axis int, options sankeyToSQL1Options) templateQuery {
-	where := templateWhere(input.Filter)
+func (input graphSankeyHandlerInput) toSQL1(axis int, res resolution, options sankeyToSQL1Options) *sb.Query {
+	r := res.forRange(input.Start, input.End)
+	where := r.where(input.Filter)
 	rowsColumns := options.rowsColumns
 	if rowsColumns == nil {
 		rowsColumns = input.Dimensions
-	}
-
-	// Select
-	arrayFields := []string{}
-	dimensions := []string{}
-	for i, column := range input.Dimensions {
-		arrayFields = append(arrayFields, fmt.Sprintf(`if(%s IN (SELECT %s FROM rows), %s, 'Other')`,
-			column.String(),
-			rowsColumns[i].String(),
-			column.ToSQLSelect(input.schema)))
-		dimensions = append(dimensions, column.String())
-	}
-	fields := []string{
-		`{{ .Units }}/range AS xps`,
-		fmt.Sprintf("[%s] AS dimensions", strings.Join(arrayFields, ",\n  ")),
-	}
-
-	// With
-	withStr := ""
-	if !options.skipWithClause {
-		with := []string{
-			fmt.Sprintf("source AS (%s)", input.sourceSelect()),
-			fmt.Sprintf(`(SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE %s) AS range`, where),
-		}
-		with = append(with, selectSankeyRowsByLimitType(input, dimensions, where))
-		withStr = fmt.Sprintf("WITH\n %s\n", strings.Join(with, ",\n "))
 	}
 
 	// Units
@@ -101,41 +77,73 @@ func (input graphSankeyHandlerInput) toSQL1(axis int, options sankeyToSQL1Option
 	if options.reverseDirection {
 		units = reverseUnits(units)
 	}
+	unitsSQL := unitsExpr(units)
 
-	template := fmt.Sprintf(`%sSELECT %d AS axis, * FROM (
-SELECT
- %s
-FROM source
-WHERE %s
-GROUP BY dimensions
-ORDER BY xps DESC)`,
-		withStr, axis, strings.Join(fields, ",\n "), where)
+	// Select
+	arrayFields := []sb.Expr{}
+	dimensions := []sb.Expr{}
+	for i, column := range input.Dimensions {
+		arrayFields = append(arrayFields, sb.Function("if",
+			sb.Op(sb.Column(column.String()), "IN",
+				sb.Select(sb.Column(rowsColumns[i].String())).
+					From(sb.Table("rows")).Subquery()),
+			column.ToSQLSelect(input.schema),
+			sb.String("Other")))
+		dimensions = append(dimensions, sb.Column(column.String()))
+	}
 
-	context := inputContext{
+	inner := sb.Select(
+		sb.Alias(sb.Op(unitsSQL, "/", sb.Column("range")), "xps"),
+		sb.Alias(sb.Array(arrayFields...), "dimensions"),
+	).
+		From(sb.Table("source")).
+		Where(where).
+		GroupBy(sb.Column("dimensions")).
+		OrderBy(sb.Order(sb.Column("xps")).Desc())
+
+	query := sb.Select(
+		sb.Alias(sb.Int(int64(axis)), "axis"),
+		sb.Star()).
+		FromSelect(inner)
+	if !options.skipWithClause {
+		query.With("source", input.sourceSelect(r.Table))
+		// There is no time axis here, so the traffic is averaged over the whole
+		// period covered by the data.
+		query.WithScalar(
+			sb.Select(sb.Op(
+				sb.Function("MAX", sb.Column("TimeReceived")), "-",
+				sb.Function("MIN", sb.Column("TimeReceived")))).
+				From(sb.Table("source")).
+				Where(where),
+			"range")
+		query.With("rows", selectSankeyRowsByLimitType(input, dimensions, where, unitsSQL))
+	}
+	return query
+}
+
+// resolveContext returns what is needed to select the table for this query.
+// There is no time axis here, so the number of points only steers the table
+// selection towards a reasonably consolidated one.
+func (input graphSankeyHandlerInput) resolveContext() inputContext {
+	return inputContext{
 		Start:             input.Start,
 		End:               input.End,
 		MainTableRequired: requireMainTable(input.schema, input.Dimensions, input.Filter),
 		Points:            20,
-		Units:             units,
-	}
-
-	return templateQuery{
-		Template: strings.TrimSpace(template),
-		Context:  context,
 	}
 }
 
-// toSQL converts a sankey query to an SQL request
-func (input graphSankeyHandlerInput) toSQL() ([]templateQuery, error) {
-	queries := []templateQuery{input.toSQL1(1, sankeyToSQL1Options{})}
+// toSQL converts a sankey query to a list of SQL requests, one per axis.
+func (input graphSankeyHandlerInput) toSQL(res resolution) []*sb.Query {
+	queries := []*sb.Query{input.toSQL1(1, res, sankeyToSQL1Options{})}
 	if input.Bidirectional {
-		queries = append(queries, input.reverseDirection().toSQL1(2, sankeyToSQL1Options{
+		queries = append(queries, input.reverseDirection().toSQL1(2, res, sankeyToSQL1Options{
 			skipWithClause:   true,
 			reverseDirection: true,
 			rowsColumns:      input.Dimensions,
 		}))
 	}
-	return queries, nil
+	return queries
 }
 
 func (c *Component) graphSankeyHandlerFunc(w http.ResponseWriter, req *http.Request) {
@@ -159,21 +167,24 @@ func (c *Component) graphSankeyHandlerFunc(w http.ResponseWriter, req *http.Requ
 				c.config.DimensionsLimit)})
 		return
 	}
-
-	queries, err := input.toSQL()
-	if err != nil {
-		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
+	if len(input.Dimensions) == 0 {
+		// A sankey diagram links dimension values together, there is nothing to
+		// draw without a dimension.
+		httpserver.WriteJSON(w, http.StatusBadRequest,
+			helpers.M{"message": "At least one dimension is required."})
 		return
 	}
 
 	// Prepare and execute query
-	sqlQuery := c.finalizeTemplateQueries(queries)
+	r := c.resolve(input.resolveContext())
+	sqlQuery := unionAll(input.toSQL(r))
 	w.Header().Set("X-SQL-Query", strings.ReplaceAll(sqlQuery, "\n", "  "))
 	results := []struct {
 		Axis       uint8    `ch:"axis"`
 		Xps        float64  `ch:"xps"`
 		Dimensions []string `ch:"dimensions"`
 	}{}
+	c.metrics.clickhouseQueries.WithLabelValues(r.Table).Inc()
 	if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery); err != nil {
 		c.r.Err(err).Str("query", sqlQuery).Msg("unable to query database")
 		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})

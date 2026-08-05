@@ -6,7 +6,6 @@ package console
 import (
 	"net"
 	"reflect"
-	"strings"
 	"testing"
 	"time"
 
@@ -15,6 +14,7 @@ import (
 
 	"akvorado/common/clickhousedb/mocks"
 	"akvorado/common/helpers"
+	sb "akvorado/common/sqlbuilder"
 )
 
 func TestWidgetLastFlow(t *testing.T) {
@@ -22,13 +22,13 @@ func TestWidgetLastFlow(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	mockRows := mocks.NewMockRows(ctrl)
-	mockConn.EXPECT().Query(gomock.Any(), `
+	mockConn.EXPECT().Query(gomock.Any(), sb.SQLMatcher(t, `
 SELECT * EXCEPT (DstCommunities, DstLargeCommunities),
  arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), DstCommunities) AS DstCommunities,
  arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))), DstLargeCommunities) AS DstLargeCommunities
 FROM flows
 WHERE TimeReceived=(SELECT MAX(TimeReceived) FROM flows)
-LIMIT 1`).
+LIMIT 1`)).
 		Return(mockRows, nil)
 	mockRows.EXPECT().Next().Return(true)
 	mockRows.EXPECT().Close()
@@ -153,8 +153,21 @@ func TestWidgetTop(t *testing.T) {
 	_, h, mockConn, _ := NewMock(t, DefaultConfiguration())
 
 	gomock.InOrder(
+		// The first query is pinned, the others only differ by the selector and
+		// the grouping.
 		mockConn.EXPECT().
-			Select(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).
+			Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
+WITH
+ (SELECT SUM(Bytes*SamplingRate) FROM flows WHERE TimeReceived BETWEEN toDateTime('1969-12-31 23:55:00', 'UTC') AND toDateTime('1970-01-01 00:00:00', 'UTC') AND InIfBoundary = 'external') AS Total
+SELECT
+ if(empty(concat(dictGetOrDefault('protocols', 'name', Proto, '???'), '/', toString(SrcPort))),'Unknown',concat(dictGetOrDefault('protocols', 'name', Proto, '???'), '/', toString(SrcPort))) AS Name,
+ SUM(Bytes*SamplingRate) / Total * 100 AS Percent
+FROM flows
+WHERE TimeReceived BETWEEN toDateTime('1969-12-31 23:55:00', 'UTC') AND toDateTime('1970-01-01 00:00:00', 'UTC')
+AND InIfBoundary = 'external'
+GROUP BY Proto, SrcPort
+ORDER BY Percent DESC
+LIMIT 5`)).Return(nil).
 			SetArg(1, []topResult{
 				{"TCP/443", float64(51)},
 				{"UDP/443", float64(20)},
@@ -302,6 +315,26 @@ ORDER BY Time WITH FILL
  TO toDateTime('2009-11-11 23:00:00', 'UTC') + INTERVAL 1 second
  STEP 432`,
 		},
+		{
+			// Braces in the operator-provided filter are passed through as-is.
+			config: func() Configuration {
+				c := DefaultConfiguration()
+				c.HomepageGraphFilter = "InIfDescription != '{{ hello }}'"
+				return c
+			}(),
+			query: `
+SELECT
+ toStartOfInterval(TimeReceived + INTERVAL 144 second, INTERVAL 432 second) - INTERVAL 144 second AS Time,
+ SUM(Bytes*SamplingRate*8/432)/1000/1000/1000 AS Gbps
+FROM flows
+WHERE TimeReceived BETWEEN toDateTime('2009-11-10 23:00:00', 'UTC') AND toDateTime('2009-11-11 23:00:00', 'UTC')
+AND InIfDescription != '{{ hello }}'
+GROUP BY Time
+ORDER BY Time WITH FILL
+ FROM toDateTime('2009-11-10 23:00:00', 'UTC')
+ TO toDateTime('2009-11-11 23:00:00', 'UTC') + INTERVAL 1 second
+ STEP 432`,
+		},
 	}
 	for _, tcase := range testcases {
 		_, h, mockConn, mockClock := NewMock(t, tcase.config)
@@ -320,7 +353,7 @@ ORDER BY Time WITH FILL
 			{base.Add(5 * time.Minute), 24.7},
 		}
 		mockConn.EXPECT().
-			Select(gomock.Any(), gomock.Any(), strings.TrimSpace(tcase.query)).
+			Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, tcase.query)).
 			SetArg(1, expected).
 			Return(nil)
 

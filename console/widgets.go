@@ -4,49 +4,61 @@
 package console
 
 import (
-	"fmt"
 	"net/http"
 	"reflect"
 	"strings"
 	"time"
 
+	"akvorado/common/constants"
 	"akvorado/common/helpers"
 	"akvorado/common/httpserver"
 	"akvorado/common/schema"
+	sb "akvorado/common/sqlbuilder"
+	"akvorado/console/query"
 )
 
 func (c *Component) widgetFlowLastHandlerFunc(w http.ResponseWriter, req *http.Request) {
 	ctx := c.t.Context(req.Context())
 	replace := []struct {
 		key         schema.ColumnKey
-		replaceWith string
+		replaceWith sb.Expr
 	}{
-		{schema.ColumnSrcCommunities, communitiesFormat("SrcCommunities")},
-		{schema.ColumnSrcLargeCommunities, largeCommunitiesFormat("SrcLargeCommunities")},
-		{schema.ColumnDstCommunities, communitiesFormat("DstCommunities")},
-		{schema.ColumnDstLargeCommunities, largeCommunitiesFormat("DstLargeCommunities")},
-		{schema.ColumnSrcMAC, `MACNumToString(SrcMAC)`},
-		{schema.ColumnDstMAC, `MACNumToString(DstMAC)`},
+		{schema.ColumnSrcCommunities, query.CommunitiesToStrings("SrcCommunities")},
+		{schema.ColumnSrcLargeCommunities, query.LargeCommunitiesToStrings("SrcLargeCommunities")},
+		{schema.ColumnDstCommunities, query.CommunitiesToStrings("DstCommunities")},
+		{schema.ColumnDstLargeCommunities, query.LargeCommunitiesToStrings("DstLargeCommunities")},
+		{schema.ColumnSrcMAC, sb.Function("MACNumToString", sb.Column("SrcMAC"))},
+		{schema.ColumnDstMAC, sb.Function("MACNumToString", sb.Column("DstMAC"))},
 	}
-	selectClause := []string{"SELECT *"}
+	// The columns below are not readable as they are stored, so they are
+	// dropped from the "*" and added back in a friendlier form.
+	replaced := []sb.Expr{}
 	except := []string{}
 	for _, r := range replace {
 		if column, ok := c.d.Schema.LookupColumnByKey(r.key); ok && !column.Disabled {
 			except = append(except, r.key.String())
-			selectClause = append(selectClause, fmt.Sprintf("%s AS %s", r.replaceWith, r.key))
+			replaced = append(replaced, sb.Alias(r.replaceWith, r.key.String()))
 		}
 	}
+	last := sb.Select()
 	if len(except) > 0 {
-		selectClause[0] = fmt.Sprintf("SELECT * EXCEPT (%s)", strings.Join(except, ", "))
+		last.Item(sb.Star(), sb.Except(except...))
+	} else {
+		last.Item(sb.Star())
 	}
-	query := fmt.Sprintf(`
-%s
-FROM flows
-WHERE TimeReceived=(SELECT MAX(TimeReceived) FROM flows)
-LIMIT 1`, strings.Join(selectClause, ",\n "))
-	w.Header().Set("X-SQL-Query", query)
+	for _, expr := range replaced {
+		last.Item(expr)
+	}
+	sqlQuery := last.
+		From(sb.Table("flows")).
+		Where(sb.Op(sb.Column("TimeReceived"), "=",
+			sb.Select(sb.Function("MAX", sb.Column("TimeReceived"))).
+				From(sb.Table("flows")).Subquery())).
+		Limit(1).
+		String()
+	w.Header().Set("X-SQL-Query", sqlQuery)
 	// Do not increase counter for this one.
-	rows, err := c.d.ClickHouseDB.Conn.Query(ctx, query)
+	rows, err := c.d.ClickHouseDB.Conn.Query(ctx, sqlQuery)
 	if err != nil {
 		c.r.Err(err).Msg("unable to query database")
 		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})
@@ -76,14 +88,6 @@ LIMIT 1`, strings.Join(selectClause, ",\n "))
 		response[column] = vars[index]
 	}
 	httpserver.WriteIndentedJSON(w, http.StatusOK, response)
-}
-
-func communitiesFormat(prefix string) string {
-	return fmt.Sprintf(`arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), %s)`, prefix)
-}
-
-func largeCommunitiesFormat(prefix string) string {
-	return fmt.Sprintf(`arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))), %s)`, prefix)
 }
 
 func (c *Component) widgetFlowRateHandlerFunc(w http.ResponseWriter, req *http.Request) {
@@ -135,11 +139,14 @@ type topResult struct {
 func (c *Component) widgetTopHandlerFunc(w http.ResponseWriter, req *http.Request) {
 	ctx := c.t.Context(req.Context())
 	var (
-		selector          string
-		groupby           string
-		filter            string
+		selector          sb.Expr
+		groupby           []sb.Expr
+		filter            sb.Expr
 		mainTableRequired bool
 	)
+	dictName := func(dictionary string, column string) sb.Expr {
+		return sb.Column(column).Apply(query.DictionaryName(dictionary, "???"))
+	}
 
 	rawName := req.PathValue("name")
 	widgetName, err := HomepageTopWidgetString(rawName)
@@ -149,73 +156,89 @@ func (c *Component) widgetTopHandlerFunc(w http.ResponseWriter, req *http.Reques
 	}
 
 	switch widgetName {
-	case HomepageTopWidgetSrcAS:
-		selector = fmt.Sprintf(`concat(toString(SrcAS), ': ', dictGetOrDefault('%s', 'name', SrcAS, '???'))`, schema.DictionaryASNs)
-		groupby = `SrcAS`
-	case HomepageTopWidgetDstAS:
-		selector = fmt.Sprintf(`concat(toString(DstAS), ': ', dictGetOrDefault('%s', 'name', DstAS, '???'))`, schema.DictionaryASNs)
-		groupby = `DstAS`
+	case HomepageTopWidgetSrcAS, HomepageTopWidgetDstAS:
+		column := "SrcAS"
+		if widgetName == HomepageTopWidgetDstAS {
+			column = "DstAS"
+		}
+		selector = sb.Function("concat",
+			sb.Function("toString", sb.Column(column)),
+			sb.String(": "),
+			dictName(schema.DictionaryASNs, column))
+		groupby = sb.Columns(column)
 	case HomepageTopWidgetSrcCountry:
-		selector = `SrcCountry`
+		selector = sb.Column("SrcCountry")
 	case HomepageTopWidgetDstCountry:
-		selector = `DstCountry`
+		selector = sb.Column("DstCountry")
 	case HomepageTopWidgetExporter:
-		selector = "ExporterName"
+		selector = sb.Column("ExporterName")
 	case HomepageTopWidgetProtocol:
-		selector = fmt.Sprintf(`dictGetOrDefault('%s', 'name', Proto, '???')`, schema.DictionaryProtocols)
-		groupby = `Proto`
+		selector = dictName(schema.DictionaryProtocols, "Proto")
+		groupby = sb.Columns("Proto")
 	case HomepageTopWidgetEtype:
-		selector = `if(equals(EType, 34525), 'IPv6', if(equals(EType, 2048), 'IPv4', '???'))`
-		groupby = `EType`
-	case HomepageTopWidgetSrcPort:
-		selector = fmt.Sprintf(`concat(dictGetOrDefault('%s', 'name', Proto, '???'), '/', toString(SrcPort))`, schema.DictionaryProtocols)
-		groupby = `Proto, SrcPort`
-		mainTableRequired = true
-	case HomepageTopWidgetDstPort:
-		selector = fmt.Sprintf(`concat(dictGetOrDefault('%s', 'name', Proto, '???'), '/', toString(DstPort))`, schema.DictionaryProtocols)
-		groupby = `Proto, DstPort`
+		etype := sb.Column("EType")
+		selector = sb.Function("if",
+			sb.Function("equals", etype, sb.Uint(constants.ETypeIPv6)),
+			sb.String("IPv6"),
+			sb.Function("if",
+				sb.Function("equals", etype, sb.Uint(constants.ETypeIPv4)),
+				sb.String("IPv4"),
+				sb.String("???")))
+		groupby = sb.Columns("EType")
+	case HomepageTopWidgetSrcPort, HomepageTopWidgetDstPort:
+		column := "SrcPort"
+		if widgetName == HomepageTopWidgetDstPort {
+			column = "DstPort"
+		}
+		selector = sb.Function("concat",
+			dictName(schema.DictionaryProtocols, "Proto"),
+			sb.String("/"),
+			sb.Function("toString", sb.Column(column)))
+		groupby = sb.Columns("Proto", column)
 		mainTableRequired = true
 	default:
 		httpserver.WriteJSON(w, http.StatusNotFound, helpers.M{"message": "Unknown top request."})
 		return
 	}
 	if strings.HasPrefix(rawName, "src-") {
-		filter = "AND InIfBoundary = 'external'"
+		filter = sb.Op(sb.Column("InIfBoundary"), "=", sb.String("external"))
 	} else if strings.HasPrefix(rawName, "dst-") {
-		filter = "AND OutIfBoundary = 'external'"
+		filter = sb.Op(sb.Column("OutIfBoundary"), "=", sb.String("external"))
 	}
-	if groupby == "" {
-		groupby = selector
+	if len(groupby) == 0 {
+		groupby = []sb.Expr{selector}
 	}
 
 	now := c.d.Clock.Now()
-	template := fmt.Sprintf(`
-WITH
- (SELECT SUM(Bytes*SamplingRate) FROM {{ .Table }} WHERE {{ .Timefilter }} %s) AS Total
-SELECT
- if(empty(%s),'Unknown',%s) AS Name,
- SUM(Bytes*SamplingRate) / Total * 100 AS Percent
-FROM {{ .Table }}
-WHERE {{ .Timefilter }}
-%s
-GROUP BY %s
-ORDER BY Percent DESC
-LIMIT 5`,
-		filter, selector, selector, filter, groupby)
-
-	query := c.finalizeTemplateQuery(templateQuery{
-		Template: template,
-		Context: inputContext{
-			Start:             now.Add(-5 * time.Minute),
-			End:               now,
-			MainTableRequired: mainTableRequired,
-			Points:            5,
-		},
-	})
-	w.Header().Set("X-SQL-Query", query)
+	start, end := now.Add(-5*time.Minute), now
+	r := c.resolve(inputContext{
+		Start:             start,
+		End:               end,
+		MainTableRequired: mainTableRequired,
+		Points:            5,
+	}).forRange(start, end)
+	where := sb.And(r.timefilter(), filter)
+	bytes := sb.MustParseExpr("SUM(Bytes*SamplingRate)")
+	sqlQuery := sb.Select(
+		sb.Alias(sb.Function("if",
+			sb.Function("empty", selector),
+			sb.String("Unknown"),
+			selector), "Name"),
+		sb.Alias(sb.Op(
+			sb.Op(bytes, "/", sb.Column("Total")), "*", sb.Uint(100)),
+			"Percent")).
+		WithScalar(sb.Select(bytes).From(sb.Table(r.Table)).Where(where), "Total").
+		From(sb.Table(r.Table)).
+		Where(where).
+		GroupBy(groupby...).
+		OrderBy(sb.Order(sb.Column("Percent")).Desc()).
+		Limit(5).
+		String()
+	w.Header().Set("X-SQL-Query", sqlQuery)
 
 	results := []topResult{}
-	if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, strings.TrimSpace(query)); err != nil {
+	c.metrics.clickhouseQueries.WithLabelValues(r.Table).Inc()
+	if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery); err != nil {
 		c.r.Err(err).Msg("unable to query database")
 		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})
 		return
@@ -224,42 +247,40 @@ LIMIT 5`,
 }
 
 func (c *Component) widgetGraphHandlerFunc(w http.ResponseWriter, req *http.Request) {
-	filter := c.config.HomepageGraphFilter
-	if filter != "" {
-		filter = fmt.Sprintf("AND %s", filter)
-	}
 	ctx := c.t.Context(req.Context())
 	now := c.d.Clock.Now()
-	template := fmt.Sprintf(`
-SELECT
- {{ .ToStartOfInterval }} AS Time,
- SUM(Bytes*SamplingRate*8/{{ .Interval }})/1000/1000/1000 AS Gbps
-FROM {{ .Table }}
-WHERE {{ .Timefilter }}
-%s
-GROUP BY Time
-ORDER BY Time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}`,
-		filter)
-
-	query := c.finalizeTemplateQuery(templateQuery{
-		Template: template,
-		Context: inputContext{
-			Start:             now.Add(-c.config.HomepageGraphTimeRange),
-			End:               now,
-			MainTableRequired: false,
-			Points:            200,
-		},
-	})
-	w.Header().Set("X-SQL-Query", query)
+	start, end := now.Add(-c.config.HomepageGraphTimeRange), now
+	r := c.resolve(inputContext{
+		Start:             start,
+		End:               end,
+		MainTableRequired: false,
+		Points:            200,
+	}).forRange(start, end)
+	gbps := sb.Function("SUM",
+		sb.Op(sb.MustParseExpr("Bytes*SamplingRate*8"), "/", sb.Uint(r.Interval)))
+	// From bits per second to gigabits per second.
+	for range 3 {
+		gbps = sb.Op(gbps, "/", sb.Uint(1000))
+	}
+	sqlQuery := sb.Select(
+		sb.Alias(r.toStartOfInterval(), "Time"),
+		sb.Alias(gbps, "Gbps")).
+		From(sb.Table(r.Table)).
+		Where(sb.And(r.timefilter(), c.homepageGraphFilter)).
+		GroupBy(sb.Column("Time")).
+		OrderBy(sb.Order(sb.Column("Time")).Fill(
+			r.timefilterStart(),
+			sb.Op(r.timefilterEnd(), "+", seconds(1)),
+			sb.Uint(r.Interval))).
+		String()
+	w.Header().Set("X-SQL-Query", sqlQuery)
 
 	results := []struct {
 		Time time.Time `json:"t"`
 		Gbps float64   `json:"gbps"`
 	}{}
-	err := c.d.ClickHouseDB.Conn.Select(ctx, &results, strings.TrimSpace(query))
+	c.metrics.clickhouseQueries.WithLabelValues(r.Table).Inc()
+	err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery)
 	if err != nil {
 		c.r.Err(err).Msg("unable to query database")
 		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})

@@ -5,6 +5,8 @@ package console
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -12,6 +14,7 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/common/schema"
+	sb "akvorado/common/sqlbuilder"
 	"akvorado/console/query"
 )
 
@@ -30,7 +33,6 @@ func TestGraphLineInputReverseDirection(t *testing.T) {
 		},
 		Points: 100,
 	}
-	original1 := fmt.Sprintf("%+v", input)
 	expected := graphLineHandlerInput{
 		graphCommonHandlerInput: graphCommonHandlerInput{
 			Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
@@ -48,13 +50,16 @@ func TestGraphLineInputReverseDirection(t *testing.T) {
 	expected.Filter.Validate(input.schema)
 	query.Columns(input.Dimensions).Validate(input.schema)
 	query.Columns(expected.Dimensions).Validate(input.schema)
+	snapshot := func() string {
+		return fmt.Sprintf("%+v %s %s", input, input.Filter.Direct(), input.Filter.Reverse())
+	}
+	original := snapshot()
 	got := input.reverseDirection()
-	original2 := fmt.Sprintf("%+v", input)
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Fatalf("reverseDirection() (-got, +want):\n%s", diff)
 	}
-	if original1 != original2 {
-		t.Fatalf("reverseDirection() modified original to:\n-%s\n+%s", original1, original2)
+	if now := snapshot(); original != now {
+		t.Fatalf("reverseDirection() modified original to:\n-%s\n+%s", original, now)
 	}
 }
 
@@ -104,13 +109,15 @@ func TestGraphPreviousPeriod(t *testing.T) {
 			"Feb 10, 2020 at 15:04", "Mar 25, 2020 at 17:34",
 			"Jan 13, 2020 at 15:04", "Feb 26, 2020 at 17:34",
 		}, {
+			// 2020 is a leap year: the end moves by the same 365 days as the
+			// start, otherwise the previous period would be one day shorter.
 			helpers.Mark(),
 			"Feb 10, 2020 at 15:04", "Jul 25, 2020 at 17:34",
-			"Feb 10, 2019 at 15:04", "Jul 25, 2019 at 17:34",
+			"Feb 10, 2019 at 15:04", "Jul 26, 2019 at 17:34",
 		}, {
 			helpers.Mark(),
 			"Feb 10, 2019 at 15:04", "Jul 25, 2020 at 17:34",
-			"Feb 10, 2018 at 15:04", "Jul 25, 2019 at 17:34",
+			"Feb 10, 2018 at 15:04", "Jul 26, 2019 at 17:34",
 		},
 	}
 	for _, tc := range cases {
@@ -143,7 +150,7 @@ func TestGraphPreviousPeriod(t *testing.T) {
 				},
 			}
 			query.Columns(input.Dimensions).Validate(input.schema)
-			got := input.previousPeriod()
+			got, period := input.previousPeriod()
 			expected := graphLineHandlerInput{
 				graphCommonHandlerInput: graphCommonHandlerInput{
 					Start:      expectedStart,
@@ -154,8 +161,191 @@ func TestGraphPreviousPeriod(t *testing.T) {
 			if diff := helpers.Diff(got, expected); diff != "" {
 				t.Fatalf("%spreviousPeriod() (-got, +want):\n%s", tc.Pos, diff)
 			}
+			// Both ends move by the returned period, so the previous period
+			// covers exactly as much time as the main one.
+			if diff := helpers.Diff(start.Sub(got.Start), period); diff != "" {
+				t.Errorf("%spreviousPeriod() start shift (-got, +want):\n%s", tc.Pos, diff)
+			}
+			if diff := helpers.Diff(end.Sub(got.End), period); diff != "" {
+				t.Errorf("%spreviousPeriod() end shift (-got, +want):\n%s", tc.Pos, diff)
+			}
 		})
 	}
+}
+
+func TestGraphLineResolveContext(t *testing.T) {
+	sch := schema.NewMock(t)
+	start := time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC)
+	end := time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC)
+	cases := []struct {
+		Description string
+		Dimensions  []query.Column
+		Filter      query.Filter
+		Expected    inputContext
+	}{
+		{
+			Description: "no dimension",
+			Dimensions:  []query.Column{},
+			Expected:    inputContext{Start: start, End: end, Points: 100},
+		}, {
+			Description: "dimension on the main table only",
+			Dimensions:  []query.Column{query.NewColumn("SrcPort")},
+			Expected: inputContext{
+				Start: start, End: end, Points: 100, MainTableRequired: true,
+			},
+		}, {
+			Description: "filter on the main table only",
+			Dimensions:  []query.Column{},
+			Filter:      query.NewFilter("SrcPort = 80"),
+			Expected: inputContext{
+				Start: start, End: end, Points: 100, MainTableRequired: true,
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.Description, func(t *testing.T) {
+			input := graphLineHandlerInput{
+				graphCommonHandlerInput: graphCommonHandlerInput{
+					schema:     sch,
+					Start:      start,
+					End:        end,
+					Dimensions: tc.Dimensions,
+					Filter:     tc.Filter,
+				},
+				Points: 100,
+			}
+			if err := query.Columns(input.Dimensions).Validate(sch); err != nil {
+				t.Fatalf("Validate() error:\n%+v", err)
+			}
+			if err := input.Filter.Validate(sch); err != nil {
+				t.Fatalf("Validate() error:\n%+v", err)
+			}
+			if diff := helpers.Diff(input.resolveContext(), tc.Expected); diff != "" {
+				t.Errorf("resolveContext() (-got, +want):\n%s", diff)
+			}
+		})
+	}
+}
+
+// TestGraphQueryAxesRanges checks the two properties the axes must have: they
+// all step on the same time grid, but the previous period covers its own range.
+func TestGraphQueryAxesRanges(t *testing.T) {
+	input := graphLineHandlerInput{
+		graphCommonHandlerInput: graphCommonHandlerInput{
+			schema:     schema.NewMock(t),
+			Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+			End:        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+			Dimensions: []query.Column{},
+			Units:      "l3bps",
+		},
+		Points:         100,
+		PreviousPeriod: true,
+	}
+	if err := input.Filter.Validate(input.schema); err != nil {
+		t.Fatalf("Validate() error:\n%+v", err)
+	}
+	got := toSQLStrings(t, input.toSQL(testResolution))
+	if len(got) != 2 {
+		t.Fatalf("toSQL() got %d axes, expected 2", len(got))
+	}
+
+	// Same step for both axes: the previous period is drawn on the time axis
+	// of the main one.
+	steps := regexp.MustCompile(`STEP (\d+)`)
+	main := steps.FindStringSubmatch(got[0])
+	previous := steps.FindStringSubmatch(got[1])
+	if main == nil || previous == nil {
+		t.Fatalf("toSQL() missing STEP:\n%s\n%s", got[0], got[1])
+	}
+	if diff := helpers.Diff(previous[1], main[1]); diff != "" {
+		t.Errorf("toSQL() previous period STEP (-got, +want):\n%s", diff)
+	}
+
+	// But the previous period queries the day before.
+	if !strings.Contains(got[0], "BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC')") {
+		t.Errorf("toSQL() main axis does not cover the requested period:\n%s", got[0])
+	}
+	if !strings.Contains(got[1], "BETWEEN toDateTime('2022-04-09 15:45:00', 'UTC') AND toDateTime('2022-04-10 15:45:00', 'UTC')") {
+		t.Errorf("toSQL() previous period does not cover the day before:\n%s", got[1])
+	}
+}
+
+// TestGraphQueryAxesLeapYear checks the previous period covers as much time as
+// the main one when a leap day sits between them. Both share a time axis and
+// step on the same grid, so a longer range would give the previous period one
+// point more than the main one.
+func TestGraphQueryAxesLeapYear(t *testing.T) {
+	cases := []struct {
+		Description string
+		Pos         helpers.Pos
+		Start       time.Time
+		End         time.Time
+	}{
+		{
+			// A year back from here is 365 days, but the requested period
+			// covers February 29th and the previous one does not.
+			Description: "leap day in the main period",
+			Pos:         helpers.Mark(),
+			Start:       time.Date(2020, 1, 1, 15, 45, 10, 0, time.UTC),
+			End:         time.Date(2020, 3, 5, 15, 45, 10, 0, time.UTC),
+		}, {
+			// The other way around: a year back is 366 days and only the
+			// previous period covers February 29th.
+			Description: "leap day in the previous period",
+			Pos:         helpers.Mark(),
+			Start:       time.Date(2021, 1, 1, 15, 45, 10, 0, time.UTC),
+			End:         time.Date(2021, 3, 5, 15, 45, 10, 0, time.UTC),
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.Description, func(t *testing.T) {
+			input := graphLineHandlerInput{
+				graphCommonHandlerInput: graphCommonHandlerInput{
+					schema:     schema.NewMock(t),
+					Start:      tc.Start,
+					End:        tc.End,
+					Dimensions: []query.Column{},
+					Units:      "l3bps",
+				},
+				Points:         100,
+				PreviousPeriod: true,
+			}
+			if err := input.Filter.Validate(input.schema); err != nil {
+				t.Fatalf("Validate() error:\n%+v", err)
+			}
+			got := toSQLStrings(t, input.toSQL(testResolution))
+			if len(got) != 2 {
+				t.Fatalf("toSQL() got %d axes, expected 2", len(got))
+			}
+			main := timefilterSpan(t, got[0])
+			previous := timefilterSpan(t, got[1])
+			if diff := helpers.Diff(previous, main); diff != "" {
+				t.Errorf("%stoSQL() previous period span (-got, +want):\n%s\nmain axis:\n%s\nprevious period:\n%s",
+					tc.Pos, diff, got[0], got[1])
+			}
+		})
+	}
+}
+
+var timefilterRegexp = regexp.MustCompile(
+	`TimeReceived BETWEEN toDateTime\('([^']+)', 'UTC'\) AND toDateTime\('([^']+)', 'UTC'\)`)
+
+// timefilterSpan returns how much time the WHERE clause of a query covers. With
+// a shared interval, this is what decides how many points an axis has.
+func timefilterSpan(t *testing.T, sql string) time.Duration {
+	t.Helper()
+	matches := timefilterRegexp.FindStringSubmatch(sql)
+	if matches == nil {
+		t.Fatalf("no time filter found in:\n%s", sql)
+	}
+	parse := func(value string) time.Time {
+		when, err := time.ParseInLocation("2006-01-02 15:04:05", value, time.UTC)
+		if err != nil {
+			t.Fatalf("time.ParseInLocation(%q) error:\n%+v", value, err)
+		}
+		return when
+	}
+	return parse(matches[2]).Sub(parse(matches[1]))
 }
 
 func TestGraphQuerySQL(t *testing.T) {
@@ -163,7 +353,7 @@ func TestGraphQuerySQL(t *testing.T) {
 		Description string
 		Pos         helpers.Pos
 		Input       graphLineHandlerInput
-		Expected    []templateQuery
+		Expected    []string
 	}{
 		{
 			Description: "no dimensions, no filters, bps",
@@ -178,30 +368,22 @@ func TestGraphQuerySQL(t *testing.T) {
 				},
 				Points: 100,
 			},
-			Expected: []templateQuery{
-				{
-					Context: inputContext{
-						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-						Points: 100,
-						Units:  "l3bps",
-					},
-					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
+			Expected: []string{
+				`WITH
+ source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ .ToStartOfInterval }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time,
+ SUM(Bytes*SamplingRate*8)/60 AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE {{ .Timefilter }}
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM toDateTime('2022-04-10 15:45:00', 'UTC')
+ TO toDateTime('2022-04-11 15:45:00', 'UTC') + INTERVAL 1 second
+ STEP 60
  INTERPOLATE (dimensions AS emptyArrayString()))`,
-				},
 			},
 		}, {
 			Description: "no dimensions, no filters, l2 bps",
@@ -216,30 +398,22 @@ ORDER BY time WITH FILL
 				},
 				Points: 100,
 			},
-			Expected: []templateQuery{
-				{
-					Context: inputContext{
-						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-						Points: 100,
-						Units:  "l2bps",
-					},
-					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
+			Expected: []string{
+				`WITH
+ source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ .ToStartOfInterval }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time,
+ SUM((Bytes+38*Packets)*SamplingRate*8)/60 AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE {{ .Timefilter }}
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM toDateTime('2022-04-10 15:45:00', 'UTC')
+ TO toDateTime('2022-04-11 15:45:00', 'UTC') + INTERVAL 1 second
+ STEP 60
  INTERPOLATE (dimensions AS emptyArrayString()))`,
-				},
 			},
 		}, {
 			Description: "no dimensions, no filters, pps",
@@ -254,30 +428,22 @@ ORDER BY time WITH FILL
 				},
 				Points: 100,
 			},
-			Expected: []templateQuery{
-				{
-					Context: inputContext{
-						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-						Points: 100,
-						Units:  "pps",
-					},
-					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
+			Expected: []string{
+				`WITH
+ source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ .ToStartOfInterval }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time,
+ SUM(Packets*SamplingRate)/60 AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE {{ .Timefilter }}
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM toDateTime('2022-04-10 15:45:00', 'UTC')
+ TO toDateTime('2022-04-11 15:45:00', 'UTC') + INTERVAL 1 second
+ STEP 60
  INTERPOLATE (dimensions AS emptyArrayString()))`,
-				},
 			},
 		}, {
 			Description: "no dimensions, no filters, fps",
@@ -292,30 +458,22 @@ ORDER BY time WITH FILL
 				},
 				Points: 100,
 			},
-			Expected: []templateQuery{
-				{
-					Context: inputContext{
-						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-						Points: 100,
-						Units:  "fps",
-					},
-					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
+			Expected: []string{
+				`WITH
+ source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ .ToStartOfInterval }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time,
+ COUNT(*)/60 AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE {{ .Timefilter }}
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM toDateTime('2022-04-10 15:45:00', 'UTC')
+ TO toDateTime('2022-04-11 15:45:00', 'UTC') + INTERVAL 1 second
+ STEP 60
  INTERPOLATE (dimensions AS emptyArrayString()))`,
-				},
 			},
 		}, {
 			Description: "truncated source address",
@@ -332,32 +490,23 @@ ORDER BY time WITH FILL
 				},
 				Points: 100,
 			},
-			Expected: []templateQuery{
-				{
-					Context: inputContext{
-						Start:             time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-						End:               time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-						Points:            100,
-						Units:             "l3bps",
-						MainTableRequired: true,
-					},
-					Template: `WITH
- source AS (SELECT * REPLACE (tupleElement(IPv6CIDRToRange(SrcAddr, if(tupleElement(IPv6CIDRToRange(SrcAddr, 96), 1) = toIPv6('0.0.0.0'), 120, 48)), 1) AS SrcAddr) FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
- rows AS (SELECT SrcAddr FROM source WHERE {{ .Timefilter }} AND (SrcAddr BETWEEN toIPv6('1.0.0.0') AND toIPv6('1.255.255.255')) GROUP BY SrcAddr ORDER BY {{ .Units }} DESC LIMIT 0)
+			Expected: []string{
+				`WITH
+ source AS (SELECT * REPLACE (tupleElement(IPv6CIDRToRange(SrcAddr, if(tupleElement(IPv6CIDRToRange(SrcAddr, 96), 1) = toIPv6('0.0.0.0'), 120, 48)), 1) AS SrcAddr) FROM flows SETTINGS asterisk_include_alias_columns = 1),
+ rows AS (SELECT SrcAddr FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND SrcAddr BETWEEN toIPv6('1.0.0.0') AND toIPv6('1.255.255.255') GROUP BY SrcAddr ORDER BY SUM(Bytes*SamplingRate*8) DESC LIMIT 0)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ .ToStartOfInterval }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time,
+ SUM(Bytes*SamplingRate*8)/60 AS xps,
  if((SrcAddr) IN rows, [replaceRegexpOne(IPv6NumToString(SrcAddr), '^::ffff:', '')], ['Other']) AS dimensions
 FROM source
-WHERE {{ .Timefilter }} AND (SrcAddr BETWEEN toIPv6('1.0.0.0') AND toIPv6('1.255.255.255'))
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND SrcAddr BETWEEN toIPv6('1.0.0.0') AND toIPv6('1.255.255.255')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM toDateTime('2022-04-10 15:45:00', 'UTC')
+ TO toDateTime('2022-04-11 15:45:00', 'UTC') + INTERVAL 1 second
+ STEP 60
  INTERPOLATE (dimensions AS ['Other']))`,
-				},
 			},
 		}, {
 			Description: "no dimensions",
@@ -372,33 +521,25 @@ ORDER BY time WITH FILL
 				},
 				Points: 100,
 			},
-			Expected: []templateQuery{
-				{
-					Context: inputContext{
-						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-						Points: 100,
-						Units:  "l3bps",
-					},
-					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
+			Expected: []string{
+				`WITH
+ source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ .ToStartOfInterval }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time,
+ SUM(Bytes*SamplingRate*8)/60 AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE {{ .Timefilter }} AND (DstCountry = 'FR' AND SrcCountry = 'US')
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND DstCountry = 'FR' AND SrcCountry = 'US'
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM toDateTime('2022-04-10 15:45:00', 'UTC')
+ TO toDateTime('2022-04-11 15:45:00', 'UTC') + INTERVAL 1 second
+ STEP 60
  INTERPOLATE (dimensions AS emptyArrayString()))`,
-				},
 			},
 		}, {
-			Description: "no dimensions, escaped filter",
+			Description: "no dimensions, filter with braces",
 			Pos:         helpers.Mark(),
 			Input: graphLineHandlerInput{
 				graphCommonHandlerInput: graphCommonHandlerInput{
@@ -410,30 +551,22 @@ ORDER BY time WITH FILL
 				},
 				Points: 100,
 			},
-			Expected: []templateQuery{
-				{
-					Context: inputContext{
-						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-						Points: 100,
-						Units:  "l3bps",
-					},
-					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
+			Expected: []string{
+				`WITH
+ source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ .ToStartOfInterval }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time,
+ SUM(Bytes*SamplingRate*8)/60 AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE {{ .Timefilter }} AND (InIfDescription = '{{"{{"}} hello }}' AND SrcCountry = 'US')
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND InIfDescription = '{{ hello }}' AND SrcCountry = 'US'
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM toDateTime('2022-04-10 15:45:00', 'UTC')
+ TO toDateTime('2022-04-11 15:45:00', 'UTC') + INTERVAL 1 second
+ STEP 60
  INTERPOLATE (dimensions AS emptyArrayString()))`,
-				},
 			},
 		}, {
 			Description: "no dimensions, reverse direction",
@@ -449,50 +582,35 @@ ORDER BY time WITH FILL
 				Points:        100,
 				Bidirectional: true,
 			},
-			Expected: []templateQuery{
-				{
-					Context: inputContext{
-						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-						Points: 100,
-						Units:  "l3bps",
-					},
-					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
+			Expected: []string{
+				`WITH
+ source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ .ToStartOfInterval }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time,
+ SUM(Bytes*SamplingRate*8)/60 AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE {{ .Timefilter }} AND (DstCountry = 'FR' AND SrcCountry = 'US')
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND DstCountry = 'FR' AND SrcCountry = 'US'
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM toDateTime('2022-04-10 15:45:00', 'UTC')
+ TO toDateTime('2022-04-11 15:45:00', 'UTC') + INTERVAL 1 second
+ STEP 60
  INTERPOLATE (dimensions AS emptyArrayString()))`,
-				}, {
-					Context: inputContext{
-						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-						Points: 100,
-						Units:  "l3bps",
-					},
-					Template: `SELECT 2 AS axis, * FROM (
+				`SELECT 2 AS axis, * FROM (
 SELECT
- {{ .ToStartOfInterval }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time,
+ SUM(Bytes*SamplingRate*8)/60 AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE {{ .Timefilter }} AND (SrcCountry = 'FR' AND DstCountry = 'US')
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND SrcCountry = 'FR' AND DstCountry = 'US'
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM toDateTime('2022-04-10 15:45:00', 'UTC')
+ TO toDateTime('2022-04-11 15:45:00', 'UTC') + INTERVAL 1 second
+ STEP 60
  INTERPOLATE (dimensions AS emptyArrayString()))`,
-				},
 			},
 		}, {
 			Description: "no dimensions, reverse direction, inl2%",
@@ -508,50 +626,35 @@ ORDER BY time WITH FILL
 				Points:        100,
 				Bidirectional: true,
 			},
-			Expected: []templateQuery{
-				{
-					Context: inputContext{
-						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-						Points: 100,
-						Units:  "inl2%",
-					},
-					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
+			Expected: []string{
+				`WITH
+ source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ .ToStartOfInterval }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time,
+ ifNotFinite(SUM((Bytes+38*Packets)*SamplingRate*8*100/(InIfSpeed*1000000))/COUNT(DISTINCT ExporterAddress, InIfName),0)/60 AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE {{ .Timefilter }} AND (DstCountry = 'FR' AND SrcCountry = 'US')
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND DstCountry = 'FR' AND SrcCountry = 'US'
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM toDateTime('2022-04-10 15:45:00', 'UTC')
+ TO toDateTime('2022-04-11 15:45:00', 'UTC') + INTERVAL 1 second
+ STEP 60
  INTERPOLATE (dimensions AS emptyArrayString()))`,
-				}, {
-					Context: inputContext{
-						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-						Points: 100,
-						Units:  "outl2%",
-					},
-					Template: `SELECT 2 AS axis, * FROM (
+				`SELECT 2 AS axis, * FROM (
 SELECT
- {{ .ToStartOfInterval }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time,
+ ifNotFinite(SUM((Bytes+38*Packets)*SamplingRate*8*100/(OutIfSpeed*1000000))/COUNT(DISTINCT ExporterAddress, OutIfName),0)/60 AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE {{ .Timefilter }} AND (SrcCountry = 'FR' AND DstCountry = 'US')
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND SrcCountry = 'FR' AND DstCountry = 'US'
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM toDateTime('2022-04-10 15:45:00', 'UTC')
+ TO toDateTime('2022-04-11 15:45:00', 'UTC') + INTERVAL 1 second
+ STEP 60
  INTERPOLATE (dimensions AS emptyArrayString()))`,
-				},
 			},
 		}, {
 			Description: "no filters",
@@ -570,31 +673,23 @@ ORDER BY time WITH FILL
 				},
 				Points: 100,
 			},
-			Expected: []templateQuery{
-				{
-					Context: inputContext{
-						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-						Points: 100,
-						Units:  "l3bps",
-					},
-					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
- rows AS (SELECT ExporterName, InIfProvider FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY {{ .Units }} DESC LIMIT 20)
+			Expected: []string{
+				`WITH
+ source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1),
+ rows AS (SELECT ExporterName, InIfProvider FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') GROUP BY ExporterName, InIfProvider ORDER BY SUM(Bytes*SamplingRate*8) DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ .ToStartOfInterval }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time,
+ SUM(Bytes*SamplingRate*8)/60 AS xps,
  if((ExporterName, InIfProvider) IN rows, [ExporterName, InIfProvider], ['Other', 'Other']) AS dimensions
 FROM source
-WHERE {{ .Timefilter }}
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM toDateTime('2022-04-10 15:45:00', 'UTC')
+ TO toDateTime('2022-04-11 15:45:00', 'UTC') + INTERVAL 1 second
+ STEP 60
  INTERPOLATE (dimensions AS ['Other', 'Other']))`,
-				},
 			},
 		}, {
 			Description: "no filters, limitType by max",
@@ -614,31 +709,23 @@ ORDER BY time WITH FILL
 				},
 				Points: 100,
 			},
-			Expected: []templateQuery{
-				{
-					Context: inputContext{
-						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-						Points: 100,
-						Units:  "l3bps",
-					},
-					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
- rows AS (SELECT ExporterName, InIfProvider FROM ( SELECT ExporterName, InIfProvider, {{ .Units }} AS sum_at_time FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ) GROUP BY ExporterName, InIfProvider ORDER BY MAX(sum_at_time) DESC LIMIT 20)
+			Expected: []string{
+				`WITH
+ source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1),
+ rows AS (SELECT ExporterName, InIfProvider FROM ( SELECT ExporterName, InIfProvider, SUM(Bytes*SamplingRate*8) AS sum_at_time FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') GROUP BY ExporterName, InIfProvider ) GROUP BY ExporterName, InIfProvider ORDER BY MAX(sum_at_time) DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ .ToStartOfInterval }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time,
+ SUM(Bytes*SamplingRate*8)/60 AS xps,
  if((ExporterName, InIfProvider) IN rows, [ExporterName, InIfProvider], ['Other', 'Other']) AS dimensions
 FROM source
-WHERE {{ .Timefilter }}
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM toDateTime('2022-04-10 15:45:00', 'UTC')
+ TO toDateTime('2022-04-11 15:45:00', 'UTC') + INTERVAL 1 second
+ STEP 60
  INTERPOLATE (dimensions AS ['Other', 'Other']))`,
-				},
 			},
 		}, {
 			Description: "no filters, reverse",
@@ -658,51 +745,36 @@ ORDER BY time WITH FILL
 				Points:        100,
 				Bidirectional: true,
 			},
-			Expected: []templateQuery{
-				{
-					Context: inputContext{
-						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-						Points: 100,
-						Units:  "l3bps",
-					},
-					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
- rows AS (SELECT ExporterName, InIfProvider FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY {{ .Units }} DESC LIMIT 20)
+			Expected: []string{
+				`WITH
+ source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1),
+ rows AS (SELECT ExporterName, InIfProvider FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') GROUP BY ExporterName, InIfProvider ORDER BY SUM(Bytes*SamplingRate*8) DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ .ToStartOfInterval }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time,
+ SUM(Bytes*SamplingRate*8)/60 AS xps,
  if((ExporterName, InIfProvider) IN rows, [ExporterName, InIfProvider], ['Other', 'Other']) AS dimensions
 FROM source
-WHERE {{ .Timefilter }}
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM toDateTime('2022-04-10 15:45:00', 'UTC')
+ TO toDateTime('2022-04-11 15:45:00', 'UTC') + INTERVAL 1 second
+ STEP 60
  INTERPOLATE (dimensions AS ['Other', 'Other']))`,
-				}, {
-					Context: inputContext{
-						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-						Points: 100,
-						Units:  "l3bps",
-					},
-					Template: `SELECT 2 AS axis, * FROM (
+				`SELECT 2 AS axis, * FROM (
 SELECT
- {{ .ToStartOfInterval }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time,
+ SUM(Bytes*SamplingRate*8)/60 AS xps,
  if((ExporterName, OutIfProvider) IN rows, [ExporterName, OutIfProvider], ['Other', 'Other']) AS dimensions
 FROM source
-WHERE {{ .Timefilter }}
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM toDateTime('2022-04-10 15:45:00', 'UTC')
+ TO toDateTime('2022-04-11 15:45:00', 'UTC') + INTERVAL 1 second
+ STEP 60
  INTERPOLATE (dimensions AS ['Other', 'Other']))`,
-				},
 			},
 		}, {
 			Description: "no filters, previous period",
@@ -722,55 +794,36 @@ ORDER BY time WITH FILL
 				Points:         100,
 				PreviousPeriod: true,
 			},
-			Expected: []templateQuery{
-				{
-					Context: inputContext{
-						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-						Points: 100,
-						Units:  "l3bps",
-					},
-					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
- rows AS (SELECT ExporterName, InIfProvider FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY {{ .Units }} DESC LIMIT 20)
+			Expected: []string{
+				`WITH
+ source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1),
+ rows AS (SELECT ExporterName, InIfProvider FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') GROUP BY ExporterName, InIfProvider ORDER BY SUM(Bytes*SamplingRate*8) DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ .ToStartOfInterval }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time,
+ SUM(Bytes*SamplingRate*8)/60 AS xps,
  if((ExporterName, InIfProvider) IN rows, [ExporterName, InIfProvider], ['Other', 'Other']) AS dimensions
 FROM source
-WHERE {{ .Timefilter }}
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM toDateTime('2022-04-10 15:45:00', 'UTC')
+ TO toDateTime('2022-04-11 15:45:00', 'UTC') + INTERVAL 1 second
+ STEP 60
  INTERPOLATE (dimensions AS ['Other', 'Other']))`,
-				}, {
-					Context: inputContext{
-						Start: time.Date(2022, 4, 9, 15, 45, 10, 0, time.UTC),
-						End:   time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-						StartForTableSelection: func() *time.Time {
-							t := time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC)
-							return &t
-						}(),
-						Points: 100,
-						Units:  "l3bps",
-					},
-					Template: `SELECT 3 AS axis, * FROM (
+				`SELECT 3 AS axis, * FROM (
 SELECT
- {{ .ToStartOfInterval }} + INTERVAL 86400 second AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second + INTERVAL 86400 second AS time,
+ SUM(Bytes*SamplingRate*8)/60 AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE {{ .Timefilter }}
+WHERE TimeReceived BETWEEN toDateTime('2022-04-09 15:45:00', 'UTC') AND toDateTime('2022-04-10 15:45:00', 'UTC')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }} + INTERVAL 86400 second
- TO {{ .TimefilterEnd }} + INTERVAL 1 second + INTERVAL 86400 second
- STEP {{ .Interval }}
+ FROM toDateTime('2022-04-09 15:45:00', 'UTC') + INTERVAL 86400 second
+ TO toDateTime('2022-04-10 15:45:00', 'UTC') + INTERVAL 1 second + INTERVAL 86400 second
+ STEP 60
  INTERPOLATE (dimensions AS emptyArrayString()))`,
-				},
 			},
 		}, {
 			Description: "previous period while main table is required",
@@ -789,57 +842,36 @@ ORDER BY time WITH FILL
 				Points:         100,
 				PreviousPeriod: true,
 			},
-			Expected: []templateQuery{
-				{
-					Context: inputContext{
-						Start:             time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-						End:               time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-						MainTableRequired: true,
-						Points:            100,
-						Units:             "l3bps",
-					},
-					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
- rows AS (SELECT SrcAddr, DstAddr FROM source WHERE {{ .Timefilter }} AND (InIfBoundary = 'external') GROUP BY SrcAddr, DstAddr ORDER BY {{ .Units }} DESC LIMIT 0)
+			Expected: []string{
+				`WITH
+ source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1),
+ rows AS (SELECT SrcAddr, DstAddr FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND InIfBoundary = 'external' GROUP BY SrcAddr, DstAddr ORDER BY SUM(Bytes*SamplingRate*8) DESC LIMIT 0)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ .ToStartOfInterval }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time,
+ SUM(Bytes*SamplingRate*8)/60 AS xps,
  if((SrcAddr, DstAddr) IN rows, [replaceRegexpOne(IPv6NumToString(SrcAddr), '^::ffff:', ''), replaceRegexpOne(IPv6NumToString(DstAddr), '^::ffff:', '')], ['Other', 'Other']) AS dimensions
 FROM source
-WHERE {{ .Timefilter }} AND (InIfBoundary = 'external')
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND InIfBoundary = 'external'
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM toDateTime('2022-04-10 15:45:00', 'UTC')
+ TO toDateTime('2022-04-11 15:45:00', 'UTC') + INTERVAL 1 second
+ STEP 60
  INTERPOLATE (dimensions AS ['Other', 'Other']))`,
-				}, {
-					Context: inputContext{
-						Start: time.Date(2022, 4, 9, 15, 45, 10, 0, time.UTC),
-						End:   time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-						StartForTableSelection: func() *time.Time {
-							t := time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC)
-							return &t
-						}(),
-						MainTableRequired: true,
-						Points:            100,
-						Units:             "l3bps",
-					},
-					Template: `SELECT 3 AS axis, * FROM (
+				`SELECT 3 AS axis, * FROM (
 SELECT
- {{ .ToStartOfInterval }} + INTERVAL 86400 second AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second + INTERVAL 86400 second AS time,
+ SUM(Bytes*SamplingRate*8)/60 AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE {{ .Timefilter }} AND (InIfBoundary = 'external')
+WHERE TimeReceived BETWEEN toDateTime('2022-04-09 15:45:00', 'UTC') AND toDateTime('2022-04-10 15:45:00', 'UTC') AND InIfBoundary = 'external'
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }} + INTERVAL 86400 second
- TO {{ .TimefilterEnd }} + INTERVAL 1 second + INTERVAL 86400 second
- STEP {{ .Interval }}
+ FROM toDateTime('2022-04-09 15:45:00', 'UTC') + INTERVAL 86400 second
+ TO toDateTime('2022-04-10 15:45:00', 'UTC') + INTERVAL 1 second + INTERVAL 86400 second
+ STEP 60
  INTERPOLATE (dimensions AS emptyArrayString()))`,
-				},
 			},
 		},
 	}
@@ -852,8 +884,8 @@ ORDER BY time WITH FILL
 			t.Fatalf("%sValidate() error:\n%+v", tc.Pos, err)
 		}
 		t.Run(tc.Description, func(t *testing.T) {
-			got := tc.Input.toSQL()
-			if diff := helpers.Diff(got, tc.Expected); diff != "" {
+			got := toSQLStrings(t, tc.Input.toSQL(testResolution))
+			if diff := helpers.Diff(got, sb.NormalizeAll(t, tc.Expected)); diff != "" {
 				t.Errorf("%stoSQL (-got, +want):\n%s", tc.Pos, diff)
 			}
 		})

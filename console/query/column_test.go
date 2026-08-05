@@ -86,12 +86,11 @@ func TestQueryColumnSQLSelect(t *testing.T) {
 			Expected: `arrayStringConcat(DstASPath, ' ')`,
 		}, {
 			Input: schema.ColumnDstCommunities,
-			Expected: `arrayStringConcat(arrayConcat(
-			arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), DstCommunities),
-			arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':',
-								toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':',
-								toString(bitAnd(c, 0xffffffff))), DstLargeCommunities)
-			), ' ')`,
+			Expected: "arrayStringConcat(arrayConcat(" +
+				"arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), DstCommunities), " +
+				"arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', " +
+				"toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', " +
+				"toString(bitAnd(c, 0xffffffff))), DstLargeCommunities)), ' ')",
 		}, {
 			Input:    schema.ColumnDstMAC,
 			Expected: `MACNumToString(DstMAC)`,
@@ -110,10 +109,10 @@ func TestQueryColumnSQLSelect(t *testing.T) {
 			Expected: `arrayStringConcat([if(bitTest(TCPFlags, 0) = 1, 'F', ''), if(bitTest(TCPFlags, 1) = 1, 'S', ''), if(bitTest(TCPFlags, 2) = 1, 'R', ''), if(bitTest(TCPFlags, 3) = 1, 'P', ''), if(bitTest(TCPFlags, 4) = 1, '.', ''), if(bitTest(TCPFlags, 5) = 1, 'U', ''), if(bitTest(TCPFlags, 6) = 1, 'E', ''), if(bitTest(TCPFlags, 7) = 1, 'C', ''), if(bitTest(TCPFlags, 8) = 1, 'N', '')], '')`,
 		}, {
 			Input:    schema.ColumnDstPort,
-			Expected: "replaceRegexpOne(multiIf(Proto==6, concat(toString(DstPort), '/', dictGetOrDefault('tcp', 'name', DstPort,'')), Proto==17, concat(toString(DstPort), '/', dictGetOrDefault('udp', 'name', DstPort,'')), toString(DstPort)), '/$', '')",
+			Expected: "replaceRegexpOne(multiIf(Proto = 6, concat(toString(DstPort), '/', dictGetOrDefault('tcp', 'name', DstPort, '')), Proto = 17, concat(toString(DstPort), '/', dictGetOrDefault('udp', 'name', DstPort, '')), toString(DstPort)), '/$', '')",
 		}, {
 			Input:    schema.ColumnSrcPort,
-			Expected: "replaceRegexpOne(multiIf(Proto==6, concat(toString(SrcPort), '/', dictGetOrDefault('tcp', 'name', SrcPort,'')), Proto==17, concat(toString(SrcPort), '/', dictGetOrDefault('udp', 'name', SrcPort,'')), toString(SrcPort)), '/$', '')",
+			Expected: "replaceRegexpOne(multiIf(Proto = 6, concat(toString(SrcPort), '/', dictGetOrDefault('tcp', 'name', SrcPort, '')), Proto = 17, concat(toString(SrcPort), '/', dictGetOrDefault('udp', 'name', SrcPort, '')), toString(SrcPort)), '/$', '')",
 		},
 	}
 	for _, tc := range cases {
@@ -122,9 +121,9 @@ func TestQueryColumnSQLSelect(t *testing.T) {
 			if err := column.Validate(schema.NewMock(t).EnableAllColumns()); err != nil {
 				t.Fatalf("Validate() error:\n%+v", err)
 			}
-			got := column.ToSQLSelect(sch)
+			got := column.ToSQLSelect(sch).String()
 			if diff := helpers.Diff(got, tc.Expected); diff != "" {
-				t.Errorf("toSQLWhere (-got, +want):\n%s", diff)
+				t.Errorf("ToSQLSelect() (-got, +want):\n%s", diff)
 			}
 		})
 	}
