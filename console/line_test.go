@@ -712,7 +712,7 @@ ORDER BY time WITH FILL
 			Expected: []string{
 				`WITH
  source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1),
- rows AS (SELECT ExporterName, InIfProvider FROM ( SELECT ExporterName, InIfProvider, SUM(Bytes*SamplingRate*8) AS sum_at_time FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') GROUP BY ExporterName, InIfProvider ) GROUP BY ExporterName, InIfProvider ORDER BY MAX(sum_at_time) DESC LIMIT 20)
+ rows AS (SELECT ExporterName, InIfProvider FROM ( SELECT toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time, ExporterName, InIfProvider, SUM(Bytes*SamplingRate*8) AS sum_at_time FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') GROUP BY time, ExporterName, InIfProvider ) GROUP BY ExporterName, InIfProvider ORDER BY MAX(sum_at_time) DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
 SELECT
  toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time,

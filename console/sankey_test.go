@@ -120,7 +120,7 @@ ORDER BY xps DESC)`,
 				`WITH
  source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1),
  (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC')) AS range,
- rows AS (SELECT SrcAS, ExporterName FROM ( SELECT SrcAS, ExporterName, SUM(Bytes*SamplingRate*8) AS sum_at_time FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') GROUP BY SrcAS, ExporterName ) GROUP BY SrcAS, ExporterName ORDER BY MAX(sum_at_time) DESC LIMIT 5)
+ rows AS (SELECT SrcAS, ExporterName FROM ( SELECT toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time, SrcAS, ExporterName, SUM(Bytes*SamplingRate*8) AS sum_at_time FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') GROUP BY time, SrcAS, ExporterName ) GROUP BY SrcAS, ExporterName ORDER BY MAX(sum_at_time) DESC LIMIT 5)
 SELECT 1 AS axis, * FROM (
 SELECT
  SUM(Bytes*SamplingRate*8)/range AS xps,

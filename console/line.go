@@ -169,7 +169,7 @@ func (input graphLineHandlerInput) toSQL1(axis int, r resolved, options toSQL1Op
 	if !options.skipWithClause {
 		query.With("source", input.sourceSelect(r.Table))
 		if len(dimensions) > 0 {
-			query.With("rows", selectLineRowsByLimitType(input, dimensions, where, unitsSQL))
+			query.With("rows", selectLineRowsByLimitType(input, r, dimensions, where, unitsSQL))
 		}
 	}
 	return query

@@ -35,27 +35,32 @@ func (c *Component) fixQueryColumnName(name string) string {
 	return ""
 }
 
-func selectSankeyRowsByLimitType(input graphSankeyHandlerInput, dimensions []sb.Expr, where, units sb.Expr) *sb.Query {
-	return selectRowsByLimitType(input.graphCommonHandlerInput, dimensions, where, units)
+func selectSankeyRowsByLimitType(input graphSankeyHandlerInput, r resolved, dimensions []sb.Expr, where, units sb.Expr) *sb.Query {
+	return selectRowsByLimitType(input.graphCommonHandlerInput, r, dimensions, where, units)
 }
 
-func selectLineRowsByLimitType(input graphLineHandlerInput, dimensions []sb.Expr, where, units sb.Expr) *sb.Query {
-	return selectRowsByLimitType(input.graphCommonHandlerInput, dimensions, where, units)
+func selectLineRowsByLimitType(input graphLineHandlerInput, r resolved, dimensions []sb.Expr, where, units sb.Expr) *sb.Query {
+	return selectRowsByLimitType(input.graphCommonHandlerInput, r, dimensions, where, units)
 }
 
 // selectRowsByLimitType builds the query picking the dimension values to
 // display. The other values are grouped as "Other".
-func selectRowsByLimitType(input graphCommonHandlerInput, dimensions []sb.Expr, where, units sb.Expr) *sb.Query {
+func selectRowsByLimitType(input graphCommonHandlerInput, r resolved, dimensions []sb.Expr, where, units sb.Expr) *sb.Query {
 	rows := sb.Select(dimensions...).GroupBy(dimensions...).Limit(input.Limit)
 	if input.LimitType == "max" {
-		// Rank on the highest value reached instead of the total, so a short
-		// burst is not hidden by a steady flow.
+		// Rank on the highest value reached during one interval instead of the
+		// total, so a short burst is not hidden by a steady flow. The inner
+		// query groups on time as well: without it, each dimension gets a
+		// single row holding its total and the maximum is that total.
 		rows.FromSelect(
-			sb.Select(slices.Concat(dimensions,
+			sb.Select(slices.Concat(
+				[]sb.Expr{sb.Alias(r.toStartOfInterval(), "time")},
+				dimensions,
 				[]sb.Expr{sb.Alias(units, "sum_at_time")})...).
 				From(sb.Table("source")).
 				Where(where).
-				GroupBy(dimensions...)).
+				GroupBy(slices.Concat(
+					[]sb.Expr{sb.Column("time")}, dimensions)...)).
 			OrderBy(sb.Order(
 				sb.Function("MAX", sb.Column("sum_at_time"))).Desc())
 		return rows

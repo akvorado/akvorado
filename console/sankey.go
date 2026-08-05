@@ -116,7 +116,7 @@ func (input graphSankeyHandlerInput) toSQL1(axis int, res resolution, options sa
 				From(sb.Table("source")).
 				Where(where),
 			"range")
-		query.With("rows", selectSankeyRowsByLimitType(input, dimensions, where, unitsSQL))
+		query.With("rows", selectSankeyRowsByLimitType(input, r, dimensions, where, unitsSQL))
 	}
 	return query
 }
