@@ -353,3 +353,39 @@ func TestMultipleProviders(t *testing.T) {
 		t.Fatalf("Lookup() (-got, +want):\n%s", diff)
 	}
 }
+
+func TestNegativeCache(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		r := reporter.NewMock(t)
+		configuration := DefaultConfiguration()
+		configuration.Providers = []ProviderConfiguration{{Config: skipProviderConfiguration{}}}
+		c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
+
+		// First lookup: no cached result, provider is queried and skips.
+		expectMockLookup(t, c, "127.0.0.1", 765, provider.Answer{})
+		gotMetrics := r.GetMetrics("akvorado_outlet_metadata_provider_", "requests_total")
+		if diff := helpers.Diff(gotMetrics, map[string]string{`requests_total`: "1"}); diff != "" {
+			t.Fatalf("after first lookup, metrics (-got, +want):\n%s", diff)
+		}
+
+		// Second lookup within CacheDuration: negative cache hit, provider must
+		// NOT be queried again.
+		time.Sleep(10 * time.Minute)
+		synctest.Wait()
+		expectMockLookup(t, c, "127.0.0.1", 765, provider.Answer{})
+		gotMetrics = r.GetMetrics("akvorado_outlet_metadata_provider_", "requests_total")
+		if diff := helpers.Diff(gotMetrics, map[string]string{`requests_total`: "1"}); diff != "" {
+			t.Fatalf("after cached lookup, metrics (-got, +want):\n%s", diff)
+		}
+
+		// After CacheDuration elapses the negative cache entry expires and the
+		// next lookup must query the provider again.
+		time.Sleep(32 * time.Minute)
+		synctest.Wait()
+		expectMockLookup(t, c, "127.0.0.1", 765, provider.Answer{})
+		gotMetrics = r.GetMetrics("akvorado_outlet_metadata_provider_", "requests_total")
+		if diff := helpers.Diff(gotMetrics, map[string]string{`requests_total`: "2"}); diff != "" {
+			t.Fatalf("after negative cache expiry, metrics (-got, +want):\n%s", diff)
+		}
+	})
+}

@@ -233,6 +233,8 @@ func (c *Component) queryProviders(query provider.Query) (provider.Answer, error
 			result = answer
 			return nil
 		}
+		// All providers were skipped. Cache a negative result.
+		c.sc.Put(now, query, provider.Answer{})
 		return nil
 	})
 	if err != nil {

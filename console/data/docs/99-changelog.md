@@ -32,6 +32,7 @@ memory. Drop it on each cluster member once the new version runs:
 - 🩹 *console*: fix the reverse direction of a filter on `SrcNetPrefix` or `DstNetPrefix`
 - 🩹 *console*: fix `NOT` in front of a filter on `SrcNetPrefix` or `DstNetPrefix`
 - 🩹 *orchestrator*: fix custom dictionaries with an IP prefix layout
+- 🩹 *outlet*: cache empty result when all metadata providers are skipped
 - 🌱 *console*: pick the top rows with `topKWeighted` on the unconsolidated table to use less memory
 - 🌱 *docs*: reorganize the documentation with the Diátaxis framework
 - 🌱 *docs*: serve the documentation as Markdown when explicitely asked
