@@ -14,6 +14,7 @@ mock_*.go
 /console/data/docs/53-metrics.md
 
 *~
+__pycache__/
 /outlet/routing/provider/bmp/testdata/*.svg
 /.go-cache
 /.npm-cache
