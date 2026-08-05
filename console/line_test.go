@@ -728,6 +728,42 @@ ORDER BY time WITH FILL
  INTERPOLATE (dimensions AS ['Other', 'Other']))`,
 			},
 		}, {
+			Description: "no filters, limitType by last",
+			Pos:         helpers.Mark(),
+			Input: graphLineHandlerInput{
+				graphCommonHandlerInput: graphCommonHandlerInput{
+					Start:     time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					End:       time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					Limit:     20,
+					LimitType: "last",
+					Dimensions: []query.Column{
+						query.NewColumn("ExporterName"),
+						query.NewColumn("InIfProvider"),
+					},
+					Filter: query.Filter{},
+					Units:  "l3bps",
+				},
+				Points: 100,
+			},
+			Expected: []string{
+				`WITH
+ source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1),
+ rows AS (SELECT ExporterName, InIfProvider FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND TimeReceived >= toDateTime('2022-04-11 15:45:00', 'UTC') - INTERVAL 60 second GROUP BY ExporterName, InIfProvider ORDER BY SUM(Bytes*SamplingRate*8) DESC LIMIT 20)
+SELECT 1 AS axis, * FROM (
+SELECT
+ toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time,
+ SUM(Bytes*SamplingRate*8)/60 AS xps,
+ if((ExporterName, InIfProvider) IN rows, [ExporterName, InIfProvider], ['Other', 'Other']) AS dimensions
+FROM source
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC')
+GROUP BY time, dimensions
+ORDER BY time WITH FILL
+ FROM toDateTime('2022-04-10 15:45:00', 'UTC')
+ TO toDateTime('2022-04-11 15:45:00', 'UTC') + INTERVAL 1 second
+ STEP 60
+ INTERPOLATE (dimensions AS ['Other', 'Other']))`,
+			},
+		}, {
 			Description: "no filters, reverse",
 			Pos:         helpers.Mark(),
 			Input: graphLineHandlerInput{

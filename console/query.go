@@ -65,5 +65,15 @@ func selectRowsByLimitType(input graphCommonHandlerInput, r resolved, dimensions
 				sb.Function("MAX", sb.Column("sum_at_time"))).Desc())
 		return rows
 	}
+	if input.LimitType == "last" {
+		// Rank on the traffic of the last interval only, so the rows are the
+		// ones busy at the end of the range. Every dimension is measured on the
+		// same window, so they stay comparable.
+		return rows.From(sb.Table("source")).
+			Where(sb.And(where,
+				sb.Op(sb.Column("TimeReceived"), ">=",
+					sb.Op(r.timefilterEnd(), "-", seconds(r.Interval))))).
+			OrderBy(sb.Order(units).Desc())
+	}
 	return rows.From(sb.Table("source")).Where(where).OrderBy(sb.Order(units).Desc())
 }
