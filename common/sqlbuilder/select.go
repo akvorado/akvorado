@@ -29,15 +29,6 @@ func (q *Query) Distinct() *Query {
 	return q
 }
 
-// Apply passes the query through the provided transforms, in order. Other
-// packages use it to add their own building blocks on top of this package.
-func (q *Query) Apply(transforms ...func(*Query) *Query) *Query {
-	for _, transform := range transforms {
-		q = transform(q)
-	}
-	return q
-}
-
 // Item appends one item to the select list. Modifiers apply to that item, for
 // example Replace() on a Star().
 func (q *Query) Item(expr Expr, modifiers ...Modifier) *Query {

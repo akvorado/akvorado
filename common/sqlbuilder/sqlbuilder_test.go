@@ -464,41 +464,6 @@ FROM
 	}
 }
 
-// TestApply checks how another package would add its own building blocks on
-// top of this one.
-func TestApply(t *testing.T) {
-	truncate := func(bits uint64) func(sb.Expr) sb.Expr {
-		return func(expr sb.Expr) sb.Expr {
-			return sb.Function("tupleElement",
-				sb.Function("IPv6CIDRToRange", expr, sb.Uint(bits)),
-				sb.Uint(1))
-		}
-	}
-	toString := func(expr sb.Expr) sb.Expr {
-		return sb.Function("IPv6NumToString", expr)
-	}
-	got := sb.Column("SrcAddr").Apply(truncate(48), toString).String()
-	expected := "IPv6NumToString(tupleElement(IPv6CIDRToRange(SrcAddr, 48), 1))"
-	if diff := helpers.Diff(got, expected); diff != "" {
-		t.Errorf("Apply() (-got, +want):\n%s", diff)
-	}
-
-	limited := func(limit int) func(*sb.Query) *sb.Query {
-		return func(q *sb.Query) *sb.Query {
-			return q.Limit(limit)
-		}
-	}
-	gotQuery := sb.Select(sb.Star()).From(sb.Table("flows")).Apply(limited(5)).String()
-	expectedQuery := `SELECT
-  *
-FROM
-  flows
-LIMIT 5`
-	if diff := helpers.Diff(gotQuery, expectedQuery); diff != "" {
-		t.Errorf("Apply() (-got, +want):\n%s", diff)
-	}
-}
-
 func TestParseExprErrors(t *testing.T) {
 	cases := []string{
 		"SrcAddr, DstAddr",    // two expressions

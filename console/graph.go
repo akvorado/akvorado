@@ -41,12 +41,10 @@ func reverseUnits(units string) string {
 
 // truncateIP cuts an address down to the network of the requested prefix
 // length.
-func truncateIP(bits sb.Expr) func(sb.Expr) sb.Expr {
-	return func(addr sb.Expr) sb.Expr {
-		return sb.Function("tupleElement",
-			sb.Function("IPv6CIDRToRange", addr, bits),
-			sb.Uint(1))
-	}
+func truncateIP(addr, bits sb.Expr) sb.Expr {
+	return sb.Function("tupleElement",
+		sb.Function("IPv6CIDRToRange", addr, bits),
+		sb.Uint(1))
 }
 
 // sourceSelect builds a SELECT query to use as a source for data. Notably, it
@@ -70,13 +68,13 @@ func (input graphCommonHandlerInput) sourceSelect(table string) *sb.Query {
 				// Addresses are all stored as IPv6 ones, so the prefix length
 				// to use depends on the family of each address.
 				bits = sb.Function("if",
-					sb.Op(addr.Apply(truncateIP(sb.Uint(96))), "=",
+					sb.Op(truncateIP(addr, sb.Uint(96)), "=",
 						sb.Function("toIPv6", sb.String("0.0.0.0"))),
 					sb.Uint(uint64(input.TruncateAddrV4+96)),
 					sb.Uint(uint64(input.TruncateAddrV6)))
 			}
 			truncated = append(truncated,
-				sb.Alias(addr.Apply(truncateIP(bits)), qc.String()))
+				sb.Alias(truncateIP(addr, bits), qc.String()))
 		}
 	}
 	source := sb.Select()

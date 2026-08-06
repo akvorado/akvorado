@@ -5,9 +5,6 @@
 // is a thin layer on top of github.com/AfterShip/clickhouse-sql-parser: the
 // constructors here return nodes of its AST and the final SQL comes from its
 // formatter.
-//
-// A package needing its own building blocks defines them as transforms and
-// passes them to Expr.Apply or Query.Apply.
 package sqlbuilder
 
 import (
@@ -40,17 +37,6 @@ func nodes(exprs []Expr) []parser.Expr {
 // IsZero tells if there is no expression.
 func (e Expr) IsZero() bool {
 	return e.node == nil
-}
-
-// Apply passes the expression through the provided transforms, in order. Other
-// packages use it to add their own building blocks on top of this package. The
-// same expression can appear in several places of a query, so a transform has
-// to build a new expression around the one it gets.
-func (e Expr) Apply(transforms ...func(Expr) Expr) Expr {
-	for _, transform := range transforms {
-		e = transform(e)
-	}
-	return e
 }
 
 // String renders the expression as a single line of SQL.

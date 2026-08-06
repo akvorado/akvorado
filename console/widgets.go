@@ -145,8 +145,8 @@ func (c *Component) widgetTopHandlerFunc(w http.ResponseWriter, req *http.Reques
 		mainTableRequired bool
 	)
 	dictLookup := func(dictionary string, column string) sb.Expr {
-		return sb.Column(column).Apply(
-			query.DictionaryLookup(c.d.ClickHouseDB.DatabaseName(), dictionary, "???"))
+		return query.DictionaryLookup(c.d.ClickHouseDB.DatabaseName(), dictionary,
+			sb.Column(column), "???")
 	}
 
 	rawName := req.PathValue("name")

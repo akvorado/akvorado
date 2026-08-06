@@ -112,7 +112,7 @@ func (qc Column) ToSQLSelect(sch *schema.Component, database string) sb.Expr {
 		return sb.Function("concat",
 			sb.Function("toString", self),
 			sb.String(": "),
-			self.Apply(DictionaryLookup(database, schema.DictionaryASNs, "???")))
+			DictionaryLookup(database, schema.DictionaryASNs, self, "???"))
 	case schema.ColumnInIfBoundary, schema.ColumnOutIfBoundary:
 		return sb.Function("toString", self)
 	case schema.ColumnEType:
@@ -125,7 +125,7 @@ func (qc Column) ToSQLSelect(sch *schema.Component, database string) sb.Expr {
 				sb.String("IPv6"),
 				sb.String("???")))
 	case schema.ColumnProto:
-		return self.Apply(DictionaryLookup(database, schema.DictionaryProtocols, "???"))
+		return DictionaryLookup(database, schema.DictionaryProtocols, self, "???")
 	case schema.ColumnMPLSLabels, schema.ColumnDstASPath:
 		return sb.Function("arrayStringConcat", self, sb.String(" "))
 	case schema.ColumnSrcCommunities, schema.ColumnDstCommunities:
@@ -166,7 +166,7 @@ func (qc Column) ToSQLSelect(sch *schema.Component, database string) sb.Expr {
 			return sb.Function("concat",
 				sb.Function("toString", self),
 				sb.String("/"),
-				self.Apply(DictionaryLookup(database, dictionary, "")))
+				DictionaryLookup(database, dictionary, self, ""))
 		}
 		// The port may have no name in the dictionary, in which case the
 		// trailing slash is dropped.
@@ -186,7 +186,7 @@ func (qc Column) ToSQLSelect(sch *schema.Component, database string) sb.Expr {
 				return sb.Function("toString", self)
 			}
 			if col.ClickHouseType == "IPv6" || col.ClickHouseType == "LowCardinality(IPv6)" {
-				return self.Apply(AddressToString)
+				return AddressToString(self)
 			}
 		}
 		return self
@@ -197,12 +197,10 @@ func (qc Column) ToSQLSelect(sch *schema.Component, database string) sb.Expr {
 // When the key is unknown, the fallback is used instead. The dictionary is
 // qualified with the database it lives in, as the remote nodes of a cluster do
 // not resolve a bare name.
-func DictionaryLookup(database, dictionary, fallback string) func(sb.Expr) sb.Expr {
-	return func(key sb.Expr) sb.Expr {
-		return sb.Function("dictGetOrDefault",
-			sb.String(sb.Table(dictionary).In(database).String()), sb.String("name"),
-			key, sb.String(fallback))
-	}
+func DictionaryLookup(database, dictionary string, key sb.Expr, fallback string) sb.Expr {
+	return sb.Function("dictGetOrDefault",
+		sb.String(sb.Table(dictionary).In(database).String()), sb.String("name"),
+		key, sb.String(fallback))
 }
 
 // AddressToString turns an address into a string. All addresses are stored as

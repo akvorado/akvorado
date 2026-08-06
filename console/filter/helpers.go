@@ -234,13 +234,11 @@ func (c *current) ipOrSubnetCondition(col schema.Column, operator string, items 
 // it with a string. An unknown protocol becomes "???", like in the columns the
 // console displays. The dictionary is qualified with the database it lives in,
 // as the remote nodes of a cluster do not resolve a bare name.
-func protocolName(database string) func(sb.Expr) sb.Expr {
-	return func(proto sb.Expr) sb.Expr {
-		dictionary := sb.Table(schema.DictionaryProtocols).In(database)
-		return sb.Function("dictGetOrDefault",
-			sb.String(dictionary.String()), sb.String("name"),
-			proto, sb.String("???"))
-	}
+func protocolName(database string, proto sb.Expr) sb.Expr {
+	dictionary := sb.Table(schema.DictionaryProtocols).In(database)
+	return sb.Function("dictGetOrDefault",
+		sb.String(dictionary.String()), sb.String("name"),
+		proto, sb.String("???"))
 }
 
 // macToNum turns a MAC address into its numeric form.
