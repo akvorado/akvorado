@@ -231,10 +231,12 @@ func (c *current) ipOrSubnetCondition(col schema.Column, operator string, items 
 // protocolName turns a protocol number into its name, so a filter can compare
 // it with a string. An unknown protocol becomes "???", like in the columns the
 // console displays.
-func protocolName(proto sb.Expr) sb.Expr {
-	return sb.Function("dictGetOrDefault",
-		sb.String(schema.DictionaryProtocols), sb.String("name"),
-		proto, sb.String("???"))
+func protocolName(sch *schema.Component) func(sb.Expr) sb.Expr {
+	return func(proto sb.Expr) sb.Expr {
+		return sb.Function("dictGetOrDefault",
+			sb.String(sch.DictionaryName(schema.DictionaryProtocols)), sb.String("name"),
+			proto, sb.String("???"))
+	}
 }
 
 // macToNum turns a MAC address into its numeric form.
