@@ -144,8 +144,8 @@ func (c *Component) widgetTopHandlerFunc(w http.ResponseWriter, req *http.Reques
 		filter            sb.Expr
 		mainTableRequired bool
 	)
-	dictName := func(dictionary string, column string) sb.Expr {
-		return sb.Column(column).Apply(query.DictionaryName(c.d.Schema, dictionary, "???"))
+	dictLookup := func(dictionary string, column string) sb.Expr {
+		return sb.Column(column).Apply(query.DictionaryLookup(c.d.Schema, dictionary, "???"))
 	}
 
 	rawName := req.PathValue("name")
@@ -164,7 +164,7 @@ func (c *Component) widgetTopHandlerFunc(w http.ResponseWriter, req *http.Reques
 		selector = sb.Function("concat",
 			sb.Function("toString", sb.Column(column)),
 			sb.String(": "),
-			dictName(schema.DictionaryASNs, column))
+			dictLookup(schema.DictionaryASNs, column))
 		groupby = sb.Columns(column)
 	case HomepageTopWidgetSrcCountry:
 		selector = sb.Column("SrcCountry")
@@ -173,7 +173,7 @@ func (c *Component) widgetTopHandlerFunc(w http.ResponseWriter, req *http.Reques
 	case HomepageTopWidgetExporter:
 		selector = sb.Column("ExporterName")
 	case HomepageTopWidgetProtocol:
-		selector = dictName(schema.DictionaryProtocols, "Proto")
+		selector = dictLookup(schema.DictionaryProtocols, "Proto")
 		groupby = sb.Columns("Proto")
 	case HomepageTopWidgetEtype:
 		etype := sb.Column("EType")
@@ -191,7 +191,7 @@ func (c *Component) widgetTopHandlerFunc(w http.ResponseWriter, req *http.Reques
 			column = "DstPort"
 		}
 		selector = sb.Function("concat",
-			dictName(schema.DictionaryProtocols, "Proto"),
+			dictLookup(schema.DictionaryProtocols, "Proto"),
 			sb.String("/"),
 			sb.Function("toString", sb.Column(column)))
 		groupby = sb.Columns("Proto", column)
