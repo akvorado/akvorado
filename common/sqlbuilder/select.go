@@ -22,6 +22,13 @@ func Select(items ...Expr) *Query {
 	return q
 }
 
+// Distinct keeps only one row of each set of identical rows, as in "SELECT
+// DISTINCT".
+func (q *Query) Distinct() *Query {
+	q.query.HasDistinct = true
+	return q
+}
+
 // Apply passes the query through the provided transforms, in order. Other
 // packages use it to add their own building blocks on top of this package.
 func (q *Query) Apply(transforms ...func(*Query) *Query) *Query {
@@ -175,6 +182,18 @@ func (q *Query) UnionAll(other *Query) *Query {
 		last = last.UnionAll
 	}
 	last.UnionAll = other.query
+	return q
+}
+
+// UnionDistinct appends another query with UNION DISTINCT, so a row present in
+// several of them is kept once. Only the first query of the union carries the
+// WITH clause, the others read its CTEs.
+func (q *Query) UnionDistinct(other *Query) *Query {
+	last := q.query
+	for last.UnionDistinct != nil {
+		last = last.UnionDistinct
+	}
+	last.UnionDistinct = other.query
 	return q
 }
 

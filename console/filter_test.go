@@ -11,20 +11,20 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/common/schema"
+	sb "akvorado/common/sqlbuilder"
 )
 
 func TestFilterHandlers(t *testing.T) {
 	_, h, mockConn, _ := NewMock(t, DefaultConfiguration())
 
 	mockConn.EXPECT().
-		Select(gomock.Any(), gomock.Any(), `
+		Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
 SELECT ExporterName AS label
 FROM exporters
-WHERE positionCaseInsensitive(ExporterName, $1) >= 1
+WHERE positionCaseInsensitive(ExporterName, 'th2-') >= 1
 GROUP BY ExporterName
-ORDER BY positionCaseInsensitive(ExporterName, $1) ASC, ExporterName ASC
-LIMIT 20`,
-			"th2-").
+ORDER BY positionCaseInsensitive(ExporterName, 'th2-'), ExporterName
+LIMIT 20`)).
 		SetArg(1, []struct {
 			Label string `ch:"label"`
 		}{
@@ -34,46 +34,45 @@ LIMIT 20`,
 		}).
 		Return(nil)
 	mockConn.EXPECT().
-		Select(gomock.Any(), gomock.Any(), `
+		Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
 SELECT DISTINCT name AS attribute
 FROM networks
-WHERE positionCaseInsensitive(name, $1) >= 1
+WHERE positionCaseInsensitive(name, 'c') >= 1
 ORDER BY name
-LIMIT 20`, "c").
+LIMIT 20`)).
 		SetArg(1, []struct {
 			Attribute string `ch:"attribute"`
 		}{{"customer-1"}, {"customer-2"}, {"customer-3"}}).
 		Return(nil)
 	mockConn.EXPECT().
-		Select(gomock.Any(), gomock.Any(), `
+		Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
 SELECT DISTINCT role AS attribute
 FROM networks
-WHERE positionCaseInsensitive(role, $1) >= 1
+WHERE positionCaseInsensitive(role, 'c') >= 1
 ORDER BY role
-LIMIT 20`, "c").
+LIMIT 20`)).
 		SetArg(1, []struct {
 			Attribute string `ch:"attribute"`
 		}{{"customer"}}).
 		Return(nil)
 	mockConn.EXPECT().
-		Select(gomock.Any(), gomock.Any(), `
+		Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
 SELECT label, detail FROM (
  SELECT concat('AS', toString(DstAS)) AS label, dictGet('default.asns', 'name', DstAS) AS detail, 1 AS rank
  FROM flows
  WHERE TimeReceived > date_sub(minute, 1, now())
  AND detail != ''
- AND positionCaseInsensitive(detail, $1) >= 1
+ AND positionCaseInsensitive(detail, 'goog') >= 1
  GROUP BY DstAS
  ORDER BY COUNT(*) DESC
  LIMIT 20
 UNION DISTINCT
  SELECT concat('AS', toString(asn)) AS label, name AS detail, 2 AS rank
  FROM default.asns
- WHERE positionCaseInsensitive(name, $1) >= 1
- ORDER BY positionCaseInsensitive(name, $1) ASC, asn ASC
+ WHERE positionCaseInsensitive(name, 'goog') >= 1
+ ORDER BY positionCaseInsensitive(name, 'goog'), asn
  LIMIT 20
-) GROUP BY label, detail ORDER BY MIN(rank) ASC, MIN(rowNumberInBlock()) ASC LIMIT 20`,
-			"goog").
+) GROUP BY label, detail ORDER BY MIN(rank), MIN(rowNumberInBlock()) LIMIT 20`)).
 		SetArg(1, []struct {
 			Label  string `ch:"label"`
 			Detail string `ch:"detail"`
@@ -93,27 +92,26 @@ UNION DISTINCT
 		Return(nil).
 		MinTimes(2).MaxTimes(2)
 	mockConn.EXPECT().
-		Select(gomock.Any(), gomock.Any(), `
+		Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
 SELECT label, detail FROM (
  SELECT concat('AS', toString(DstAS)) AS label, dictGet('default.asns', 'name', DstAS) AS detail, 1 AS rank
  FROM flows
  WHERE TimeReceived > date_sub(minute, 1, now())
  AND detail != ''
- AND positionCaseInsensitive(detail, $1) >= 1
+ AND positionCaseInsensitive(detail, 'srca') >= 1
  GROUP BY DstAS
  ORDER BY COUNT(*) DESC
  LIMIT 20
 UNION DISTINCT
  SELECT concat('AS', toString(asn)) AS label, name AS detail, 2 AS rank
  FROM default.asns
- WHERE positionCaseInsensitive(name, $1) >= 1
- ORDER BY positionCaseInsensitive(name, $1) ASC, asn ASC
+ WHERE positionCaseInsensitive(name, 'srca') >= 1
+ ORDER BY positionCaseInsensitive(name, 'srca'), asn
  LIMIT 20
-) GROUP BY label, detail ORDER BY MIN(rank) ASC, MIN(rowNumberInBlock()) ASC LIMIT 20`,
-			"srca").
+) GROUP BY label, detail ORDER BY MIN(rank), MIN(rowNumberInBlock()) LIMIT 20`)).
 		Return(nil)
 	mockConn.EXPECT().
-		Select(gomock.Any(), gomock.Any(), `
+		Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
 SELECT label, detail FROM (
  SELECT
   'community' AS detail,
@@ -139,8 +137,8 @@ SELECT label, detail FROM (
   ORDER BY COUNT(*) DESC
  )
 )
-WHERE startsWith(label, $1)
-LIMIT 20`, "6540").
+WHERE startsWith(label, '6540')
+LIMIT 20`)).
 		SetArg(1, []struct {
 			Label  string `ch:"label"`
 			Detail string `ch:"detail"`
@@ -152,14 +150,14 @@ LIMIT 20`, "6540").
 		}).
 		Return(nil)
 	mockConn.EXPECT().
-		Select(gomock.Any(), gomock.Any(), `
+		Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
 SELECT label, detail FROM (
- SELECT toString(SrcPort) AS label, if(Proto = 6, dictGet('default.tcp', 'name', SrcPort), dictGet('default.udp', 'name', SrcPort) ) AS detail, 1 AS rank, count(*) AS c
+ SELECT toString(SrcPort) AS label, if(Proto = 6, dictGet('default.tcp', 'name', SrcPort), dictGet('default.udp', 'name', SrcPort) ) AS detail, 1 AS rank, COUNT(*) AS c
  FROM flows
  WHERE Proto IN (6, 17)
  AND TimeReceived > date_sub(minute, 1, now())
  AND detail != ''
- AND positionCaseInsensitive(detail, $1) >= 1
+ AND positionCaseInsensitive(detail, 'http') >= 1
  GROUP BY SrcPort, Proto
  ORDER BY COUNT(*) DESC
  LIMIT 20
@@ -168,10 +166,10 @@ UNION DISTINCT
  FROM (
   SELECT port, name FROM default.tcp UNION DISTINCT SELECT port, name FROM default.udp
  )
- WHERE positionCaseInsensitive(name, $1) >= 1
- ORDER BY positionCaseInsensitive(name, $1) ASC, port ASC
+ WHERE positionCaseInsensitive(name, 'http') >= 1
+ ORDER BY positionCaseInsensitive(name, 'http'), port
  LIMIT 20
-) GROUP BY rank, label, detail ORDER BY rank ASC, MAX(c) DESC, MIN(rowNumberInBlock()) ASC LIMIT 20`, "http").
+) GROUP BY rank, label, detail ORDER BY rank, MAX(c) DESC, MIN(rowNumberInBlock()) LIMIT 20`)).
 		SetArg(1, []struct {
 			Label  string `ch:"label"`
 			Detail string `ch:"detail"`
@@ -509,14 +507,14 @@ func TestFilterHandlersMore(t *testing.T) {
 	c.d.Schema = schema.NewMock(t).EnableAllColumns()
 
 	mockConn.EXPECT().
-		Select(gomock.Any(), gomock.Any(), `
+		Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
 SELECT MACNumToString(SrcMAC) AS label
 FROM flows
 WHERE TimeReceived > date_sub(minute, 1, now())
-AND positionCaseInsensitive(label, $1) >= 1
+AND positionCaseInsensitive(label, '11:') >= 1
 GROUP BY SrcMAC
 ORDER BY COUNT(*) DESC
-LIMIT 20`, "11:").
+LIMIT 20`)).
 		SetArg(1, []struct {
 			Label string `ch:"label"`
 		}{
@@ -526,24 +524,24 @@ LIMIT 20`, "11:").
 		}).
 		Return(nil)
 	mockConn.EXPECT().
-		Select(gomock.Any(), gomock.Any(), `
+		Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
 SELECT label FROM (
  SELECT ICMPv6 AS label, 1 AS rank
  FROM flows
  WHERE TimeReceived > date_sub(minute, 1, now())
  AND Proto = 58
- AND positionCaseInsensitive(label, $1) >= 1
+ AND positionCaseInsensitive(label, 'echo') >= 1
  GROUP BY ICMPv6
  ORDER BY COUNT(*) DESC
  LIMIT 20
 UNION DISTINCT
  SELECT name AS label, 2 AS rank
- FROM icmp
- WHERE positionCaseInsensitive(label, $1) >= 1
+ FROM default.icmp
+ WHERE positionCaseInsensitive(label, 'echo') >= 1
  AND proto = 58
- ORDER BY positionCaseInsensitive(label, $1) ASC, type ASC, code ASC
+ ORDER BY positionCaseInsensitive(label, 'echo'), type, code
  LIMIT 20
-) GROUP BY label ORDER BY MIN(rank) ASC, MIN(rowNumberInBlock()) ASC LIMIT 20`, "echo").
+) GROUP BY label ORDER BY MIN(rank), MIN(rowNumberInBlock()) LIMIT 20`)).
 		SetArg(1, []struct {
 			Label string `ch:"label"`
 		}{
@@ -579,24 +577,24 @@ func TestFilterHandlersCustomDict(t *testing.T) {
 	c, h, mockConn, _ := NewMock(t, DefaultConfiguration())
 
 	mockConn.EXPECT().
-		Select(gomock.Any(), gomock.Any(), `
+		Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
 SELECT DISTINCT DstAddrRole AS attribute
 FROM flows
-WHERE TimeReceived > date_sub(minute, 10, now()) AND startsWith(attribute, $1)
+WHERE TimeReceived > date_sub(minute, 10, now()) AND startsWith(attribute, '')
 ORDER BY DstAddrRole
-LIMIT 20`, "").
+LIMIT 20`)).
 		SetArg(1, []struct {
 			Attribute string `ch:"attribute"`
 		}{{"a-role"}, {"b-role"}, {"c-role"}}).
 		Return(nil)
 
 	mockConn.EXPECT().
-		Select(gomock.Any(), gomock.Any(), `
+		Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
 SELECT DISTINCT DstAddrRole AS attribute
 FROM flows
-WHERE TimeReceived > date_sub(minute, 10, now()) AND startsWith(attribute, $1)
+WHERE TimeReceived > date_sub(minute, 10, now()) AND startsWith(attribute, 'a')
 ORDER BY DstAddrRole
-LIMIT 20`, "a").
+LIMIT 20`)).
 		SetArg(1, []struct {
 			Attribute string `ch:"attribute"`
 		}{{"a-role"}}).

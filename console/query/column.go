@@ -213,34 +213,46 @@ func AddressToString(addr sb.Expr) sb.Expr {
 		sb.String("^::ffff:"), sb.String(""))
 }
 
+// CommunityToString turns a BGP community into a string using the "AS:value"
+// notation.
+func CommunityToString(community sb.Expr) sb.Expr {
+	return sb.Function("concat",
+		sb.Function("toString",
+			sb.Function("bitShiftRight", community, sb.Uint(16))),
+		sb.String(":"),
+		sb.Function("toString",
+			sb.Function("bitAnd", community, sb.Number("0xffff"))))
+}
+
 // CommunitiesToStrings turns an array of BGP communities into an array of
 // strings using the "AS:value" notation.
 func CommunitiesToStrings(column string) sb.Expr {
 	return sb.Function("arrayMap",
-		sb.Lambda("c", sb.Function("concat",
-			sb.Function("toString",
-				sb.Function("bitShiftRight", sb.Column("c"), sb.Uint(16))),
-			sb.String(":"),
-			sb.Function("toString",
-				sb.Function("bitAnd", sb.Column("c"), sb.Number("0xffff"))))),
+		sb.Lambda("c", CommunityToString(sb.Column("c"))),
 		sb.Column(column))
 }
 
-// LargeCommunitiesToStrings turns an array of large BGP communities into an
-// array of strings using the "AS:value:value" notation.
-func LargeCommunitiesToStrings(column string) sb.Expr {
+// LargeCommunityToString turns a large BGP community into a string using the
+// "AS:value:value" notation.
+func LargeCommunityToString(community sb.Expr) sb.Expr {
 	part := func(shift uint64) sb.Expr {
-		value := sb.Column("c")
+		value := community
 		if shift > 0 {
 			value = sb.Function("bitShiftRight", value, sb.Uint(shift))
 		}
 		return sb.Function("toString",
 			sb.Function("bitAnd", value, sb.Number("0xffffffff")))
 	}
+	return sb.Function("concat",
+		part(64), sb.String(":"),
+		part(32), sb.String(":"),
+		part(0))
+}
+
+// LargeCommunitiesToStrings turns an array of large BGP communities into an
+// array of strings using the "AS:value:value" notation.
+func LargeCommunitiesToStrings(column string) sb.Expr {
 	return sb.Function("arrayMap",
-		sb.Lambda("c", sb.Function("concat",
-			part(64), sb.String(":"),
-			part(32), sb.String(":"),
-			part(0))),
+		sb.Lambda("c", LargeCommunityToString(sb.Column("c"))),
 		sb.Column(column))
 }

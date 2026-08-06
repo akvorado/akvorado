@@ -412,6 +412,38 @@ FROM
 	}
 }
 
+func TestSelectUnionDistinct(t *testing.T) {
+	first := sb.Select(sb.Column("port")).From(sb.Table("tcp"))
+	second := sb.Select(sb.Column("port")).From(sb.Table("udp"))
+	got := first.UnionDistinct(second).String()
+	expected := `SELECT
+  port
+FROM
+  tcp
+UNION DISTINCT
+SELECT
+  port
+FROM
+  udp`
+	if diff := helpers.Diff(got, expected); diff != "" {
+		t.Errorf("String() (-got, +want):\n%s", diff)
+	}
+}
+
+func TestSelectDistinct(t *testing.T) {
+	got := sb.Select(sb.Column("ExporterName")).
+		Distinct().
+		From(sb.Table("flows")).
+		String()
+	expected := `SELECT DISTINCT
+  ExporterName
+FROM
+  flows`
+	if diff := helpers.Diff(got, expected); diff != "" {
+		t.Errorf("String() (-got, +want):\n%s", diff)
+	}
+}
+
 func TestSelectScalarCTE(t *testing.T) {
 	period := sb.Select(sb.MustParseExpr("MAX(TimeReceived) - MIN(TimeReceived)")).From(sb.Table("source"))
 	got := sb.Select(sb.Alias(sb.MustParseExpr("SUM(Bytes)/range"), "xps")).
