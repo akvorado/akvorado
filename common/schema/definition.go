@@ -129,6 +129,18 @@ const (
 	DictionaryUDP string = "udp"
 )
 
+// DictionaryName returns the dictionary name qualified with the database
+// name (e.g. "akvorado.asns") when DatabaseName is set. Otherwise, it
+// returns the unqualified name. Qualification is needed for ClickHouse
+// clusters using the Distributed engine, where remote shard nodes may
+// not resolve unqualified dictionary names.
+func (sc *Component) DictionaryName(name string) string {
+	if sc.DatabaseName != "" {
+		return sc.DatabaseName + "." + name
+	}
+	return name
+}
+
 // revive:disable
 const (
 	ColumnTimeReceived ColumnKey = iota + 1

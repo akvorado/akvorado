@@ -111,7 +111,7 @@ func (qc Column) ToSQLSelect(sch *schema.Component) sb.Expr {
 		return sb.Function("concat",
 			sb.Function("toString", self),
 			sb.String(": "),
-			self.Apply(DictionaryName(schema.DictionaryASNs, "???")))
+			self.Apply(DictionaryName(sch, schema.DictionaryASNs, "???")))
 	case schema.ColumnInIfBoundary, schema.ColumnOutIfBoundary:
 		return sb.Function("toString", self)
 	case schema.ColumnEType:
@@ -124,7 +124,7 @@ func (qc Column) ToSQLSelect(sch *schema.Component) sb.Expr {
 				sb.String("IPv6"),
 				sb.String("???")))
 	case schema.ColumnProto:
-		return self.Apply(DictionaryName(schema.DictionaryProtocols, "???"))
+		return self.Apply(DictionaryName(sch, schema.DictionaryProtocols, "???"))
 	case schema.ColumnMPLSLabels, schema.ColumnDstASPath:
 		return sb.Function("arrayStringConcat", self, sb.String(" "))
 	case schema.ColumnSrcCommunities, schema.ColumnDstCommunities:
@@ -165,7 +165,7 @@ func (qc Column) ToSQLSelect(sch *schema.Component) sb.Expr {
 			return sb.Function("concat",
 				sb.Function("toString", self),
 				sb.String("/"),
-				self.Apply(DictionaryName(dictionary, "")))
+				self.Apply(DictionaryName(sch, dictionary, "")))
 		}
 		// The port may have no name in the dictionary, in which case the
 		// trailing slash is dropped.
@@ -193,11 +193,12 @@ func (qc Column) ToSQLSelect(sch *schema.Component) sb.Expr {
 }
 
 // DictionaryName looks up the name matching a key in a ClickHouse dictionary.
-// When the key is unknown, the fallback is used instead.
-func DictionaryName(dictionary, fallback string) func(sb.Expr) sb.Expr {
+// When the key is unknown, the fallback is used instead. The dictionary
+// name is qualified with the database name from the schema component.
+func DictionaryName(sch *schema.Component, dictionary, fallback string) func(sb.Expr) sb.Expr {
 	return func(key sb.Expr) sb.Expr {
 		return sb.Function("dictGetOrDefault",
-			sb.String(dictionary), sb.String("name"),
+			sb.String(sch.DictionaryName(dictionary)), sb.String("name"),
 			key, sb.String(fallback))
 	}
 }

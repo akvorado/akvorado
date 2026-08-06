@@ -199,6 +199,7 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, d
 	if err != nil {
 		return fmt.Errorf("unable to initialize ClickHouse component: %w", err)
 	}
+	schemaComponent.DatabaseName = clickhouseDBComponent.DatabaseName()
 	clickhouseComponent, err := clickhouse.New(r, config.ClickHouse, clickhouse.Dependencies{
 		Daemon:     daemonComponent,
 		HTTP:       httpComponent,

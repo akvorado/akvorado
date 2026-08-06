@@ -145,7 +145,7 @@ func (c *Component) widgetTopHandlerFunc(w http.ResponseWriter, req *http.Reques
 		mainTableRequired bool
 	)
 	dictName := func(dictionary string, column string) sb.Expr {
-		return sb.Column(column).Apply(query.DictionaryName(dictionary, "???"))
+		return sb.Column(column).Apply(query.DictionaryName(c.d.Schema, dictionary, "???"))
 	}
 
 	rawName := req.PathValue("name")

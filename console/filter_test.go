@@ -166,7 +166,7 @@ SELECT label, detail FROM (
 UNION DISTINCT
  SELECT toString(port) AS label, name AS detail, 2 AS rank, 0 AS c
  FROM (
-  SELECT port, name FROM tcp UNION DISTINCT SELECT port, name FROM tcp
+  SELECT port, name FROM tcp UNION DISTINCT SELECT port, name FROM udp
  )
  WHERE positionCaseInsensitive(name, $1) >= 1
  ORDER BY positionCaseInsensitive(name, $1) ASC, port ASC

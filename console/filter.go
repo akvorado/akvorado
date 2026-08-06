@@ -276,12 +276,12 @@ SELECT label, detail FROM (
  LIMIT %d
 UNION DISTINCT
  SELECT concat('AS', toString(asn)) AS label, name AS detail, 2 AS rank
- FROM asns
+ FROM %s
  WHERE positionCaseInsensitive(name, $1) >= 1
  ORDER BY positionCaseInsensitive(name, $1) ASC, asn ASC
  LIMIT %d
 ) GROUP BY label, detail ORDER BY MIN(rank) ASC, MIN(rowNumberInBlock()) ASC LIMIT %d`,
-				columnName, schema.DictionaryASNs, columnName, columnName, input.Limit, input.Limit, input.Limit)
+				columnName, c.d.Schema.DictionaryName(schema.DictionaryASNs), columnName, columnName, input.Limit, c.d.Schema.DictionaryName(schema.DictionaryASNs), input.Limit, input.Limit)
 			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery, input.Prefix); err != nil {
 				c.r.Err(err).Msg("unable to query database")
 				break
@@ -315,13 +315,13 @@ SELECT label, detail FROM (
 UNION DISTINCT
  SELECT toString(port) AS label, name AS detail, 2 AS rank, 0 AS c
  FROM (
-  SELECT port, name FROM tcp UNION DISTINCT SELECT port, name FROM tcp
+  SELECT port, name FROM %s UNION DISTINCT SELECT port, name FROM %s
  )
  WHERE positionCaseInsensitive(name, $1) >= 1
  ORDER BY positionCaseInsensitive(name, $1) ASC, port ASC
  LIMIT %d
 ) GROUP BY rank, label, detail ORDER BY rank ASC, MAX(c) DESC, MIN(rowNumberInBlock()) ASC LIMIT %d`,
-				columnName, schema.DictionaryTCP, columnName, schema.DictionaryUDP, columnName, columnName, input.Limit, input.Limit, input.Limit,
+				columnName, c.d.Schema.DictionaryName(schema.DictionaryTCP), columnName, c.d.Schema.DictionaryName(schema.DictionaryUDP), columnName, columnName, input.Limit, c.d.Schema.DictionaryName(schema.DictionaryTCP), c.d.Schema.DictionaryName(schema.DictionaryUDP), input.Limit, input.Limit,
 			)
 			if err := c.d.ClickHouseDB.Select(ctx, &results, sqlQuery, input.Prefix); err != nil {
 				c.r.Err(err).Msg("unable to query database")
