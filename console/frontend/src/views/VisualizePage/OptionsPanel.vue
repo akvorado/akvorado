@@ -88,7 +88,31 @@
             />
           </div>
         </div>
-        <SectionLabel>Time range</SectionLabel>
+        <SectionLabel>
+          <template #default>Time range</template>
+          <template #hint>
+            <label
+              class="flex items-center gap-1"
+              :class="liveRange ? 'cursor-pointer' : 'cursor-not-allowed'"
+              :title="autoRefreshHint"
+            >
+              <span>Auto refresh</span>
+              <select
+                v-model="autoRefresh"
+                :disabled="!liveRange"
+                class="cursor-pointer rounded border border-gray-300 bg-white px-1 py-0.5 text-xs text-gray-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-400"
+              >
+                <option
+                  v-for="interval in refreshIntervals"
+                  :key="interval.value"
+                  :value="interval.value"
+                >
+                  {{ interval.label }}
+                </option>
+              </select>
+            </label>
+          </template>
+        </SectionLabel>
         <InputTimeRange v-model="timeRange" @submit="submitOptions(true)" />
         <SectionLabel>Dimensions</SectionLabel>
         <InputDimensions
@@ -114,6 +138,7 @@
 
 <script lang="ts" setup>
 import { ref, watch, computed, inject, toRaw } from "vue";
+import { useIntervalFn } from "@vueuse/core";
 import { Date as SugarDate } from "sugar-date";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/vue/solid";
 import {
@@ -148,7 +173,7 @@ const props = withDefaults(
   },
 );
 const emit = defineEmits<{
-  "update:modelValue": [value: typeof props.modelValue];
+  "update:modelValue": [value: typeof props.modelValue, auto?: boolean];
   cancel: [];
 }>();
 
@@ -177,19 +202,56 @@ const units = ref<Units>("l3bps");
 const bidirectional = ref(false);
 const previousPeriod = ref(false);
 
-const submitOptions = (force?: boolean) => {
+const submitOptions = (force?: boolean, auto?: boolean) => {
   if (!force && props.loading) {
     emit("cancel");
   } else {
     if (options.value !== null && !hasErrors.value) {
-      emit("update:modelValue", {
-        ...options.value,
-        start: SugarDate.create(options.value.humanStart).toISOString(),
-        end: SugarDate.create(options.value.humanEnd).toISOString(),
-      });
+      emit(
+        "update:modelValue",
+        {
+          ...options.value,
+          start: SugarDate.create(options.value.humanStart).toISOString(),
+          end: SugarDate.create(options.value.humanEnd).toISOString(),
+        },
+        auto,
+      );
     }
   }
 };
+
+// Querying again only brings new data when the range follows the clock, so
+// this is limited to a range ending with "now".
+const refreshIntervals = [
+  { value: 0, label: "off" },
+  { value: 5_000, label: "5s" },
+  { value: 10_000, label: "10s" },
+  { value: 30_000, label: "30s" },
+  { value: 60_000, label: "1m" },
+  { value: 300_000, label: "5m" },
+];
+const autoRefresh = ref(0);
+const liveRange = computed(
+  () => timeRange.value?.end.trim().toLowerCase() === "now",
+);
+const autoRefreshHint = computed(() =>
+  liveRange.value
+    ? "Query again at a regular interval"
+    : 'Only available when the range ends with "now"',
+);
+watch(liveRange, (live) => {
+  if (!live) autoRefresh.value = 0;
+});
+const { pause, resume } = useIntervalFn(
+  () => {
+    // Skip the tick while a query runs: a query slower than the interval would
+    // keep cancelling and restarting itself.
+    if (!props.loading) submitOptions(true, true);
+  },
+  () => autoRefresh.value || 60_000,
+  { immediate: false },
+);
+watch(autoRefresh, (interval) => (interval ? resume() : pause()));
 
 const options = computed((): InternalModelType => {
   if (!timeRange.value || !dimensions.value || !filter.value) {

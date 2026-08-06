@@ -60,6 +60,10 @@ appearance.
   `2022-05-22 12:33`. The arrows on the right of the *start* and *end* fields
   move the whole time range one period backward or forward.
 
+- The *auto refresh* selector runs the query again at a regular interval, from
+  every 5 seconds to every 5 minutes. It is only available when the end of the
+  range is `now`.
+
 - You can select a set of dimensions. For time series, dimensions are
   converted to series. They are stacked with “stacked”, displayed as simple
   lines with “lines”, and displayed in a grid with “grid”. The grid

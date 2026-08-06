@@ -23,9 +23,10 @@ memory. Drop it on each cluster member once the new version runs:
 - 💥 *outlet*: rename the Kafka input metrics from `akvorado_outlet_kafka_*` to
   `akvorado_outlet_kafkainput_*`
 - ✨ *outlet*: optionally export decoded and enriched flows to a Kafka topic
+- ✨ *console*: add arrows in the time range fields to move it backward or forward
+- ✨ *console*: add an auto refresh selector for time ranges ending with `now`
 - ✨ *console*: allow filters to compare two columns, like `SrcPort < DstPort`,
   `DstAS != SrcAS` or `InIfConnectivity != OutIfConnectivity`
-- ✨ *console*: add arrows in the time range fields to move it backward or forward
 - 🩹 *console*: keep the apply button on the same line as the unit selector in the options panel
 - 🩹 *console*: fix the "max" and "last" limit types, which were selecting the same rows as "avg"
 - 🩹 *console*: fix the reverse direction of a filter on `SrcNetPrefix` or `DstNetPrefix`
