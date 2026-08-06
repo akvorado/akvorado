@@ -22,14 +22,39 @@
       <template #selected>{{ selectedPreset.name }}</template>
       <template #item="{ name }">{{ name }}</template>
     </InputListBox>
-    <InputString v-model="startTime" label="Start" :error="startTimeError" />
-    <InputString v-model="endTime" label="End" :error="endTimeError" />
+    <InputString v-model="startTime" label="Start" :error="startTimeError">
+      <template #button>
+        <button
+          type="button"
+          title="Move the time range backward"
+          :disabled="hasErrors"
+          :class="shiftButtonClass"
+          @click="shiftTimeRange(-1)"
+        >
+          <ChevronLeftIcon class="h-5 w-5" aria-hidden="true" />
+        </button>
+      </template>
+    </InputString>
+    <InputString v-model="endTime" label="End" :error="endTimeError">
+      <template #button>
+        <button
+          type="button"
+          title="Move the time range forward"
+          :disabled="hasErrors"
+          :class="shiftButtonClass"
+          @click="shiftTimeRange(1)"
+        >
+          <ChevronRightIcon class="h-5 w-5" aria-hidden="true" />
+        </button>
+      </template>
+    </InputString>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, nextTick } from "vue";
 import { Date as SugarDate } from "sugar-date";
+import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/vue/solid";
 import InputString from "@/components/InputString.vue";
 import InputListBox from "@/components/InputListBox.vue";
 import { isEqual } from "lodash-es";
@@ -39,6 +64,7 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{
   "update:modelValue": [value: typeof props.modelValue];
+  submit: [];
 }>();
 
 const startTime = ref("");
@@ -61,6 +87,23 @@ const endTimeError = computed(
 const hasErrors = computed(
   () => !!(startTimeError.value || endTimeError.value),
 );
+
+const shiftButtonClass =
+  "cursor-pointer text-gray-400 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-gray-400 dark:hover:text-gray-200 dark:disabled:hover:text-gray-400";
+
+// Move both ends of the time range by its own duration. A negative direction
+// moves to the past, a positive one to the future.
+const shiftTimeRange = (direction: number) => {
+  if (hasErrors.value) return;
+  const { start, end } = parsedTimes.value;
+  const offset = direction * (end.valueOf() - start.valueOf());
+  const format = (date: Date) =>
+    SugarDate(date).format("{yyyy}-{MM}-{dd} {HH}:{mm}:{ss}").raw;
+  startTime.value = format(new Date(start.valueOf() + offset));
+  endTime.value = format(new Date(end.valueOf() + offset));
+  // Wait for the new range to reach the parent before asking for a refresh.
+  nextTick(() => emit("submit"));
+};
 
 const presets = [
   { name: "Custom" },

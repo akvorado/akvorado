@@ -25,6 +25,7 @@ memory. Drop it on each cluster member once the new version runs:
 - ✨ *outlet*: optionally export decoded and enriched flows to a Kafka topic
 - ✨ *console*: allow filters to compare two columns, like `SrcPort < DstPort`,
   `DstAS != SrcAS` or `InIfConnectivity != OutIfConnectivity`
+- ✨ *console*: add arrows in the time range fields to move it backward or forward
 - 🩹 *console*: fix the "max" and "last" limit types, which were selecting the same rows as "avg"
 - 🌱 *console*: pick the top rows with `topKWeighted` on the unconsolidated table to use less memory
 - 🩹 *console*: fix the reverse direction of a filter on `SrcNetPrefix` or `DstNetPrefix`

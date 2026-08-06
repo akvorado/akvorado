@@ -57,7 +57,8 @@ appearance.
   natural language. [SugarJS](https://sugarjs.com/dates/#/Parsing) is used for
   parsing and provides examples of what is possible. Alternatively, you can
   look at the presets. You can also enter dates in ISO format, for example:
-  `2022-05-22 12:33`.
+  `2022-05-22 12:33`. The arrows on the right of the *start* and *end* fields
+  move the whole time range one period backward or forward.
 
 - You can select a set of dimensions. For time series, dimensions are
   converted to series. They are stacked with “stacked”, displayed as simple

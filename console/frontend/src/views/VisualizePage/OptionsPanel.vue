@@ -87,7 +87,7 @@
           </div>
         </div>
         <SectionLabel>Time range</SectionLabel>
-        <InputTimeRange v-model="timeRange" />
+        <InputTimeRange v-model="timeRange" @submit="submitOptions(true)" />
         <SectionLabel>Dimensions</SectionLabel>
         <InputDimensions
           v-model="dimensions"
