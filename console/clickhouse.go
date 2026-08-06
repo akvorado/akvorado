@@ -193,6 +193,19 @@ var unitsExprs = map[string]sb.Expr{
 	"outl2%": sb.MustParseExpr(`ifNotFinite(SUM((Bytes+38*Packets)*SamplingRate*8*100/(OutIfSpeed*1000000))/COUNT(DISTINCT ExporterAddress, OutIfName),0)`),
 }
 
+// unitsWeightExpr returns what one row is worth for the requested units. It is
+// the value the matching aggregate in unitsExprs sums up. There is nothing for
+// the percentage units, as they divide by a number of interfaces, which is not
+// known from a single row.
+func unitsWeightExpr(units string) sb.Expr {
+	return map[string]sb.Expr{
+		"fps":   sb.MustParseExpr(`1`),
+		"pps":   sb.MustParseExpr(`Packets*SamplingRate`),
+		"l3bps": sb.MustParseExpr(`Bytes*SamplingRate*8`),
+		"l2bps": sb.MustParseExpr(`(Bytes+38*Packets)*SamplingRate*8`),
+	}[units]
+}
+
 // resolve picks the best table for the requested time range and the interval
 // between two points.
 func (c *Component) resolve(input inputContext) resolution {

@@ -676,7 +676,7 @@ ORDER BY time WITH FILL
 			Expected: []string{
 				`WITH
  source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1),
- rows AS (SELECT ExporterName, InIfProvider FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') GROUP BY ExporterName, InIfProvider ORDER BY SUM(Bytes*SamplingRate*8) DESC LIMIT 20)
+ rows AS (SELECT tupleElement(tk, 1) AS ExporterName, tupleElement(tk, 2) AS InIfProvider FROM ( SELECT arrayJoin(topKWeighted(20, 20)(tuple(ExporterName, InIfProvider), toUInt64(Bytes*SamplingRate*8))) AS tk FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') ))
 SELECT 1 AS axis, * FROM (
 SELECT
  toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time,
@@ -784,7 +784,7 @@ ORDER BY time WITH FILL
 			Expected: []string{
 				`WITH
  source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1),
- rows AS (SELECT ExporterName, InIfProvider FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') GROUP BY ExporterName, InIfProvider ORDER BY SUM(Bytes*SamplingRate*8) DESC LIMIT 20)
+ rows AS (SELECT tupleElement(tk, 1) AS ExporterName, tupleElement(tk, 2) AS InIfProvider FROM ( SELECT arrayJoin(topKWeighted(20, 20)(tuple(ExporterName, InIfProvider), toUInt64(Bytes*SamplingRate*8))) AS tk FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') ))
 SELECT 1 AS axis, * FROM (
 SELECT
  toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time,
@@ -833,7 +833,7 @@ ORDER BY time WITH FILL
 			Expected: []string{
 				`WITH
  source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1),
- rows AS (SELECT ExporterName, InIfProvider FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') GROUP BY ExporterName, InIfProvider ORDER BY SUM(Bytes*SamplingRate*8) DESC LIMIT 20)
+ rows AS (SELECT tupleElement(tk, 1) AS ExporterName, tupleElement(tk, 2) AS InIfProvider FROM ( SELECT arrayJoin(topKWeighted(20, 20)(tuple(ExporterName, InIfProvider), toUInt64(Bytes*SamplingRate*8))) AS tk FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') ))
 SELECT 1 AS axis, * FROM (
 SELECT
  toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time,

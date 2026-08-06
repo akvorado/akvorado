@@ -117,6 +117,19 @@ func Function(name string, args ...Expr) Expr {
 	})
 }
 
+// ParametricFunction returns a call to a function taking parameters on top of
+// its arguments, as in "topKWeighted(10, 20)(SrcAddr, Bytes)". Aggregate
+// functions are the ones using this form.
+func ParametricFunction(name string, parameters []Expr, args ...Expr) Expr {
+	return wrap(&parser.FunctionExpr{
+		Name: ident(name),
+		Params: &parser.ParamExprList{
+			Items:         &parser.ColumnExprList{Items: nodes(parameters)},
+			ColumnArgList: &parser.ColumnArgList{Items: nodes(args)},
+		},
+	})
+}
+
 // Lambda returns a lambda function, as in "c -> bitAnd(c, 0xffff)".
 func Lambda(parameter string, body Expr) Expr {
 	return Op(Column(parameter), "->", body)

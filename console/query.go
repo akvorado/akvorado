@@ -75,5 +75,46 @@ func selectRowsByLimitType(input graphCommonHandlerInput, r resolved, dimensions
 					sb.Op(r.timefilterEnd(), "-", seconds(r.Interval))))).
 			OrderBy(sb.Order(units).Desc())
 	}
+	// On the main table, an exact ranking has to keep one entry for each
+	// dimension value and there can be millions of them, like when asking for
+	// the top source addresses. topKWeighted keeps a bounded number of
+	// candidates instead. Its result is approximate, so it stays reserved for
+	// the table where the exact ranking is expensive. A limit of 0 is refused by
+	// topKWeighted, while the exact query returns nothing and puts everything
+	// in "Other".
+	if weight := unitsWeightExpr(input.Units); r.Table == "flows" &&
+		input.Limit > 0 && !weight.IsZero() {
+		return selectRowsByTopK(input, dimensions, where, weight)
+	}
 	return rows.From(sb.Table("source")).Where(where).OrderBy(sb.Order(units).Desc())
+}
+
+// topKWeightedLoadFactor is how many candidates topKWeighted keeps for each
+// requested row. The default of 3 loses a few of the real top values once the
+// limit reaches a few tens.
+const topKWeightedLoadFactor = 20
+
+// selectRowsByTopK ranks the dimension values with an approximate top-N. It
+// produces the same shape as the exact query, one column per dimension, so the
+// callers query "rows" the same way.
+func selectRowsByTopK(input graphCommonHandlerInput, dimensions []sb.Expr, where, weight sb.Expr) *sb.Query {
+	// topKWeighted returns an array of tuples. Unrolling it gives back one row
+	// per dimension value.
+	top := sb.Select(
+		sb.Alias(
+			sb.Function("arrayJoin",
+				sb.ParametricFunction("topKWeighted",
+					[]sb.Expr{sb.Int(int64(input.Limit)), sb.Uint(topKWeightedLoadFactor)},
+					sb.Function("tuple", dimensions...),
+					sb.Function("toUInt64", weight))),
+			"tk")).
+		From(sb.Table("source")).
+		Where(where)
+	fields := make([]sb.Expr, 0, len(input.Dimensions))
+	for idx, column := range input.Dimensions {
+		fields = append(fields, sb.Alias(
+			sb.Function("tupleElement", sb.Column("tk"), sb.Uint(uint64(idx+1))),
+			column.String()))
+	}
+	return sb.Select(fields...).FromSelect(top)
 }

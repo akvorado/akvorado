@@ -26,6 +26,7 @@ memory. Drop it on each cluster member once the new version runs:
 - ✨ *console*: allow filters to compare two columns, like `SrcPort < DstPort`,
   `DstAS != SrcAS` or `InIfConnectivity != OutIfConnectivity`
 - 🩹 *console*: fix the "max" and "last" limit types, which were selecting the same rows as "avg"
+- 🌱 *console*: pick the top rows with `topKWeighted` on the unconsolidated table to use less memory
 - 🩹 *console*: fix the reverse direction of a filter on `SrcNetPrefix` or `DstNetPrefix`
 - 🩹 *console*: fix `NOT` in front of a filter on `SrcNetPrefix` or `DstNetPrefix`
 - 🩹 *orchestrator*: fix custom dictionaries with an IP prefix layout

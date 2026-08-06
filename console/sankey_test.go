@@ -88,7 +88,7 @@ func TestSankeyQuerySQL(t *testing.T) {
 				`WITH
  source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1),
  (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC')) AS range,
- rows AS (SELECT SrcAS, ExporterName FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes*SamplingRate*8) DESC LIMIT 5)
+ rows AS (SELECT tupleElement(tk, 1) AS SrcAS, tupleElement(tk, 2) AS ExporterName FROM ( SELECT arrayJoin(topKWeighted(5, 20)(tuple(SrcAS, ExporterName), toUInt64(Bytes*SamplingRate*8))) AS tk FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') ))
 SELECT 1 AS axis, * FROM (
 SELECT
  SUM(Bytes*SamplingRate*8)/range AS xps,
@@ -151,7 +151,7 @@ ORDER BY xps DESC)`,
 				`WITH
  source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1),
  (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC')) AS range,
- rows AS (SELECT SrcAS, ExporterName FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') GROUP BY SrcAS, ExporterName ORDER BY SUM((Bytes+38*Packets)*SamplingRate*8) DESC LIMIT 5)
+ rows AS (SELECT tupleElement(tk, 1) AS SrcAS, tupleElement(tk, 2) AS ExporterName FROM ( SELECT arrayJoin(topKWeighted(5, 20)(tuple(SrcAS, ExporterName), toUInt64((Bytes+38*Packets)*SamplingRate*8))) AS tk FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') ))
 SELECT 1 AS axis, * FROM (
 SELECT
  SUM((Bytes+38*Packets)*SamplingRate*8)/range AS xps,
@@ -182,7 +182,7 @@ ORDER BY xps DESC)`,
 				`WITH
  source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1),
  (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC')) AS range,
- rows AS (SELECT SrcAS, ExporterName FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') GROUP BY SrcAS, ExporterName ORDER BY SUM(Packets*SamplingRate) DESC LIMIT 5)
+ rows AS (SELECT tupleElement(tk, 1) AS SrcAS, tupleElement(tk, 2) AS ExporterName FROM ( SELECT arrayJoin(topKWeighted(5, 20)(tuple(SrcAS, ExporterName), toUInt64(Packets*SamplingRate))) AS tk FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') ))
 SELECT 1 AS axis, * FROM (
 SELECT
  SUM(Packets*SamplingRate)/range AS xps,
@@ -213,7 +213,7 @@ ORDER BY xps DESC)`,
 				`WITH
  source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1),
  (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND DstCountry = 'FR') AS range,
- rows AS (SELECT SrcAS, ExporterName FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND DstCountry = 'FR' GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes*SamplingRate*8) DESC LIMIT 10)
+ rows AS (SELECT tupleElement(tk, 1) AS SrcAS, tupleElement(tk, 2) AS ExporterName FROM ( SELECT arrayJoin(topKWeighted(10, 20)(tuple(SrcAS, ExporterName), toUInt64(Bytes*SamplingRate*8))) AS tk FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND DstCountry = 'FR' ))
 SELECT 1 AS axis, * FROM (
 SELECT
  SUM(Bytes*SamplingRate*8)/range AS xps,
@@ -245,7 +245,7 @@ ORDER BY xps DESC)`,
 				`WITH
  source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1),
  (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND DstCountry = 'FR') AS range,
- rows AS (SELECT SrcAS, InIfProvider FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND DstCountry = 'FR' GROUP BY SrcAS, InIfProvider ORDER BY SUM(Bytes*SamplingRate*8) DESC LIMIT 5)
+ rows AS (SELECT tupleElement(tk, 1) AS SrcAS, tupleElement(tk, 2) AS InIfProvider FROM ( SELECT arrayJoin(topKWeighted(5, 20)(tuple(SrcAS, InIfProvider), toUInt64(Bytes*SamplingRate*8))) AS tk FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND DstCountry = 'FR' ))
 SELECT 1 AS axis, * FROM (
 SELECT
  SUM(Bytes*SamplingRate*8)/range AS xps,
