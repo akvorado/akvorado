@@ -87,7 +87,7 @@ func (input graphSankeyHandlerInput) toSQL1(axis int, res resolution, options sa
 			sb.Op(sb.Column(column.String()), "IN",
 				sb.Select(sb.Column(rowsColumns[i].String())).
 					From(sb.Table("rows")).Subquery()),
-			column.ToSQLSelect(input.schema),
+			column.ToSQLSelect(input.schema, input.database),
 			sb.String("Other")))
 		dimensions = append(dimensions, sb.Column(column.String()))
 	}
@@ -148,7 +148,10 @@ func (input graphSankeyHandlerInput) toSQL(res resolution) []*sb.Query {
 
 func (c *Component) graphSankeyHandlerFunc(w http.ResponseWriter, req *http.Request) {
 	ctx := c.t.Context(req.Context())
-	input := graphSankeyHandlerInput{graphCommonHandlerInput: graphCommonHandlerInput{schema: c.d.Schema}}
+	input := graphSankeyHandlerInput{graphCommonHandlerInput: graphCommonHandlerInput{
+		schema:   c.d.Schema,
+		database: c.d.ClickHouseDB.DatabaseName(),
+	}}
 	if err := httpserver.BindJSON(req, &input); err != nil {
 		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
@@ -157,7 +160,7 @@ func (c *Component) graphSankeyHandlerFunc(w http.ResponseWriter, req *http.Requ
 		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
-	if err := input.Filter.Validate(input.schema); err != nil {
+	if err := input.Filter.Validate(input.schema, input.database); err != nil {
 		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}

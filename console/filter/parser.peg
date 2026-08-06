@@ -261,7 +261,7 @@ ConditionProtoStrExpr "condition on protocol as string" ←
             { return c.acceptColumn() }) _
  rcond:RConditionProtoStrExpr {
   return rcond.(condition).apply(c.column(column.(schema.Column)).
-    Apply(protocolName(c.meta().Schema))), nil
+    Apply(protocolName(c.meta().Database))), nil
 }
 RConditionProtoStrExpr "condition on protocol as string" ←
    operator:("=" / "!=") _ value:StringLiteral {

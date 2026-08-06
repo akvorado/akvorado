@@ -15,6 +15,7 @@ import (
 // graphSankeyHandlerInput.
 type graphCommonHandlerInput struct {
 	schema         *schema.Component
+	database       string
 	Start          time.Time      `json:"start" validate:"required"`
 	End            time.Time      `json:"end" validate:"required,gtfield=Start"`
 	Dimensions     []query.Column `json:"dimensions"`             // group by ...

@@ -44,8 +44,8 @@ func TestGraphSankeyInputReverseDirection(t *testing.T) {
 		},
 		Bidirectional: true,
 	}
-	input.Filter.Validate(input.schema)
-	expected.Filter.Validate(input.schema)
+	input.Filter.Validate(input.schema, input.database)
+	expected.Filter.Validate(input.schema, input.database)
 	query.Columns(input.Dimensions).Validate(input.schema)
 	query.Columns(expected.Dimensions).Validate(input.schema)
 	snapshot := func() string {
@@ -272,7 +272,7 @@ ORDER BY xps DESC)`,
 		if err := query.Columns(tc.Input.Dimensions).Validate(tc.Input.schema); err != nil {
 			t.Fatalf("%sValidate() error:\n%+v", tc.Pos, err)
 		}
-		if err := tc.Input.Filter.Validate(tc.Input.schema); err != nil {
+		if err := tc.Input.Filter.Validate(tc.Input.schema, tc.Input.database); err != nil {
 			t.Fatalf("%sValidate() error:\n%+v", tc.Pos, err)
 		}
 		t.Run(tc.Description, func(t *testing.T) {

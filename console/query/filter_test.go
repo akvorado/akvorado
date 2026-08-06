@@ -29,7 +29,7 @@ func TestUnmarshalFilter(t *testing.T) {
 			if err := qf.UnmarshalText([]byte(tc.Input)); err != nil {
 				t.Fatalf("UnmarshalText() error:\n%+v", err)
 			}
-			err := qf.Validate(sch)
+			err := qf.Validate(sch, "")
 			if err != nil && !tc.Error {
 				t.Fatalf("Validate() error:\n%+v", err)
 			}
@@ -67,7 +67,7 @@ func TestFilterMainTableRequired(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.Input, func(t *testing.T) {
 			qf := query.NewFilter(tc.Input)
-			if err := qf.Validate(sch); err != nil {
+			if err := qf.Validate(sch, ""); err != nil {
 				t.Fatalf("Validate() error:\n%+v", err)
 			}
 			if diff := helpers.Diff(qf.MainTableRequired(), tc.Expected); diff != "" {
@@ -79,7 +79,7 @@ func TestFilterMainTableRequired(t *testing.T) {
 
 func TestFilterSwap(t *testing.T) {
 	filter := query.NewFilter("SrcAS = 12322")
-	if err := filter.Validate(schema.NewMock(t)); err != nil {
+	if err := filter.Validate(schema.NewMock(t), ""); err != nil {
 		t.Fatalf("Validate() error:\n%+v", err)
 	}
 	filter.Swap()

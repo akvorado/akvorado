@@ -29,7 +29,7 @@ func TestColumnSQLSelectParses(t *testing.T) {
 		}
 		tested++
 		t.Run(column.Name, func(t *testing.T) {
-			sb.CheckStatement(t, fmt.Sprintf("SELECT %s", qc.ToSQLSelect(sch)))
+			sb.CheckStatement(t, fmt.Sprintf("SELECT %s", qc.ToSQLSelect(sch, "akvorado")))
 		})
 	}
 	if tested < 20 {
@@ -113,6 +113,7 @@ func TestGeneratedQueriesParse(t *testing.T) {
 				t.Run(name, func(t *testing.T) {
 					common := graphCommonHandlerInput{
 						schema:     sch,
+						database:   "akvorado",
 						Start:      testStart,
 						End:        testEnd,
 						Dimensions: variant.Dimensions,
@@ -128,7 +129,7 @@ func TestGeneratedQueriesParse(t *testing.T) {
 					if err := query.Columns(common.Dimensions).Validate(sch); err != nil {
 						t.Fatalf("Validate() error:\n%+v", err)
 					}
-					if err := common.Filter.Validate(sch); err != nil {
+					if err := common.Filter.Validate(sch, common.database); err != nil {
 						t.Fatalf("Validate() error:\n%+v", err)
 					}
 

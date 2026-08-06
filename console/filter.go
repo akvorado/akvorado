@@ -46,7 +46,11 @@ func (c *Component) filterValidateHandlerFunc(w http.ResponseWriter, req *http.R
 		})
 		return
 	}
-	got, err := filter.Parse("", []byte(input.Filter), filter.GlobalStore("meta", &filter.Meta{Schema: c.d.Schema}))
+	got, err := filter.Parse("", []byte(input.Filter),
+		filter.GlobalStore("meta", &filter.Meta{
+			Schema:   c.d.Schema,
+			Database: c.d.ClickHouseDB.DatabaseName(),
+		}))
 	if err == nil {
 		httpserver.WriteJSON(w, http.StatusOK, filterValidateHandlerOutput{
 			Message: "ok",
@@ -111,7 +115,10 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 		_, err := filter.Parse("",
 			fmt.Appendf(nil, "%s ", input.Column),
 			filter.Entrypoint("ConditionExpr"),
-			filter.GlobalStore("meta", &filter.Meta{Schema: c.d.Schema}))
+			filter.GlobalStore("meta", &filter.Meta{
+				Schema:   c.d.Schema,
+				Database: c.d.ClickHouseDB.DatabaseName(),
+			}))
 		if err != nil {
 			for _, candidate := range filter.Expected(err) {
 				if !strings.HasPrefix(candidate, `"`) {
@@ -281,7 +288,7 @@ UNION DISTINCT
  ORDER BY positionCaseInsensitive(name, $1) ASC, asn ASC
  LIMIT %d
 ) GROUP BY label, detail ORDER BY MIN(rank) ASC, MIN(rowNumberInBlock()) ASC LIMIT %d`,
-				columnName, c.d.Schema.DictionaryName(schema.DictionaryASNs), columnName, columnName, input.Limit, c.d.Schema.DictionaryName(schema.DictionaryASNs), input.Limit, input.Limit)
+				columnName, c.dictionary(schema.DictionaryASNs), columnName, columnName, input.Limit, c.dictionary(schema.DictionaryASNs), input.Limit, input.Limit)
 			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery, input.Prefix); err != nil {
 				c.r.Err(err).Msg("unable to query database")
 				break
@@ -321,7 +328,7 @@ UNION DISTINCT
  ORDER BY positionCaseInsensitive(name, $1) ASC, port ASC
  LIMIT %d
 ) GROUP BY rank, label, detail ORDER BY rank ASC, MAX(c) DESC, MIN(rowNumberInBlock()) ASC LIMIT %d`,
-				columnName, c.d.Schema.DictionaryName(schema.DictionaryTCP), columnName, c.d.Schema.DictionaryName(schema.DictionaryUDP), columnName, columnName, input.Limit, c.d.Schema.DictionaryName(schema.DictionaryTCP), c.d.Schema.DictionaryName(schema.DictionaryUDP), input.Limit, input.Limit,
+				columnName, c.dictionary(schema.DictionaryTCP), columnName, c.dictionary(schema.DictionaryUDP), columnName, columnName, input.Limit, c.dictionary(schema.DictionaryTCP), c.dictionary(schema.DictionaryUDP), input.Limit, input.Limit,
 			)
 			if err := c.d.ClickHouseDB.Select(ctx, &results, sqlQuery, input.Prefix); err != nil {
 				c.r.Err(err).Msg("unable to query database")

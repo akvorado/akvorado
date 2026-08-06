@@ -46,6 +46,7 @@ func TestQueryColumnSQLSelect(t *testing.T) {
 	sch := schema.NewMock(t).EnableAllColumns()
 	cases := []struct {
 		Input    schema.ColumnKey
+		Database string
 		Expected string
 	}{
 		{
@@ -113,6 +114,14 @@ func TestQueryColumnSQLSelect(t *testing.T) {
 		}, {
 			Input:    schema.ColumnSrcPort,
 			Expected: "replaceRegexpOne(multiIf(Proto = 6, concat(toString(SrcPort), '/', dictGetOrDefault('tcp', 'name', SrcPort, '')), Proto = 17, concat(toString(SrcPort), '/', dictGetOrDefault('udp', 'name', SrcPort, '')), toString(SrcPort)), '/$', '')",
+		}, {
+			Input:    schema.ColumnProto,
+			Database: "akvorado",
+			Expected: `dictGetOrDefault('akvorado.protocols', 'name', Proto, '???')`,
+		}, {
+			Input:    schema.ColumnDstAS,
+			Database: "akvorado",
+			Expected: `concat(toString(DstAS), ': ', dictGetOrDefault('akvorado.asns', 'name', DstAS, '???'))`,
 		},
 	}
 	for _, tc := range cases {
@@ -121,7 +130,7 @@ func TestQueryColumnSQLSelect(t *testing.T) {
 			if err := column.Validate(schema.NewMock(t).EnableAllColumns()); err != nil {
 				t.Fatalf("Validate() error:\n%+v", err)
 			}
-			got := column.ToSQLSelect(sch).String()
+			got := column.ToSQLSelect(sch, tc.Database).String()
 			if diff := helpers.Diff(got, tc.Expected); diff != "" {
 				t.Errorf("ToSQLSelect() (-got, +want):\n%s", diff)
 			}

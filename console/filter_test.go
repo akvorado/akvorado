@@ -58,7 +58,7 @@ LIMIT 20`, "c").
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), `
 SELECT label, detail FROM (
- SELECT concat('AS', toString(DstAS)) AS label, dictGet('asns', 'name', DstAS) AS detail, 1 AS rank
+ SELECT concat('AS', toString(DstAS)) AS label, dictGet('default.asns', 'name', DstAS) AS detail, 1 AS rank
  FROM flows
  WHERE TimeReceived > date_sub(minute, 1, now())
  AND detail != ''
@@ -68,7 +68,7 @@ SELECT label, detail FROM (
  LIMIT 20
 UNION DISTINCT
  SELECT concat('AS', toString(asn)) AS label, name AS detail, 2 AS rank
- FROM asns
+ FROM default.asns
  WHERE positionCaseInsensitive(name, $1) >= 1
  ORDER BY positionCaseInsensitive(name, $1) ASC, asn ASC
  LIMIT 20
@@ -95,7 +95,7 @@ UNION DISTINCT
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), `
 SELECT label, detail FROM (
- SELECT concat('AS', toString(DstAS)) AS label, dictGet('asns', 'name', DstAS) AS detail, 1 AS rank
+ SELECT concat('AS', toString(DstAS)) AS label, dictGet('default.asns', 'name', DstAS) AS detail, 1 AS rank
  FROM flows
  WHERE TimeReceived > date_sub(minute, 1, now())
  AND detail != ''
@@ -105,7 +105,7 @@ SELECT label, detail FROM (
  LIMIT 20
 UNION DISTINCT
  SELECT concat('AS', toString(asn)) AS label, name AS detail, 2 AS rank
- FROM asns
+ FROM default.asns
  WHERE positionCaseInsensitive(name, $1) >= 1
  ORDER BY positionCaseInsensitive(name, $1) ASC, asn ASC
  LIMIT 20
@@ -154,7 +154,7 @@ LIMIT 20`, "6540").
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), `
 SELECT label, detail FROM (
- SELECT toString(SrcPort) AS label, if(Proto = 6, dictGet('tcp', 'name', SrcPort), dictGet('udp', 'name', SrcPort) ) AS detail, 1 AS rank, count(*) AS c
+ SELECT toString(SrcPort) AS label, if(Proto = 6, dictGet('default.tcp', 'name', SrcPort), dictGet('default.udp', 'name', SrcPort) ) AS detail, 1 AS rank, count(*) AS c
  FROM flows
  WHERE Proto IN (6, 17)
  AND TimeReceived > date_sub(minute, 1, now())
@@ -166,7 +166,7 @@ SELECT label, detail FROM (
 UNION DISTINCT
  SELECT toString(port) AS label, name AS detail, 2 AS rank, 0 AS c
  FROM (
-  SELECT port, name FROM tcp UNION DISTINCT SELECT port, name FROM udp
+  SELECT port, name FROM default.tcp UNION DISTINCT SELECT port, name FROM default.udp
  )
  WHERE positionCaseInsensitive(name, $1) >= 1
  ORDER BY positionCaseInsensitive(name, $1) ASC, port ASC

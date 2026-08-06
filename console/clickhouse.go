@@ -14,6 +14,12 @@ import (
 	"akvorado/console/query"
 )
 
+// dictionary names a ClickHouse dictionary, qualified with the database it
+// lives in, as the remote nodes of a cluster do not resolve a bare name.
+func (c *Component) dictionary(name string) sb.TableName {
+	return sb.Table(name).In(c.d.ClickHouseDB.DatabaseName())
+}
+
 // flowsTable describe a consolidated or unconsolidated flows table.
 type flowsTable struct {
 	Name       string

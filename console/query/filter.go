@@ -60,19 +60,20 @@ func (qf *Filter) UnmarshalText(input []byte) error {
 	return nil
 }
 
-// Validate validates a query filter with the provided schema.
-func (qf *Filter) Validate(sch *schema.Component) error {
+// Validate validates a query filter with the provided schema. The database is
+// the one holding the dictionaries a filter may need.
+func (qf *Filter) Validate(sch *schema.Component, database string) error {
 	if qf.filter == "" {
 		qf.validated = true
 		return nil
 	}
 	input := []byte(qf.filter)
-	directMeta := &filter.Meta{Schema: sch}
+	directMeta := &filter.Meta{Schema: sch, Database: database}
 	direct, err := filter.Parse("", input, filter.GlobalStore("meta", directMeta))
 	if err != nil {
 		return fmt.Errorf("cannot parse filter: %s", filter.HumanError(err))
 	}
-	reverseMeta := &filter.Meta{Schema: sch, ReverseDirection: true}
+	reverseMeta := &filter.Meta{Schema: sch, Database: database, ReverseDirection: true}
 	reverse, err := filter.Parse("", input, filter.GlobalStore("meta", reverseMeta))
 	if err != nil {
 		return fmt.Errorf("cannot parse reverse filter: %s", filter.HumanError(err))

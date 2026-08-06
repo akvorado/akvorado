@@ -160,7 +160,7 @@ func TestWidgetTop(t *testing.T) {
 WITH
  (SELECT SUM(Bytes*SamplingRate) FROM flows WHERE TimeReceived BETWEEN toDateTime('1969-12-31 23:55:00', 'UTC') AND toDateTime('1970-01-01 00:00:00', 'UTC') AND InIfBoundary = 'external') AS Total
 SELECT
- if(empty(concat(dictGetOrDefault('protocols', 'name', Proto, '???'), '/', toString(SrcPort))),'Unknown',concat(dictGetOrDefault('protocols', 'name', Proto, '???'), '/', toString(SrcPort))) AS Name,
+ if(empty(concat(dictGetOrDefault('default.protocols', 'name', Proto, '???'), '/', toString(SrcPort))),'Unknown',concat(dictGetOrDefault('default.protocols', 'name', Proto, '???'), '/', toString(SrcPort))) AS Name,
  SUM(Bytes*SamplingRate) / Total * 100 AS Percent
 FROM flows
 WHERE TimeReceived BETWEEN toDateTime('1969-12-31 23:55:00', 'UTC') AND toDateTime('1970-01-01 00:00:00', 'UTC')

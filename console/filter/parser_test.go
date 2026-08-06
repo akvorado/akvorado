@@ -319,6 +319,11 @@ func TestValidFilter(t *testing.T) {
 		{Input: `Proto IN ('tcp', 'udp')`, Output: `dictGetOrDefault('protocols', 'name', Proto, '???') IN ('tcp', 'udp')`},
 		{Input: `Proto NOTIN ('tcp')`, Output: `dictGetOrDefault('protocols', 'name', Proto, '???') NOT IN ('tcp')`},
 		{
+			Input:  `Proto = 'gre'`,
+			Output: `dictGetOrDefault('akvorado.protocols', 'name', Proto, '???') = 'gre'`,
+			MetaIn: Meta{Database: "akvorado"}, MetaOut: Meta{Database: "akvorado"},
+		},
+		{
 			Input: `SrcPort = 80`, Output: `SrcPort = 80`,
 			MetaOut: Meta{MainTableRequired: true},
 		},

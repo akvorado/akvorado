@@ -109,7 +109,6 @@ func consoleStart(r *reporter.Reporter, config ConsoleConfiguration, checkOnly b
 	if err != nil {
 		return fmt.Errorf("unable to initialize schema component: %w", err)
 	}
-	schemaComponent.DatabaseName = clickhouseComponent.DatabaseName()
 	consoleComponent, err := console.New(r, config.Console, console.Dependencies{
 		Daemon:       daemonComponent,
 		HTTP:         httpComponent,

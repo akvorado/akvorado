@@ -128,7 +128,7 @@ func (input graphLineHandlerInput) toSQL1(axis int, r resolved, options toSQL1Op
 	dimensions := []sb.Expr{}
 	others := []sb.Expr{}
 	for _, column := range input.Dimensions {
-		selectFields = append(selectFields, column.ToSQLSelect(input.schema))
+		selectFields = append(selectFields, column.ToSQLSelect(input.schema, input.database))
 		dimensions = append(dimensions, sb.Column(column.String()))
 		others = append(others, sb.String("Other"))
 	}
@@ -217,7 +217,10 @@ func (input graphLineHandlerInput) toSQL(res resolution) []*sb.Query {
 
 func (c *Component) graphLineHandlerFunc(w http.ResponseWriter, req *http.Request) {
 	ctx := c.t.Context(req.Context())
-	input := graphLineHandlerInput{graphCommonHandlerInput: graphCommonHandlerInput{schema: c.d.Schema}}
+	input := graphLineHandlerInput{graphCommonHandlerInput: graphCommonHandlerInput{
+		schema:   c.d.Schema,
+		database: c.d.ClickHouseDB.DatabaseName(),
+	}}
 	if err := httpserver.BindJSON(req, &input); err != nil {
 		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
@@ -226,7 +229,7 @@ func (c *Component) graphLineHandlerFunc(w http.ResponseWriter, req *http.Reques
 		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
-	if err := input.Filter.Validate(input.schema); err != nil {
+	if err := input.Filter.Validate(input.schema, input.database); err != nil {
 		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}

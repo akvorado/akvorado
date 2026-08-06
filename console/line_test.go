@@ -46,8 +46,8 @@ func TestGraphLineInputReverseDirection(t *testing.T) {
 		},
 		Points: 100,
 	}
-	input.Filter.Validate(input.schema)
-	expected.Filter.Validate(input.schema)
+	input.Filter.Validate(input.schema, input.database)
+	expected.Filter.Validate(input.schema, input.database)
 	query.Columns(input.Dimensions).Validate(input.schema)
 	query.Columns(expected.Dimensions).Validate(input.schema)
 	snapshot := func() string {
@@ -217,7 +217,7 @@ func TestGraphLineResolveContext(t *testing.T) {
 			if err := query.Columns(input.Dimensions).Validate(sch); err != nil {
 				t.Fatalf("Validate() error:\n%+v", err)
 			}
-			if err := input.Filter.Validate(sch); err != nil {
+			if err := input.Filter.Validate(sch, ""); err != nil {
 				t.Fatalf("Validate() error:\n%+v", err)
 			}
 			if diff := helpers.Diff(input.resolveContext(), tc.Expected); diff != "" {
@@ -241,7 +241,7 @@ func TestGraphQueryAxesRanges(t *testing.T) {
 		Points:         100,
 		PreviousPeriod: true,
 	}
-	if err := input.Filter.Validate(input.schema); err != nil {
+	if err := input.Filter.Validate(input.schema, input.database); err != nil {
 		t.Fatalf("Validate() error:\n%+v", err)
 	}
 	got := toSQLStrings(t, input.toSQL(testResolution))
@@ -310,7 +310,7 @@ func TestGraphQueryAxesLeapYear(t *testing.T) {
 				Points:         100,
 				PreviousPeriod: true,
 			}
-			if err := input.Filter.Validate(input.schema); err != nil {
+			if err := input.Filter.Validate(input.schema, input.database); err != nil {
 				t.Fatalf("Validate() error:\n%+v", err)
 			}
 			got := toSQLStrings(t, input.toSQL(testResolution))
@@ -916,7 +916,7 @@ ORDER BY time WITH FILL
 		if err := query.Columns(tc.Input.Dimensions).Validate(tc.Input.schema); err != nil {
 			t.Fatalf("%sValidate() error:\n%+v", tc.Pos, err)
 		}
-		if err := tc.Input.Filter.Validate(tc.Input.schema); err != nil {
+		if err := tc.Input.Filter.Validate(tc.Input.schema, tc.Input.database); err != nil {
 			t.Fatalf("%sValidate() error:\n%+v", tc.Pos, err)
 		}
 		t.Run(tc.Description, func(t *testing.T) {

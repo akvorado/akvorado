@@ -19,6 +19,8 @@ import (
 type Meta struct {
 	// Schema is the data schema (used as input)
 	Schema *schema.Component
+	// Database is the ClickHouse database holding the dictionaries (used as input)
+	Database string
 	// ReverseDirection tells if we require the reverse direction for the provided filter (used as input)
 	ReverseDirection bool
 	// MainTableRequired tells if the main table is required to execute the expression (used as output)
@@ -230,11 +232,13 @@ func (c *current) ipOrSubnetCondition(col schema.Column, operator string, items 
 
 // protocolName turns a protocol number into its name, so a filter can compare
 // it with a string. An unknown protocol becomes "???", like in the columns the
-// console displays.
-func protocolName(sch *schema.Component) func(sb.Expr) sb.Expr {
+// console displays. The dictionary is qualified with the database it lives in,
+// as the remote nodes of a cluster do not resolve a bare name.
+func protocolName(database string) func(sb.Expr) sb.Expr {
 	return func(proto sb.Expr) sb.Expr {
+		dictionary := sb.Table(schema.DictionaryProtocols).In(database)
 		return sb.Function("dictGetOrDefault",
-			sb.String(sch.DictionaryName(schema.DictionaryProtocols)), sb.String("name"),
+			sb.String(dictionary.String()), sb.String("name"),
 			proto, sb.String("???"))
 	}
 }

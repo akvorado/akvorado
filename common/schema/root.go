@@ -21,11 +21,6 @@ type Component struct {
 	c Configuration
 
 	Schema
-
-	// DatabaseName is the ClickHouse database name, used to qualify
-	// dictionary references in generated SQL queries. It is set by the
-	// orchestrator and console components after initialization.
-	DatabaseName string
 }
 
 // New creates a new schema component.

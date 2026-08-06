@@ -101,8 +101,9 @@ func (qcs Columns) Validate(schema *schema.Component) error {
 	return nil
 }
 
-// ToSQLSelect transforms a column into an expression to use in SELECT
-func (qc Column) ToSQLSelect(sch *schema.Component) sb.Expr {
+// ToSQLSelect transforms a column into an expression to use in SELECT. The
+// database is the one holding the dictionaries.
+func (qc Column) ToSQLSelect(sch *schema.Component, database string) sb.Expr {
 	key := qc.Key()
 	self := sb.Column(qc.String())
 	switch key {
@@ -111,7 +112,7 @@ func (qc Column) ToSQLSelect(sch *schema.Component) sb.Expr {
 		return sb.Function("concat",
 			sb.Function("toString", self),
 			sb.String(": "),
-			self.Apply(DictionaryLookup(sch, schema.DictionaryASNs, "???")))
+			self.Apply(DictionaryLookup(database, schema.DictionaryASNs, "???")))
 	case schema.ColumnInIfBoundary, schema.ColumnOutIfBoundary:
 		return sb.Function("toString", self)
 	case schema.ColumnEType:
@@ -124,7 +125,7 @@ func (qc Column) ToSQLSelect(sch *schema.Component) sb.Expr {
 				sb.String("IPv6"),
 				sb.String("???")))
 	case schema.ColumnProto:
-		return self.Apply(DictionaryLookup(sch, schema.DictionaryProtocols, "???"))
+		return self.Apply(DictionaryLookup(database, schema.DictionaryProtocols, "???"))
 	case schema.ColumnMPLSLabels, schema.ColumnDstASPath:
 		return sb.Function("arrayStringConcat", self, sb.String(" "))
 	case schema.ColumnSrcCommunities, schema.ColumnDstCommunities:
@@ -165,7 +166,7 @@ func (qc Column) ToSQLSelect(sch *schema.Component) sb.Expr {
 			return sb.Function("concat",
 				sb.Function("toString", self),
 				sb.String("/"),
-				self.Apply(DictionaryLookup(sch, dictionary, "")))
+				self.Apply(DictionaryLookup(database, dictionary, "")))
 		}
 		// The port may have no name in the dictionary, in which case the
 		// trailing slash is dropped.
@@ -193,12 +194,13 @@ func (qc Column) ToSQLSelect(sch *schema.Component) sb.Expr {
 }
 
 // DictionaryLookup looks up the name matching a key in a ClickHouse dictionary.
-// When the key is unknown, the fallback is used instead. The dictionary
-// name is qualified with the database name from the schema component.
-func DictionaryLookup(sch *schema.Component, dictionary, fallback string) func(sb.Expr) sb.Expr {
+// When the key is unknown, the fallback is used instead. The dictionary is
+// qualified with the database it lives in, as the remote nodes of a cluster do
+// not resolve a bare name.
+func DictionaryLookup(database, dictionary, fallback string) func(sb.Expr) sb.Expr {
 	return func(key sb.Expr) sb.Expr {
 		return sb.Function("dictGetOrDefault",
-			sb.String(sch.DictionaryName(dictionary)), sb.String("name"),
+			sb.String(sb.Table(dictionary).In(database).String()), sb.String("name"),
 			key, sb.String(fallback))
 	}
 }
