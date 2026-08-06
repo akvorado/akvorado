@@ -33,27 +33,29 @@
         <div
           class="mb-2 flex flex-row flex-wrap items-center justify-between gap-2 sm:max-lg:flex-nowrap"
         >
-          <InputButton
-            attr-type="submit"
-            :disabled="hasErrors && !loading"
-            :loading="loading"
-            :type="loading ? 'alternative' : 'primary'"
-            class="order-2 w-28 justify-center sm:max-lg:order-4"
-            >{{ loading ? "Cancel" : applyLabel }}</InputButton
-          >
-          <InputChoice
-            v-model="units"
-            :choices="[
-              { label: 'L3ᵇ⁄ₛ', name: 'l3bps' },
-              { label: 'L2ᵇ⁄ₛ', name: 'l2bps' },
-              { label: '→%', name: 'inl2%' },
-              { label: '%→', name: 'outl2%' },
-              { label: 'ᵖ⁄ₛ', name: 'pps' },
-              { label: 'ᶠ⁄ₛ', name: 'fps' },
-            ]"
-            label="Unit"
-            class="order-1"
-          />
+          <div class="contents lg:flex lg:w-full lg:items-center lg:gap-2">
+            <InputButton
+              attr-type="submit"
+              :disabled="hasErrors && !loading"
+              :loading="loading"
+              :type="loading ? 'alternative' : 'primary'"
+              class="order-2 w-28 justify-center sm:max-lg:order-4 lg:grow"
+              >{{ loading ? "Cancel" : applyLabel }}</InputButton
+            >
+            <InputChoice
+              v-model="units"
+              :choices="[
+                { label: 'L3ᵇ⁄ₛ', name: 'l3bps' },
+                { label: 'L2ᵇ⁄ₛ', name: 'l2bps' },
+                { label: '→%', name: 'inl2%' },
+                { label: '%→', name: 'outl2%' },
+                { label: 'ᵖ⁄ₛ', name: 'pps' },
+                { label: 'ᶠ⁄ₛ', name: 'fps' },
+              ]"
+              label="Unit"
+              class="order-1"
+            />
+          </div>
           <InputListBox
             v-model="graphType"
             :items="graphTypeList"

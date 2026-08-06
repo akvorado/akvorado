@@ -22,10 +22,10 @@
       'border border-gray-300 bg-white font-medium text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white':
         type === 'alternative' && disabled,
       'cursor-not-allowed': disabled,
-      'px-2 py-1 text-xs focus:ring-2': size === 'small',
-      'px-5 py-2.5 text-sm focus:ring-4': size === 'normal',
+      'py-1 text-xs focus:ring-2': size === 'small',
+      'py-2.5 text-sm focus:ring-4': size === 'normal',
     }"
-    class="inline-flex cursor-pointer items-center rounded-lg text-center transition-colors duration-200 focus:outline-none"
+    class="inline-flex px-2 cursor-pointer items-center rounded-lg text-center transition-colors duration-200 focus:outline-none"
   >
     <LoadingSpinner
       v-if="loading"
