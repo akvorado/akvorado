@@ -150,7 +150,7 @@ directly into the wire format that is used by ClickHouse.
 
 The console and the orchestrator build SQL queries with a Fluent-like builder
 API in `common/sqlbuilder`, which outputs a syntax tree based on
-[clickhouse-sql-parser](https://github.com/Aftership/clickhouse-sql-parser). The
+[clickhouse-sql-parser](https://github.com/AfterShip/clickhouse-sql-parser). The
 filter language is also translated to a syntax tree and combined with the syntax
 tree built by the console from the elements selected by the user. The
 orchestrator also leverages the parser to compare two SQL queries and check if
