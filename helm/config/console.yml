@@ -1,0 +1,16 @@
+---
+http:
+  cache:
+    type: memory
+    #server: redis.stage-akvorado.svc.cluster.local:6379
+database:
+  saved-filters:
+    # These are prepopulated filters you can select in a drop-down
+    # menu. Users can add more filters interactively.
+    - description: "From Netflix"
+      content: >-
+        InIfBoundary = external AND SrcAS = AS2906
+    - description: "From GAFAM"
+      content: >-
+        InIfBoundary = external AND
+        SrcAS IN (AS15169, AS16509, AS32934, AS6185, AS8075)
