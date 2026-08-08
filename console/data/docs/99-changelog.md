@@ -36,6 +36,7 @@ memory. Drop it on each cluster member once the new version runs:
 - 🌱 *docs*: reorganize the documentation with the Diátaxis framework
 - 🌱 *docs*: serve the documentation as Markdown when explicitely asked
 - 🌱 *outlet*: move GeoIP and network attributes from ClickHouse to the outlet
+- 🌱 *outlet*: parse EoMPLS with or without control word
 - 🌱 *docker*: update Kafka to 4.3.1 (not mandatory)
 
 ## 2.4.1 - 2026-07-14

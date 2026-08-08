@@ -233,6 +233,21 @@ func ParseEthernet(sch *schema.Component, bf *schema.FlowMessage, decap pb.RawFl
 			data = data[4:]
 			mplsLabels = append(mplsLabels, label)
 			if bottom == 1 {
+				// To detect the payload in an MPLS packet, we apply the
+				// following heuristic:
+				//
+				// - label is 0 (IPv4 explicit null), the payload is IPv4
+				// - label is 2 (IPv6 explicit null), the payload is IPv6
+				// - otherwise, look at the first nibble:
+				//   - nibble is 4, the payload is IPv4
+				//   - nibble is 6, the payload is IPv6
+				//   - nibble is 0, we assume a control word, if it's 0, the payload is Ethernet
+				//
+				// Anything else is not parsed.
+				//
+				// See:
+				//  - https://www.iana.org/assignments/mpls-label-values/mpls-label-values.xhtml
+				//  - https://www.rfc-editor.org/rfc/rfc9790.html
 				var offset int
 				switch label {
 				case 0:
