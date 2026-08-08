@@ -6,6 +6,7 @@ package geoip
 import (
 	"errors"
 	"strconv"
+	"strings"
 
 	"github.com/oschwald/maxminddb-golang/v2"
 	"github.com/oschwald/maxminddb-golang/v2/mmdbdata"
@@ -14,66 +15,70 @@ import (
 // ipinfoGeoInfo is an alias for GeoInfo with ipinfo-specific unmarshaling
 type ipinfoGeoInfo GeoInfo
 
-// UnmarshalMaxMindDB implements custom unmarshaling for ipinfo geo format
-func (g *ipinfoGeoInfo) UnmarshalMaxMindDB(d *mmdbdata.Decoder) error {
-	mapIter, _, err := d.ReadMap()
+// UnmarshalMaxMindDBCursor implements custom unmarshaling for ipinfo geo format
+func (g *ipinfoGeoInfo) UnmarshalMaxMindDBCursor(cursor mmdbdata.Cursor) (mmdbdata.Cursor, error) {
+	entries, err := cursor.MapReader()
 	if err != nil {
-		return err
+		return mmdbdata.Cursor{}, mmdbdata.NormalizeUnmarshalError[ipinfoGeoInfo](err)
 	}
-
-	for key, err := range mapIter {
-		if err != nil {
-			return err
+	next := entries.First()
+	for range entries.Len() {
+		key, value, keyErr := next.ReadMapKey()
+		if keyErr != nil {
+			return mmdbdata.Cursor{}, keyErr
 		}
 		switch string(key) {
 		case "country":
-			g.Country, err = d.ReadString()
+			g.Country, next, err = value.ReadString()
 		case "region":
-			g.State, err = d.ReadString()
+			g.State, next, err = value.ReadString()
 		case "city":
-			g.City, err = d.ReadString()
+			g.City, next, err = value.ReadString()
 		default:
-			err = d.SkipValue()
+			next, err = value.Skip()
 		}
 		if err != nil {
-			return err
+			return mmdbdata.Cursor{}, err
 		}
 	}
-	return nil
+	return entries.End(next)
 }
 
 // ipinfoASNInfo is an alias for ASNInfo with ipinfo-specific unmarshaling
 type ipinfoASNInfo ASNInfo
 
-// UnmarshalMaxMindDB implements custom unmarshaling for ipinfo ASN format
-func (a *ipinfoASNInfo) UnmarshalMaxMindDB(d *mmdbdata.Decoder) error {
-	mapIter, _, err := d.ReadMap()
+// UnmarshalMaxMindDBCursor implements custom unmarshaling for ipinfo ASN format
+func (a *ipinfoASNInfo) UnmarshalMaxMindDBCursor(cursor mmdbdata.Cursor) (mmdbdata.Cursor, error) {
+	entries, err := cursor.MapReader()
 	if err != nil {
-		return err
+		return mmdbdata.Cursor{}, mmdbdata.NormalizeUnmarshalError[ipinfoASNInfo](err)
 	}
-
-	for key, err := range mapIter {
-		if err != nil {
-			return err
+	next := entries.First()
+	for range entries.Len() {
+		key, value, keyErr := next.ReadMapKey()
+		if keyErr != nil {
+			return mmdbdata.Cursor{}, keyErr
 		}
-		switch string(key) {
-		case "asn":
-			asnStr, err := d.ReadString()
-			// Parse ASN from "ASxxxx" format
-			if err == nil && len(asnStr) > 2 && asnStr[:2] == "AS" {
-				if num, err := strconv.ParseUint(asnStr[2:], 10, 32); err == nil {
-					a.ASNumber = uint32(num)
-					continue
+		if string(key) == "asn" {
+			// The AS number uses the "ASxxxx" format.
+			var asn string
+			asn, next, err = value.ReadString()
+			if err == nil {
+				digits, found := strings.CutPrefix(asn, "AS")
+				num, parseErr := strconv.ParseUint(digits, 10, 32)
+				if !found || parseErr != nil {
+					return mmdbdata.Cursor{}, errors.New("invalid AS number")
 				}
+				a.ASNumber = uint32(num)
 			}
-			return errors.New("invalid AS number")
-		default:
-			if err := d.SkipValue(); err != nil {
-				return err
-			}
+		} else {
+			next, err = value.Skip()
+		}
+		if err != nil {
+			return mmdbdata.Cursor{}, err
 		}
 	}
-	return nil
+	return entries.End(next)
 }
 
 type ipinfoDB struct {

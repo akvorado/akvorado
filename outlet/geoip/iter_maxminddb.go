@@ -13,150 +13,188 @@ import (
 // maxmindGeoInfo is an alias for GeoInfo with MaxMind-specific unmarshaling
 type maxmindGeoInfo GeoInfo
 
-// UnmarshalMaxMindDB implements custom unmarshaling for MaxMind geo format
-func (g *maxmindGeoInfo) UnmarshalMaxMindDB(d *mmdbdata.Decoder) error {
-	mapIter, _, err := d.ReadMap()
+// UnmarshalMaxMindDBCursor implements custom unmarshaling for MaxMind geo format
+func (g *maxmindGeoInfo) UnmarshalMaxMindDBCursor(cursor mmdbdata.Cursor) (mmdbdata.Cursor, error) {
+	entries, err := cursor.MapReader()
 	if err != nil {
-		return err
+		return mmdbdata.Cursor{}, mmdbdata.NormalizeUnmarshalError[maxmindGeoInfo](err)
 	}
-
-	for key, err := range mapIter {
-		if err != nil {
-			return err
+	next := entries.First()
+	for range entries.Len() {
+		key, value, keyErr := next.ReadMapKey()
+		if keyErr != nil {
+			return mmdbdata.Cursor{}, keyErr
 		}
 		switch string(key) {
 		case "country":
-			countryIter, _, err := d.ReadMap()
-			if err != nil {
-				return err
-			}
-			for countryKey, err := range countryIter {
-				if err != nil {
-					return err
-				}
-				if string(countryKey) == "iso_code" {
-					isoCode, err := d.ReadString()
-					if err != nil {
-						return err
-					}
-					g.Country = isoCode
-				} else {
-					if err := d.SkipValue(); err != nil {
-						return err
-					}
-				}
-			}
+			next, err = g.unmarshalCountry(value)
 		case "city":
-			cityIter, _, err := d.ReadMap()
-			if err != nil {
-				return err
-			}
-			for cityKey, err := range cityIter {
-				if err != nil {
-					return err
-				}
-				if string(cityKey) == "names" {
-					namesIter, _, err := d.ReadMap()
-					if err != nil {
-						return err
-					}
-					for nameKey, err := range namesIter {
-						if err != nil {
-							return err
-						}
-						if string(nameKey) == "en" {
-							cityName, err := d.ReadString()
-							if err != nil {
-								return err
-							}
-							g.City = cityName
-						} else {
-							if err := d.SkipValue(); err != nil {
-								return err
-							}
-						}
-					}
-				} else {
-					if err := d.SkipValue(); err != nil {
-						return err
-					}
-				}
-			}
+			next, err = g.unmarshalCity(value)
 		case "subdivisions":
-			subdivisionsIter, _, err := d.ReadSlice()
-			if err != nil {
-				return err
-			}
-			skipRemaining := false
-			for err := range subdivisionsIter {
-				if err != nil {
-					return err
-				}
-				if !skipRemaining {
-					subdivisionIter, _, err := d.ReadMap()
-					if err != nil {
-						return err
-					}
-					for subdivisionKey, err := range subdivisionIter {
-						if err != nil {
-							return err
-						}
-						if string(subdivisionKey) == "iso_code" {
-							isoCode, err := d.ReadString()
-							if err != nil {
-								return err
-							}
-							g.State = isoCode
-						} else {
-							if err := d.SkipValue(); err != nil {
-								return err
-							}
-						}
-					}
-					skipRemaining = true
-				} else {
-					if err := d.SkipValue(); err != nil {
-						return err
-					}
-				}
-			}
+			next, err = g.unmarshalSubdivisions(value)
 		default:
-			if err := d.SkipValue(); err != nil {
-				return err
-			}
+			next, err = value.Skip()
+		}
+		if err != nil {
+			return mmdbdata.Cursor{}, err
 		}
 	}
-	return nil
+	return entries.End(next)
+}
+
+// unmarshalCountry keeps the ISO code of the country.
+func (g *maxmindGeoInfo) unmarshalCountry(cursor mmdbdata.Cursor) (mmdbdata.Cursor, error) {
+	entries, err := cursor.MapReader()
+	if err != nil {
+		return mmdbdata.Cursor{}, err
+	}
+	next := entries.First()
+	for range entries.Len() {
+		key, value, keyErr := next.ReadMapKey()
+		if keyErr != nil {
+			return mmdbdata.Cursor{}, keyErr
+		}
+		if string(key) == "iso_code" {
+			g.Country, next, err = value.ReadString()
+		} else {
+			next, err = value.Skip()
+		}
+		if err != nil {
+			return mmdbdata.Cursor{}, err
+		}
+	}
+	return entries.End(next)
+}
+
+// unmarshalCity looks for the localized names of the city.
+func (g *maxmindGeoInfo) unmarshalCity(cursor mmdbdata.Cursor) (mmdbdata.Cursor, error) {
+	entries, err := cursor.MapReader()
+	if err != nil {
+		return mmdbdata.Cursor{}, err
+	}
+	next := entries.First()
+	for range entries.Len() {
+		key, value, keyErr := next.ReadMapKey()
+		if keyErr != nil {
+			return mmdbdata.Cursor{}, keyErr
+		}
+		if string(key) == "names" {
+			next, err = g.unmarshalCityNames(value)
+		} else {
+			next, err = value.Skip()
+		}
+		if err != nil {
+			return mmdbdata.Cursor{}, err
+		}
+	}
+	return entries.End(next)
+}
+
+// unmarshalCityNames keeps the English name of the city.
+func (g *maxmindGeoInfo) unmarshalCityNames(cursor mmdbdata.Cursor) (mmdbdata.Cursor, error) {
+	entries, err := cursor.MapReader()
+	if err != nil {
+		return mmdbdata.Cursor{}, err
+	}
+	next := entries.First()
+	for range entries.Len() {
+		key, value, keyErr := next.ReadMapKey()
+		if keyErr != nil {
+			return mmdbdata.Cursor{}, keyErr
+		}
+		if string(key) == "en" {
+			g.City, next, err = value.ReadString()
+		} else {
+			next, err = value.Skip()
+		}
+		if err != nil {
+			return mmdbdata.Cursor{}, err
+		}
+	}
+	return entries.End(next)
+}
+
+// unmarshalSubdivisions keeps the ISO code of the first subdivision, which is
+// the largest one. The remaining ones are skipped.
+func (g *maxmindGeoInfo) unmarshalSubdivisions(cursor mmdbdata.Cursor) (mmdbdata.Cursor, error) {
+	values, err := cursor.Slice()
+	if err != nil {
+		return mmdbdata.Cursor{}, err
+	}
+	var next mmdbdata.Cursor
+	for {
+		index, value, ok := values.Next(next)
+		if !ok {
+			break
+		}
+		if index == 0 {
+			next, err = g.unmarshalSubdivision(value)
+		} else {
+			next, err = value.Skip()
+		}
+		if err != nil {
+			return mmdbdata.Cursor{}, err
+		}
+	}
+	return values.End()
+}
+
+// unmarshalSubdivision keeps the ISO code of one subdivision.
+func (g *maxmindGeoInfo) unmarshalSubdivision(cursor mmdbdata.Cursor) (mmdbdata.Cursor, error) {
+	entries, err := cursor.MapReader()
+	if err != nil {
+		return mmdbdata.Cursor{}, err
+	}
+	next := entries.First()
+	for range entries.Len() {
+		key, value, keyErr := next.ReadMapKey()
+		if keyErr != nil {
+			return mmdbdata.Cursor{}, keyErr
+		}
+		if string(key) == "iso_code" {
+			g.State, next, err = value.ReadString()
+		} else {
+			next, err = value.Skip()
+		}
+		if err != nil {
+			return mmdbdata.Cursor{}, err
+		}
+	}
+	return entries.End(next)
 }
 
 // maxmindASNInfo is an alias for ASNInfo with MaxMind-specific unmarshaling
 type maxmindASNInfo ASNInfo
 
-// UnmarshalMaxMindDB implements custom unmarshaling for MaxMind ASN format
-func (a *maxmindASNInfo) UnmarshalMaxMindDB(d *mmdbdata.Decoder) error {
-	mapIter, _, err := d.ReadMap()
+// UnmarshalMaxMindDBCursor implements custom unmarshaling for MaxMind ASN format
+func (a *maxmindASNInfo) UnmarshalMaxMindDBCursor(cursor mmdbdata.Cursor) (mmdbdata.Cursor, error) {
+	entries, err := cursor.MapReader()
 	if err != nil {
-		return err
+		return mmdbdata.Cursor{}, mmdbdata.NormalizeUnmarshalError[maxmindASNInfo](err)
 	}
-
-	for key, err := range mapIter {
+	next := entries.First()
+	for range entries.Len() {
+		key, value, keyErr := next.ReadMapKey()
+		if keyErr != nil {
+			return mmdbdata.Cursor{}, keyErr
+		}
+		if string(key) == "autonomous_system_number" {
+			var asn uint64
+			asn, next, err = value.ReadUint()
+			if err == nil {
+				if uint64(uint32(asn)) != asn {
+					return mmdbdata.Cursor{}, mmdbdata.NewUnmarshalTypeError[uint32](asn)
+				}
+				a.ASNumber = uint32(asn)
+			}
+		} else {
+			next, err = value.Skip()
+		}
 		if err != nil {
-			return err
-		}
-		switch string(key) {
-		case "autonomous_system_number":
-			asn, err := d.ReadUint32()
-			if err != nil {
-				return err
-			}
-			a.ASNumber = asn
-		default:
-			if err := d.SkipValue(); err != nil {
-				return err
-			}
+			return mmdbdata.Cursor{}, err
 		}
 	}
-	return nil
+	return entries.End(next)
 }
 
 type maxmindDB struct {
