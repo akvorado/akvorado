@@ -32,6 +32,11 @@ type Configuration struct {
 	// InitialDelay defines how long to wait at start (when receiving the first
 	// packets) before applying the query timeout
 	InitialDelay time.Duration `validate:"min=1s,max=1h"`
+	// NegativeCacheDuration defines how long to cache a negative result when all
+	// providers skip a query (exporter unknown to any configured provider). This
+	// prevents repeated blocking lookups for exporters with no SNMP/gNMI source,
+	// which would otherwise hold up Kafka consumer workers.
+	NegativeCacheDuration time.Duration `validate:"min=1s,max=1h"`
 }
 
 // DefaultConfiguration represents the default configuration for the metadata provider.
@@ -40,8 +45,9 @@ func DefaultConfiguration() Configuration {
 		CacheDuration:      30 * time.Minute,
 		CacheRefresh:       time.Hour,
 		CacheCheckInterval: 2 * time.Minute,
-		QueryTimeout:       5 * time.Second,
-		InitialDelay:       time.Minute,
+		QueryTimeout:          5 * time.Second,
+		InitialDelay:          time.Minute,
+		NegativeCacheDuration: 30 * time.Second,
 	}
 }
 

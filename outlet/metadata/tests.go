@@ -91,6 +91,20 @@ func NewMock(t *testing.T, reporter *reporter.Reporter, configuration Configurat
 	return c
 }
 
+// skipProvider is a provider that skips every query, simulating an exporter
+// that is not known to any configured provider (no SNMP/gNMI source).
+type skipProvider struct{}
+
+func (sp skipProvider) Query(_ context.Context, _ provider.Query) (provider.Answer, error) {
+	return provider.Answer{}, provider.ErrSkipProvider
+}
+
+type skipProviderConfiguration struct{}
+
+func (spc skipProviderConfiguration) New(context.Context, *reporter.Reporter) (provider.Provider, error) {
+	return skipProvider{}, nil
+}
+
 // emptyProvider represents an empty mock provider.
 type emptyProvider struct{}
 

@@ -30,8 +30,9 @@ type Component struct {
 	t      tomb.Tomb
 	config Configuration
 
-	sc *metadataCache
-	sf singleflight.Group
+	sc           *metadataCache
+	sf           singleflight.Group
+	negativeCache sync.Map // key: "ip-ifindex" → time.Time expiry
 
 	providerBreakersLock   sync.Mutex
 	providerBreakerLoggers map[netip.Addr]reporter.Logger
@@ -180,8 +181,14 @@ func (c *Component) Lookup(t time.Time, exporterIP netip.Addr, ifIndex uint) pro
 		return answer
 	}
 
-	// Use singleflight to prevent duplicate queries
+	// Check negative cache: if all providers previously skipped this query,
+	// return immediately without blocking on a new provider round-trip.
 	key := fmt.Sprintf("%s-%d", exporterIP, ifIndex)
+	if exp, ok := c.negativeCache.Load(key); ok && time.Now().Before(exp.(time.Time)) {
+		return provider.Answer{}
+	}
+
+	// Use singleflight to prevent duplicate queries
 	result, err, _ := c.sf.Do(key, func() (any, error) {
 		return c.queryProviders(query)
 	})
@@ -220,18 +227,26 @@ func (c *Component) queryProviders(query provider.Query) (provider.Answer, error
 		defer cancel()
 
 		now := time.Now()
+		allSkipped := true
 		for _, p := range c.providers {
 			answer, err := p.Query(ctx, query)
 			if err == provider.ErrSkipProvider {
 				// Next provider
 				continue
 			}
+			allSkipped = false
 			if err != nil {
 				return err
 			}
 			c.sc.Put(now, query, answer)
 			result = answer
 			return nil
+		}
+		if allSkipped {
+			// No provider handles this exporter; cache the negative result to
+			// avoid blocking future Kafka workers on the same (exporter, ifIndex).
+			negKey := fmt.Sprintf("%s-%d", query.ExporterIP, query.IfIndex)
+			c.negativeCache.Store(negKey, time.Now().Add(c.config.NegativeCacheDuration))
 		}
 		return nil
 	})
@@ -269,6 +284,15 @@ func (c *Component) refreshCacheEntry(exporterIP netip.Addr, ifIndex uint) {
 // expireCache handles cache expiration and refresh.
 func (c *Component) expireCache() {
 	c.sc.Expire(time.Now().Add(-c.config.CacheDuration))
+
+	// Purge expired negative cache entries to prevent unbounded growth.
+	now := time.Now()
+	c.negativeCache.Range(func(k, v any) bool {
+		if now.After(v.(time.Time)) {
+			c.negativeCache.Delete(k)
+		}
+		return true
+	})
 	if c.config.CacheRefresh > 0 {
 		c.r.Debug().Msg("refresh metadata cache")
 		c.metrics.cacheRefreshRuns.Inc()
