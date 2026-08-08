@@ -232,15 +232,45 @@ func ParseEthernet(sch *schema.Component, bf *schema.FlowMessage, decap pb.RawFl
 			bottom := data[2] & 1
 			data = data[4:]
 			mplsLabels = append(mplsLabels, label)
-			if bottom == 1 || label <= 15 {
-				switch data[0] & 0xf0 >> 4 {
-				case 4:
+			if bottom == 1 {
+				var offset int
+				switch label {
+				case 0:
 					etherType = constants.ETypeIPv4
-				case 6:
+					offset = 0
+				case 2:
 					etherType = constants.ETypeIPv6
+					offset = 0
 				default:
-					return 0
+					if len(data) < 1 {
+						return 0
+					}
+					nibble := data[0] >> 4
+					switch nibble {
+					case 0x4:
+						etherType = constants.ETypeIPv4
+						offset = 0
+					case 0x6:
+						etherType = constants.ETypeIPv6
+						offset = 0
+					case 0x0:
+						if len(data) < 4 {
+							return 0
+						}
+						cw := binary.BigEndian.Uint32(data[0:4])
+						if cw == 0x00000000 {
+							if len(mplsLabels) > 0 && decap == pb.RawFlow_DECAP_NONE {
+								bf.AppendArrayUInt32(schema.ColumnMPLSLabels, mplsLabels)
+							}
+							data = data[4:]
+							return ParseEthernet(sch, bf, decap, data)
+						}
+						return 0
+					default:
+						return 0
+					}
 				}
+				data = data[offset:]
 				break
 			}
 		}

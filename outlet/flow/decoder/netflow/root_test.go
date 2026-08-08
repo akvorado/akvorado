@@ -1158,3 +1158,61 @@ func TestJuniperCPIDDrop(t *testing.T) {
 		t.Fatalf("Decode() (-got, +want):\n%s", diff)
 	}
 }
+
+func TestDecodeEVPN(t *testing.T) {
+	_, nfdecoder, bf, got, finalize := setup(t, true)
+	options := decoder.Options{}
+
+	// Send template
+	template := helpers.ReadPcapL4(t, filepath.Join("testdata", "ethernet-over-mpls-with-control-word-template.pcap"))
+	_, err := nfdecoder.Decode(
+		decoder.RawFlow{Payload: template, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+		options, bf, finalize)
+	if err != nil {
+		t.Fatalf("Decode() error on template:\n%+v", err)
+	}
+
+	// Send data
+	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "ethernet-over-mpls-with-control-word-data.pcap"))
+	_, err = nfdecoder.Decode(
+		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+		options, bf, finalize)
+	if err != nil {
+		t.Fatalf("Decode() error on data:\n%+v", err)
+	}
+
+	if len(*got) != 10 {
+		t.Fatalf("expected 10 flows, got %d", len(*got))
+	}
+
+	// Verify Flow #4 (index 3), which has the EVPN MPLS packet including Control Word
+	flow4 := (*got)[3]
+	expectedFlow4 := &schema.FlowMessage{
+		ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+		InIf:            1022,
+		OutIf:           0,
+		SrcAddr:         netip.MustParseAddr("::ffff:198.51.100.1"),
+		DstAddr:         netip.MustParseAddr("::ffff:198.51.100.2"),
+		OtherColumns: map[schema.ColumnKey]any{
+			schema.ColumnEType:         uint32(constants.ETypeIPv4),
+			schema.ColumnProto:         uint32(constants.ProtoTCP),
+			schema.ColumnSrcPort:       uint16(443),
+			schema.ColumnDstPort:       uint16(55427),
+			schema.ColumnTCPFlags:      uint16(16),
+			schema.ColumnIPTTL:         uint8(62),
+			schema.ColumnIPTos:         uint8(32),
+			schema.ColumnIPFragmentID:  uint32(41037),
+			schema.ColumnBytes:         uint64(1492),
+			schema.ColumnPackets:       uint64(1),
+			schema.ColumnMPLSLabels:    []uint32{300012, 17},
+			schema.ColumnDstMAC:        uint64(0x020000000003),
+			schema.ColumnSrcMAC:        uint64(0x020000000004),
+			schema.ColumnFlowDirection: uint8(schema.DirectionIngress),
+		},
+	}
+
+	if diff := helpers.Diff(flow4, expectedFlow4); diff != "" {
+		t.Fatalf("Flow #4 diff (-got, +want):\n%s", diff)
+	}
+}
+
