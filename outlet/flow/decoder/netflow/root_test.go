@@ -1215,4 +1215,3 @@ func TestDecodeEVPN(t *testing.T) {
 		t.Fatalf("Flow #4 diff (-got, +want):\n%s", diff)
 	}
 }
-
