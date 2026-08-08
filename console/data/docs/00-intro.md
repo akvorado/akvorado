@@ -9,103 +9,68 @@ Kafka. It also provides a web interface to explore the data.
 
 [Akvorado]: https://eo.wikipedia.org/wiki/Akvorado
 
-## Requirements
+A public instance filled with generated traffic runs on
+[demo.akvorado.net](https://demo.akvorado.net). It is the best place to see what
+*Akvorado* looks like before installing anything.
 
-The recommended configuration is:
+## Tutorials
 
-- 8 vCPUs (AMD64 or ARM64)
-- 100 GB of disk
-- 16 GB of RAM
+The tutorials get your started. Start here if you have never used *Akvorado* and
+want to get results quickly.
 
-## Quick start
+- [Explore the demo site](01-explore.md): learn to read the graphs, without
+  installing anything.
+- [Collect your first flows](02-collect.md): install *Akvorado* and connect your
+  first router to it.
 
-The easiest way to get started is with
-[Docker](https://docs.docker.com/engine/install/) and [Docker Compose
-v2](https://docs.docker.com/compose/install/). On Debian, install the
-`docker-compose` package. On Ubuntu, use the `docker-compose-v2` package. On
-macOS, install the `docker-compose` formula from Homebrew.
+## How-to guides
 
-```console
-# mkdir akvorado
-# cd akvorado
-# curl -sL https://github.com/akvorado/akvorado/releases/latest/download/docker-compose-quickstart.tar.gz | tar zxvf -
-# docker compose up --wait
-```
+The guides are recipes for a specific goal. They assume you already have
+*Akvorado* running.
 
-Once the `akvorado-console` service is "healthy", the *Akvorado* web interface
-should be running on port 8081. This can take a few minutes.
+- [Install Akvorado](10-install.md): the deployment options, the requirements,
+  and the upgrade procedure.
+- [Configure your exporters](11-exporters.md): the configuration snippets for
+  Cisco, Juniper, Arista, Nokia, and a few others.
+- [Troubleshoot Akvorado](12-troubleshooting.md): find which component is at
+  fault when the flows do not arrive.
+- [Operate Akvorado](13-operating.md): keep Kafka, ClickHouse and the Docker
+  Compose setup in good shape.
+- [Scale Akvorado](14-scaling.md): what to tune when packets are dropped or
+  flows are late.
 
-> [!WARNING]
-> You need at least Docker Engine v23. Check with `docker version -f {{ .Server.Version }}`.
+## Reference
 
-### Next steps
+Reference guides are technical descriptions of the machinery and how to operate
+it.
 
-To connect your own network devices:
+- [Configuration](50-configuration.md): every configuration settings.
+- [Command line and endpoints](51-usage.md): the subcommands and the HTTP
+  endpoints of each service.
+- [Web console](52-console.md): the manual of the web interface and the filter
+  language.
+- [Metrics](53-metrics.md): every metric exported for monitoring.
 
-1. Customize the configuration in `akvorado.yaml`:
-   - Set SNMP communities for your devices in `outlet` → `metadata` → `provider` → `communities`
-   - Configure interface classification rules in `outlet` → `core` → `interface-classifiers`
+## Explanation
 
-1. Configure your routers/switches to send flows to *Akvorado*:
-   - NetFlow: port 2055
-   - IPFIX: port 4739
-   - sFlow: port 6343
-   
-1. Restart all containers:
-   - `docker compose down`
-   - `docker compose up --wait`
+The following guides are for when you want to understand what happens behind the
+scenes.
 
-> [!TIP]
-> Interface classification is essential for the web interface to work properly.
-> Without it, you won't see data in the dashboard widgets or visualization tab.
-> See the [configuration guide](02-configuration.md#classification) for details.
+- [How Akvorado works](80-design.md): the four services, the path of a flow, and
+  how the data is stored.
+- [Internal design](81-internals.md): how the code is organized and why.
 
-### Need help?
+The [changelog](99-changelog.md) lists the changes of each version. Read it
+before every upgrade.
 
-- Check the [installation guide](01-install.md) for other deployment options
-- Read the [configuration guide](02-configuration.md) for detailed setup instructions
-- Review the [operations guide](04-operations.md) for router configuration examples
-- Check the [troubleshooting guide](05-troubleshooting.md) if you run into an issue
-
-You can see the full configuration (with default values) with: `docker compose
-run --rm --no-deps akvorado-orchestrator orchestrator --check --dump
-/etc/akvorado/akvorado.yaml`. This is also useful to validate your
-configuration.
+## Getting help
 
 > [!IMPORTANT]
 > Please, do not open an issue or start a discussion unless you have read the
 > various chapters of the documentation, notably the [troubleshooting
-> guide](05-troubleshooting.md).
+> guide](12-troubleshooting.md).
 
-## Big picture
-
-![General design](design.svg)
-
-*Akvorado* is split into four components:
-
-- The **inlet service** receives flows from exporters and sends them to Kafka
-  without parsing them.
-
-- The **outlet service** takes flows from Kafka, parses them, and enriches them
-  with metadata. It uses SNMP to poll each exporter to get the *system name*,
-  *interface names*, *descriptions* and *speeds*. It applies rules to add
-  attributes to exporters. Interface rules add a *boundary* (external or
-  internal), a *network provider* and a *connectivity type* (PNI, IX, transit)
-  to each interface. Optionally, it may also receive BGP routes through the BMP
-  protocol to get the *AS number*, the *AS path*, and the communities. The
-  enriched flows are then exported to ClickHouse.
-
-- The **orchestrator service** configures the other components. It creates the
-  *Kafka topic* and configures *ClickHouse* to receive the flows from the outlet
-  service. It provides configuration settings for the other services. It
-  provides additional data to ClickHouse, such as *GeoIP* data.
-
-- The **console service** provides a web interface to view and analyze the flows
-  in the ClickHouse database.
-
-## ClickHouse database schemas
-
-Flows are stored in a ClickHouse database using a table `flows` (and a
-few consolidated versions). The orchestrator service keeps the table
-schema up-to-date. You can check the schema using `SHOW CREATE TABLE
-flows`.
+Questions go to the [discussions on
+GitHub](https://github.com/akvorado/akvorado/discussions/categories/q-a).
+Explain what you tried and what you observed, and include the output of the
+commands from the troubleshooting guide.

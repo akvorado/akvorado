@@ -20,7 +20,7 @@ transforms:
     inputs:
       - docker
     source: |
-      .service_name = replace(string!(.label."com.docker.compose.service"), r'(.+?)(?:-\d+)?', "$$1")
+      .service_name = replace(string!(.label."com.docker.compose.service"), r'(.+?)(?:-\d+)?', "$1")
       ._labels.service_name = .service_name
       ._labels.instance = .container_name
   routes:
@@ -73,7 +73,7 @@ transforms:
       - from_kafka_multiline
     source: |
       parsed = parse_regex!(string!(.message),
-        r'^\[(?P<timestamp>[^\]]+)\]\s+(?P<level>\w+)\s+(?P<message>(?s:.*))$$')
+        r'^\[(?P<timestamp>[^\]]+)\]\s+(?P<level>\w+)\s+(?P<message>(?s:.*))$')
       .timestamp = parse_timestamp!(parsed.timestamp, format: "%Y-%m-%d %H:%M:%S,%3f")
       .message = parsed.message
       ._labels.level = parsed.level
@@ -88,7 +88,7 @@ transforms:
          (?P<role>[XCSM])\s+
          (?P<timestamp>\d+\s+\w+\s+\d{4}\s+\d{2}:\d{2}:\d{2}\.\d{3})\s+
          (?P<level>[*\#.-])\s+
-         (?P<message>.*)$$')
+         (?P<message>.*)$')
       .timestamp = parse_timestamp!(parsed.timestamp, format: "%e %b %Y %H:%M:%S%.3f")
       .message = parsed.message
       ._labels.role = if parsed.role == "X" { "sentinel" } else if parsed.role == "C" { "RDB" } else if parsed.role == "S" { "slave" } else { "master" }
@@ -140,7 +140,7 @@ transforms:
          (?P<timestamp>\d{4}\s\d{2}:\d{2}:\d{2}\.\d+)\s+
          (?P<pid>\d+)\s+
          (?P<caller>[^]]+)\]\s+
-         (?P<message>.*)$$')
+         (?P<message>.*)$')
       # Timestamp is missing the year
       # .timestamp = parse_timestamp!(parsed.timestamp, format: "%m%d %H:%M:%S%.6f")
       .message = parsed.message
@@ -166,7 +166,7 @@ transforms:
         (?P<request_count>\d+)\s
         "(?P<frontend_name>[^"]*)"\s
         "(?P<backend_url>[^"]*)"\s
-        (?P<duration_ms>\d+)ms$$')
+        (?P<duration_ms>\d+)ms$')
       if err == null {
         .timestamp = parse_timestamp!(parsed.timestamp, "%d/%b/%Y:%H:%M:%S %z")
         .message = join!([parsed.method, parsed.path, parsed.protocol], " ")
@@ -187,7 +187,7 @@ transforms:
         parsed, err = parse_regex(.message, r'(?x)
           ^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\S+)\s
           (?P<level>\S+)\s
-          (?P<remaining>.*)$$')
+          (?P<remaining>.*)$')
         if err == null {
           .timestamp = parse_timestamp!(parsed.timestamp, "%+")
           ._labels.level = parsed.level
@@ -264,6 +264,8 @@ sinks:
     endpoint: http://loki:3100/loki
     encoding:
       codec: "text"
+    # Labels and metadata are expanded from whole objects.
+    dangerously_allow_unconfined_template_resolution: true
     labels:
       "*": "{{ ._labels }}"
     structured_metadata:

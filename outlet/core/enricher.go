@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"akvorado/common/schema"
+	"akvorado/outlet/networks"
 
 	"github.com/osrg/gobgp/v4/pkg/packet/bgp"
 )
@@ -140,9 +141,17 @@ func (w *worker) enrichFlow(exporterIP netip.Addr, exporterStr string) bool {
 	// set next hop according to user config
 	flow.NextHop = c.getNextHop(flow.NextHop, destRouting.NextHop)
 
+	// Network attributes also cover the GeoIP databases and are a source for AS
+	// numbers, look them up first.
+	var srcNet, dstNet networks.NetworkAttributes
+	if c.d.Networks != nil {
+		srcNet = c.d.Networks.Lookup(flow.SrcAddr)
+		dstNet = c.d.Networks.Lookup(flow.DstAddr)
+	}
+
 	// set asns according to user config
-	flow.SrcAS = c.getASNumber(flow.SrcAS, sourceRouting.ASN, flow.SrcNetMask)
-	flow.DstAS = c.getASNumber(flow.DstAS, destRouting.ASN, flow.DstNetMask)
+	flow.SrcAS = c.getASNumber(flow.SrcAS, sourceRouting.ASN, srcNet.ASN, flow.SrcNetMask)
+	flow.DstAS = c.getASNumber(flow.DstAS, destRouting.ASN, dstNet.ASN, flow.DstNetMask)
 	flow.AppendArrayUInt32(schema.ColumnSrcCommunities, sourceRouting.Communities)
 	flow.AppendArrayUInt32(schema.ColumnDstCommunities, destRouting.Communities)
 	flow.AppendArrayUInt32(schema.ColumnDstASPath, destRouting.ASPath)
@@ -151,6 +160,25 @@ func (w *worker) enrichFlow(exporterIP netip.Addr, exporterStr string) bool {
 	}
 	if len(destRouting.LargeCommunities) > 0 {
 		flow.AppendArrayUInt128(schema.ColumnDstLargeCommunities, largeCommunityToUInt128(destRouting.LargeCommunities))
+	}
+
+	if c.d.Networks != nil {
+		flow.AppendString(schema.ColumnSrcNetName, srcNet.Name)
+		flow.AppendString(schema.ColumnDstNetName, dstNet.Name)
+		flow.AppendString(schema.ColumnSrcNetRole, srcNet.Role)
+		flow.AppendString(schema.ColumnDstNetRole, dstNet.Role)
+		flow.AppendString(schema.ColumnSrcNetSite, srcNet.Site)
+		flow.AppendString(schema.ColumnDstNetSite, dstNet.Site)
+		flow.AppendString(schema.ColumnSrcNetRegion, srcNet.Region)
+		flow.AppendString(schema.ColumnDstNetRegion, dstNet.Region)
+		flow.AppendString(schema.ColumnSrcNetTenant, srcNet.Tenant)
+		flow.AppendString(schema.ColumnDstNetTenant, dstNet.Tenant)
+		flow.AppendString(schema.ColumnSrcCountry, srcNet.Country)
+		flow.AppendString(schema.ColumnDstCountry, dstNet.Country)
+		flow.AppendString(schema.ColumnSrcGeoState, srcNet.State)
+		flow.AppendString(schema.ColumnDstGeoState, dstNet.State)
+		flow.AppendString(schema.ColumnSrcGeoCity, srcNet.City)
+		flow.AppendString(schema.ColumnDstGeoCity, dstNet.City)
 	}
 
 	flow.AppendString(schema.ColumnExporterName, flowExporterName)
@@ -172,15 +200,12 @@ func largeCommunityToUInt128(largeCommunities []bgp.LargeCommunity) []schema.UIn
 }
 
 // getASNumber retrieves the AS number for a flow, depending on user preferences.
-func (c *Component) getASNumber(flowAS, bmpAS uint32, flowNetMask uint8) (asn uint32) {
+func (c *Component) getASNumber(flowAS, bmpAS, netAS uint32, flowNetMask uint8) (asn uint32) {
 	for _, provider := range c.config.ASNProviders {
 		if asn != 0 {
 			break
 		}
 		switch provider {
-		case ASNProviderGeoIP:
-			// This is a shortcut
-			return 0
 		case ASNProviderFlow:
 			asn = flowAS
 		case ASNProviderFlowExceptPrivate:
@@ -200,6 +225,8 @@ func (c *Component) getASNumber(flowAS, bmpAS uint32, flowNetMask uint8) (asn ui
 			if isPrivateAS(asn) {
 				asn = 0
 			}
+		case ASNProviderNetworks:
+			asn = netAS
 		}
 	}
 	return asn

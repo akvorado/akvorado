@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.repository_owner == 'akvorado'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0        # All history needed
       - name: Check for changes
@@ -29,15 +29,19 @@ jobs:
           else
             echo "should_run=false" >> $GITHUB_OUTPUT
           fi
-      - uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31
+      - uses: cachix/install-nix-action@630ae543ea3a38a9a4166f03376c02c50f408342 # v31
         if: github.event_name != 'schedule' || steps.check-changes.outputs.should_run == 'true'
       - name: Update dependency hashes
         if: github.event_name != 'schedule' || steps.check-changes.outputs.should_run == 'true'
         run: nix run .#update
+      - name: Set up git identity
+        if: github.event_name != 'schedule' || steps.check-changes.outputs.should_run == 'true'
+        uses: ./.github/actions/identity
+        with:
+          client-id: ${{ secrets.AKVORADO_APP_ID }}
+          private-key: ${{ secrets.AKVORADO_APP_KEY }}
       - name: Push update
         if: github.event_name != 'schedule' || steps.check-changes.outputs.should_run == 'true'
         run: |
-          git config --local user.name "github-actions[bot]"
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add flake.lock nix
           ! git commit -m "build: update Nix dependency hashes" || git push

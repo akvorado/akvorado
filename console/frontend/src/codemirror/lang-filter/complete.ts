@@ -29,7 +29,12 @@ export const complete = async (ctx: CompletionContext) => {
 
   // Remote completion
   const remote = async (
-    payload: { what: string; column?: string; prefix?: string },
+    payload: {
+      what: string;
+      column?: string;
+      operator?: string;
+      prefix?: string;
+    },
     transform = (x: { label: string; detail?: string }) => x,
   ) => {
     const response = await fetch("api/v0/console/filter/complete", {
@@ -109,8 +114,9 @@ export const complete = async (ctx: CompletionContext) => {
     nodeBefore.name !== "ValueRParen" &&
     (n = nodeAncestor(nodeBefore, ["Value"]))
   ) {
-    const c = nodePrevSibling(nodePrevSibling(n));
-    if (c?.name === "Column") {
+    const o = nodePrevSibling(n);
+    const c = nodePrevSibling(o);
+    if (o && c?.name === "Column") {
       let prefix: string | undefined = ctx.state.sliceDoc(
         nodeBefore.from,
         nodeBefore.to,
@@ -132,6 +138,7 @@ export const complete = async (ctx: CompletionContext) => {
         {
           what: "value",
           column: ctx.state.sliceDoc(c.from, c.to),
+          operator: ctx.state.sliceDoc(o.from, o.to),
           prefix: prefix,
         },
         (o) =>
@@ -159,6 +166,7 @@ export const complete = async (ctx: CompletionContext) => {
         await remote({
           what: "value",
           column: ctx.state.sliceDoc(c.from, c.to),
+          operator: ctx.state.sliceDoc(n.from, n.to),
         });
       }
     } else if ((n = nodeAncestor(nodeBefore, ["Value"]))) {

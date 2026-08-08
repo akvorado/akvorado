@@ -8,6 +8,16 @@ SrcAS = 12322
 ==>
 Filter(Column, Operator, Value(Literal))
 
+# Comparison between two columns
+SrcPort < DstPort
+==>
+Filter(Column, Operator, Value(Literal))
+
+# Comparison between two columns without spaces
+SrcPort<DstPort
+==>
+Filter(Column, Operator, Value(Literal))
+
 # Simple expression using a quoted string
 InIfProvider = "something"
 ==>

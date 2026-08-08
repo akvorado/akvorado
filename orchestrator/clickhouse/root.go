@@ -6,13 +6,8 @@ package clickhouse
 
 import (
 	"errors"
-	"fmt"
-	"os"
 	"sort"
-	"sync"
 	"time"
-
-	"akvorado/common/remotedatasource"
 
 	"github.com/cenkalti/backoff/v5"
 	"gopkg.in/tomb.v2"
@@ -22,7 +17,6 @@ import (
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
-	"akvorado/orchestrator/geoip"
 )
 
 // Component represents the ClickHouse configurator.
@@ -35,16 +29,8 @@ type Component struct {
 
 	shards int // number of shards if in a cluster
 
-	migrationsDone        chan bool // closed when migrations are done
-	migrationsOnce        chan bool // closed after first attempt to migrate
-	networkSourcesFetcher *remotedatasource.Component[externalNetworkAttributes]
-	networkSources        map[string][]externalNetworkAttributes
-	networkSourcesLock    sync.RWMutex
-
-	networksCSVReady      chan bool // close when networks.csv was generated once
-	networksCSVUpdateChan chan bool // channel to write to to request updates
-	networksCSVFile       *os.File
-	networksCSVLock       sync.Mutex
+	migrationsDone chan bool // closed when migrations are done
+	migrationsOnce chan bool // closed after first attempt to migrate
 }
 
 // Dependencies define the dependencies of the orchestrator.
@@ -53,26 +39,16 @@ type Dependencies struct {
 	HTTP       *httpserver.Component
 	ClickHouse *clickhousedb.Component
 	Schema     *schema.Component
-	GeoIP      *geoip.Component
 }
 
 // New creates a new ClickHouse component.
 func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
 	c := Component{
-		r:                     r,
-		d:                     &dependencies,
-		config:                configuration,
-		migrationsDone:        make(chan bool),
-		migrationsOnce:        make(chan bool),
-		networkSources:        make(map[string][]externalNetworkAttributes),
-		networksCSVReady:      make(chan bool),
-		networksCSVUpdateChan: make(chan bool, 1),
-	}
-	var err error
-	c.networkSourcesFetcher, err = remotedatasource.New[externalNetworkAttributes](
-		r, c.UpdateSource, "network_source", configuration.NetworkSources)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize remote data source fetcher component: %w", err)
+		r:              r,
+		d:              &dependencies,
+		config:         configuration,
+		migrationsDone: make(chan bool),
+		migrationsOnce: make(chan bool),
 	}
 	c.initMetrics()
 
@@ -134,40 +110,6 @@ func (c *Component) Start() error {
 		})
 	}
 
-	// Network sources update
-	if err := c.networkSourcesFetcher.Start(); err != nil {
-		return fmt.Errorf("unable to start network sources fetcher component: %w", err)
-	}
-
-	// GeoIP updates
-	notifyChan := c.d.GeoIP.Notify()
-	c.t.Go(func() error {
-		c.r.Info().Msg("starting GeoIP refresher")
-		for {
-			select {
-			case <-c.t.Dying():
-				return nil
-			case <-notifyChan:
-				c.triggerNetworksCSVRefresh()
-			}
-		}
-	})
-
-	// networks.csv refresh
-	c.t.Go(func() error {
-		c.networksCSVRefresher()
-
-		c.r.Debug().Msg("remove networks.csv")
-		c.networksCSVLock.Lock()
-		if c.networksCSVFile != nil {
-			c.networksCSVFile.Close()
-			os.Remove(c.networksCSVFile.Name())
-		}
-		c.networksCSVLock.Unlock()
-
-		return nil
-	})
-
 	c.r.Info().Msg("ClickHouse component started")
 	return nil
 }
@@ -177,6 +119,5 @@ func (c *Component) Stop() error {
 	c.r.Info().Msg("stopping ClickHouse component")
 	defer c.r.Info().Msg("ClickHouse component stopped")
 	c.t.Kill(nil)
-	c.networkSourcesFetcher.Stop()
 	return c.t.Wait()
 }

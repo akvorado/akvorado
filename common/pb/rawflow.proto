@@ -1,6 +1,6 @@
 syntax = "proto3";
 package input;
-option go_package = "akvorado/common/pb";
+option go_package = "akvorado/common/pb;pb";
 
 // RawFlow is an undecoded flow with some options.
 message RawFlow {

@@ -1,0 +1,124 @@
+# Explore the demo site
+
+This tutorial is a guided tour of the web interface. You do not need to install
+anything: it uses [demo.akvorado.net](https://demo.akvorado.net), a public
+instance filled with generated traffic. Nothing you do there is saved, so you
+can try everything without risk.
+
+Count about 10 minutes. At the end, you will know how to build a graph and how
+to read it. The [next tutorial](02-collect.md) shows how to do the same with the
+traffic of your own network.
+
+> [!NOTE]
+> The demo runs on a small virtual machine shared with everybody. Please be
+> gentle with it.
+
+## Look at the home page
+
+Open [demo.akvorado.net](https://demo.akvorado.net). The home page shows:
+
+- the number of flows received per second and the number of exporters,
+- a graph of the last 24 hours,
+- the most active source AS numbers, source ports, protocols, source countries
+  and IP families,
+- the last flow received.
+
+Look at the last flow. A router only reports a limited number of information: an
+interface index, an IP address, a number of bytes. Here you also get `InIfName`,
+`InIfDescription`, `SrcCountry` and `InIfBoundary`. They were added by outlet
+service.
+
+## Draw your first graph
+
+Click on “Visualize” in the top bar. The page opens with a graph already
+drawn. On the left, a panel holds the options used to build it:
+
+- the unit is `L3ᵇ⁄ₛ`, layer-3 bits per second,
+- the graph type is “Stacked areas”,
+- the time range goes from 6 hours ago to now,
+- the only dimension is `SrcAS`, limited to the 10 first values,
+- the filter is `InIfBoundary = external`.
+
+The result is one colored band per source AS number. Everything that does not
+fit in the 10 first values goes to a band named “Other”. The filter keeps only
+the traffic that enters the network through an external interface, which is what
+you usually want: without it, the same traffic is counted again on the internal
+interfaces.
+
+Move the mouse over the graph. The tooltip gives the value of each band at that
+moment. Below the graph, a table repeats each band with its minimum, maximum,
+last, average, 95th percentile and total values.
+
+## Change what the graph shows
+
+A dimension is a column used to split the traffic. Let's use another one.
+
+1. In the left panel, click on the “Dimensions” box.
+2. Remove `SrcAS` and select `InIfProvider` instead.
+3. Click on “Apply”.
+
+The graph now shows one band per network provider: Cogent, Telia, and some
+internet exchanges.
+
+Now add a second dimension, `ExporterName`, and apply again. Each combination
+of provider and router becomes its own band. The number of bands grows fast, so
+raise the limit to 20 if some of them are missing.
+
+> [!TIP]
+> Use “Top by” to decide which values are kept when the limit is reached. `avg`
+> keeps the values with the highest average over the period, `max` keeps the
+> ones with the highest peak. Use `max` to find short traffic surges.
+
+## Keep only the traffic you care about
+
+The filter box uses a language close to SQL. Replace its content with:
+
+```
+InIfBoundary = external AND SrcAS = AS2906
+```
+
+Press `Ctrl-Enter` to run the query. The graph now shows only the traffic coming
+from AS2906, which is Netflix. Type `Ctrl-Space` inside the box to get the list
+of the columns and values you can use. The complete syntax is described in the
+[console reference](52-console.md#filter-language).
+
+The same filter is available in the “Saved filters” list, under the name “From
+Netflix”. Filters you write yourself can be saved there too, and shared with the
+other users.
+
+## See where the traffic comes from and where it goes
+
+Time series answer the question “how much”. To get “from where to where”, use
+another graph type.
+
+1. Set the dimensions to `SrcAS` and `InIfProvider`, in this order.
+2. Change the graph type to “Sankey”.
+3. Click on “Apply”.
+
+Each dimension becomes a column of nodes, and the width of the links between
+them is the volume of traffic. You can read on a single picture which provider
+carries the traffic of which network. A Sankey diagram needs at least two
+dimensions, and it has no time axis: it covers the whole period at once.
+
+Switch the graph type back to “Stacked areas” and enable “Bidirectional”. The
+traffic in the opposite direction appears below the horizontal axis, as negative
+values. This is the usual way to compare what enters and what leaves.
+
+## Share what you found
+
+Look at the address bar: the URL contains the options of the current graph. Copy
+it and it opens the same graph for somebody else. This is the simplest way to
+show a problem to a colleague.
+
+> [!WARNING]
+> These URLs are not guaranteed to survive an upgrade. Do not use them as
+> long-term bookmarks.
+
+## What you learned
+
+You can now build a graph, split it by dimension, restrict it with a filter, and
+switch between a time series and a Sankey diagram. All the options are described
+in the [console reference](52-console.md).
+
+The demo data is generated by four fake routers. The [next
+tutorial](02-collect.md) replaces them with your own network.

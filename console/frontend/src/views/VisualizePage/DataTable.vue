@@ -88,10 +88,12 @@
 <script lang="ts" setup>
 import { computed, inject, ref } from "vue";
 import { uniqWith, isEqual, findIndex, takeWhile, toPairs } from "lodash-es";
-import { formatXps, dataColor, dataColorGrey } from "@/utils";
+import { formatXps, dataColor, dataColorGrey, reverseDimension } from "@/utils";
 import { ThemeKey } from "@/components/ThemeProvider.vue";
+import { ServerConfigKey } from "@/components/ServerConfigProvider.vue";
 import type { GraphLineHandlerResult, GraphSankeyHandlerResult } from ".";
 const { isDark } = inject(ThemeKey)!;
+const serverConfiguration = inject(ServerConfigKey)!;
 
 const props = defineProps<{
   data: GraphLineHandlerResult | GraphSankeyHandlerResult | null;
@@ -135,6 +137,14 @@ const displayedAxis = computed(() => {
     ? selectedAxis.value
     : 1;
 });
+// The reverse axis groups on the opposite dimensions: SrcAS becomes DstAS and
+// so on.
+const dimensions = computed(() => {
+  const selected = props.data?.dimensions ?? [];
+  if (displayedAxis.value !== 2) return selected;
+  const known = serverConfiguration.value?.dimensions ?? [];
+  return selected.map((dimension) => reverseDimension(dimension, known));
+});
 const table = computed(
   (): {
     columns: { name: string; classNames?: string }[];
@@ -168,9 +178,9 @@ const table = computed(
       return {
         columns: [
           // Dimensions
-          ...(data.dimensions.map((col) => ({
+          ...dimensions.value.map((col) => ({
             name: col.replace(/([a-z])([A-Z])/g, "$1 $2"),
-          })) || []),
+          })),
           // Stats
           { name: "Min", classNames: "text-right" },
           { name: "Max", classNames: "text-right" },
@@ -221,9 +231,9 @@ const table = computed(
       return {
         columns: [
           // Dimensions
-          ...(data.dimensions?.map((col) => ({
+          ...dimensions.value.map((col) => ({
             name: col.replace(/([a-z])([A-Z])/, "$1 $2"),
-          })) || []),
+          })),
           // Average
           { name: "Average", classNames: "text-right" },
         ],

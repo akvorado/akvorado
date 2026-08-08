@@ -3,11 +3,11 @@
     "asn2org": {
       "flake": false,
       "locked": {
-        "lastModified": 1778838649,
-        "narHash": "sha256-SJLzkRpeK/n2Ve6MNrwLoLDY9pZ9JfjbiAauyEFJRqI=",
+        "lastModified": 1785558030,
+        "narHash": "sha256-q5apVRRbpeWaxaTd4iZN9EK7r3jXUTwn0c3EI8YBh0k=",
         "owner": "vincentbernat",
         "repo": "asn2org",
-        "rev": "3d6a5a05bf75accfc7151f60cb6f4850c7636ad3",
+        "rev": "6f6a6e29b6c96202ca5b12dafb9c4c3dc7978a52",
         "type": "github"
       },
       "original": {
@@ -38,11 +38,11 @@
     "iana-assignments": {
       "flake": false,
       "locked": {
-        "lastModified": 1779505195,
-        "narHash": "sha256-PRphCq8drn5gbWNy1PbOEQQBrzSEvhgtUAQspFdp/mc=",
+        "lastModified": 1782540630,
+        "narHash": "sha256-F7si7lWcL2BqNpTwbRl8b5h1xq4MTHtVAR9NWno/ywA=",
         "owner": "larseggert",
         "repo": "iana-assignments",
-        "rev": "dd006908e29a0ab3bdb40c201f1e50aafddcbfe9",
+        "rev": "282374963e9b858aad80ea6c6a675f334420615a",
         "type": "github"
       },
       "original": {
@@ -53,12 +53,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1779536132,
-        "narHash": "sha256-q+fF42iv/geEbHfgSzy3tS0FF/EyD6XTZ98E6yxiBO8=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "3d8f0f3f72a6cd4d93d0ad13203f2ea1cb7e1456",
-        "type": "github"
+        "lastModified": 1783816212,
+        "narHash": "sha256-M2X3JTJp7ktX73uVDEAm0Rws2A/xljf4Cu1ojd/o8pU=",
+        "rev": "3b32825de172d0bc85664f495edb096b10862524",
+        "type": "tarball",
+        "url": "https://releases.nixos.org/nixpkgs/nixpkgs-26.11pre1033157.3b32825de172/nixexprs.tar.xz"
       },
       "original": {
         "id": "nixpkgs",

@@ -48,7 +48,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 				}
 			},
 			Expected: Configuration{
-				ASNProviders: []ASNProvider{ASNProviderRouting, ASNProviderGeoIP},
+				ASNProviders: []ASNProvider{ASNProviderRouting, ASNProviderNetworks},
 			},
 			SkipValidation: true,
 		}, {
@@ -96,6 +96,18 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 			Expected: Configuration{
 				ASNProviders: []ASNProvider{ASNProviderFlow, ASNProviderRouting, ASNProviderRoutingExceptPrivate},
+			},
+			SkipValidation: true,
+		}, {
+			Description: "asn-providers with geo-ip",
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
+				return helpers.M{
+					"asn-providers": []string{"flow", "geo-ip"},
+				}
+			},
+			Expected: Configuration{
+				ASNProviders: []ASNProvider{ASNProviderFlow, ASNProviderNetworks},
 			},
 			SkipValidation: true,
 		}, {

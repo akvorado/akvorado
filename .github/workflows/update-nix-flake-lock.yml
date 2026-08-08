@@ -17,10 +17,10 @@ jobs:
           - asn2org
           - iana-assignments
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31
+      - uses: cachix/install-nix-action@630ae543ea3a38a9a4166f03376c02c50f408342 # v31
       - name: Check current IANA assignments
         if: matrix.source == 'iana-assignments'
         run: |
@@ -41,9 +41,18 @@ jobs:
             echo No diff...
             git reset --hard
           }
+      - name: Set up git identity
+        uses: ./.github/actions/identity
+        id: identity
+        with:
+          client-id: ${{ secrets.AKVORADO_APP_ID }}
+          private-key: ${{ secrets.AKVORADO_APP_KEY }}
       - name: Create pull request
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8
         with:
+          token: ${{ steps.identity.outputs.token }}
+          committer: ${{ steps.identity.outputs.name }} <${{ steps.identity.outputs.email }}>
+          author: ${{ steps.identity.outputs.name }} <${{ steps.identity.outputs.email }}>
           add-paths: flake.lock
           branch: nix/flake-lock-update-${{ matrix.source }}
           labels: dependencies

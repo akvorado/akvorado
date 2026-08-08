@@ -5,7 +5,7 @@
   <InputBase v-slot="{ id, childClass }">
     <input
       :id="id"
-      :class="childClass"
+      :class="[childClass, { 'pr-8': $slots.button }]"
       type="text"
       placeholder=" "
       :value="modelValue"
@@ -13,6 +13,12 @@
         $emit('update:modelValue', ($event.target as HTMLInputElement).value)
       "
     />
+    <span
+      v-if="$slots.button"
+      class="absolute inset-y-0 right-0 flex items-center pr-2"
+    >
+      <slot name="button"></slot>
+    </span>
   </InputBase>
 </template>
 

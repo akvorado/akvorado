@@ -6,6 +6,7 @@ package console
 import (
 	"fmt"
 	"net/http"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -14,10 +15,35 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/httpserver"
 	"akvorado/common/schema"
+	sb "akvorado/common/sqlbuilder"
 	"akvorado/console/authentication"
 	"akvorado/console/database"
 	"akvorado/console/filter"
+	"akvorado/console/query"
 )
+
+// recentFlows keeps the flows received during the last minutes. Completion
+// proposes what the exporters send right now.
+func recentFlows(minutes uint64) sb.Expr {
+	return sb.Op(sb.Column("TimeReceived"), ">",
+		sb.Function("date_sub", sb.Column("minute"), sb.Uint(minutes), sb.Function("now")))
+}
+
+// prefixPosition tells where the prefix the user typed appears in an
+// expression, whatever the case. It is 0 when it does not appear at all.
+func prefixPosition(expr sb.Expr, prefix string) sb.Expr {
+	return sb.Function("positionCaseInsensitive", expr, sb.String(prefix))
+}
+
+// matchPrefix keeps the rows where the prefix the user typed appears.
+func matchPrefix(expr sb.Expr, prefix string) sb.Expr {
+	return sb.Op(prefixPosition(expr, prefix), ">=", sb.Uint(1))
+}
+
+// mostUsedFirst sorts the rows on how often they appear in the flows.
+func mostUsedFirst() sb.OrderItem {
+	return sb.Order(sb.Function("COUNT", sb.Star())).Desc()
+}
 
 // filterValidateHandlerInput describes the input for the /filter/validate endpoint.
 type filterValidateHandlerInput struct {
@@ -44,11 +70,15 @@ func (c *Component) filterValidateHandlerFunc(w http.ResponseWriter, req *http.R
 		})
 		return
 	}
-	got, err := filter.Parse("", []byte(input.Filter), filter.GlobalStore("meta", &filter.Meta{Schema: c.d.Schema}))
+	got, err := filter.Parse("", []byte(input.Filter),
+		filter.GlobalStore("meta", &filter.Meta{
+			Schema:   c.d.Schema,
+			Database: c.d.ClickHouseDB.DatabaseName(),
+		}))
 	if err == nil {
 		httpserver.WriteJSON(w, http.StatusOK, filterValidateHandlerOutput{
 			Message: "ok",
-			Parsed:  got.(string),
+			Parsed:  got.(sb.Expr).String(),
 		})
 		return
 	}
@@ -60,10 +90,11 @@ func (c *Component) filterValidateHandlerFunc(w http.ResponseWriter, req *http.R
 
 // filterCompleteHandlerInput describes the input of the /filter/complete endpoint.
 type filterCompleteHandlerInput struct {
-	What   string `json:"what" validate:"required,oneof=column operator value"`
-	Column string `json:"column" validate:"required_unless=What column"`
-	Prefix string `json:"prefix"`
-	Limit  int    `json:"limit"`
+	What     string `json:"what" validate:"required,oneof=column operator value"`
+	Column   string `json:"column" validate:"required_unless=What column"`
+	Operator string `json:"operator"`
+	Prefix   string `json:"prefix"`
+	Limit    int    `json:"limit"`
 }
 
 // filterCompleteHandlerOutput describes the output of the /filter/complete endpoint.
@@ -108,7 +139,10 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 		_, err := filter.Parse("",
 			fmt.Appendf(nil, "%s ", input.Column),
 			filter.Entrypoint("ConditionExpr"),
-			filter.GlobalStore("meta", &filter.Meta{Schema: c.d.Schema}))
+			filter.GlobalStore("meta", &filter.Meta{
+				Schema:   c.d.Schema,
+				Database: c.d.ClickHouseDB.DatabaseName(),
+			}))
 		if err != nil {
 			for _, candidate := range filter.Expected(err) {
 				if !strings.HasPrefix(candidate, `"`) {
@@ -131,6 +165,7 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 	case "value":
 		var column, detail string
 		inputColumn := strings.ToLower(input.Column)
+		otherColumns := c.filterComparableColumns(input.Column, input.Operator, input.Prefix)
 		switch inputColumn {
 		case "inifboundary", "outifboundary":
 			completions = append(completions, filterCompletion{
@@ -184,16 +219,17 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 			results := []struct {
 				Label string `ch:"label"`
 			}{}
-			columnName := c.fixQueryColumnName(input.Column)
-			sqlQuery := fmt.Sprintf(`
-SELECT MACNumToString(%s) AS label
-FROM flows
-WHERE TimeReceived > date_sub(minute, 1, now())
-AND positionCaseInsensitive(label, $1) >= 1
-GROUP BY %s
-ORDER BY COUNT(*) DESC
-LIMIT %d`, columnName, columnName, input.Limit)
-			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery, input.Prefix); err != nil {
+			column := sb.Column(c.fixQueryColumnName(input.Column))
+			sqlQuery := sb.Select(sb.Alias(sb.Function("MACNumToString", column), "label")).
+				From(sb.Table("flows")).
+				Where(sb.And(
+					recentFlows(1),
+					matchPrefix(sb.Column("label"), input.Prefix))).
+				GroupBy(column).
+				OrderBy(mostUsedFirst()).
+				Limit(input.Limit).
+				String()
+			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery); err != nil {
 				c.r.Err(err).Msg("unable to query database")
 				break
 			}
@@ -211,35 +247,29 @@ LIMIT %d`, columnName, columnName, input.Limit)
 				Detail string `ch:"detail"`
 			}{}
 			columnNamePrefix := c.fixQueryColumnName(input.Column)[:3]
-			sqlQuery := fmt.Sprintf(`
-SELECT label, detail FROM (
- SELECT
-  'community' AS detail,
-  concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))) AS label
- FROM (
-  SELECT arrayJoin(arrayJoin(%sCommunities)) AS c
-  FROM flows
-  WHERE TimeReceived > date_sub(minute, 1, now())
-  GROUP BY c
-  ORDER BY COUNT(*) DESC
- )
-
- UNION ALL
-
- SELECT
-  'large community' AS detail,
-  concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))) AS label
- FROM (
-  SELECT arrayJoin(arrayJoin(%sLargeCommunities)) AS c
-  FROM flows
-  WHERE TimeReceived > date_sub(minute, 1, now())
-  GROUP BY c
-  ORDER BY COUNT(*) DESC
- )
-)
-WHERE startsWith(label, $1)
-LIMIT %d`, columnNamePrefix, columnNamePrefix, input.Limit)
-			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery, input.Prefix); err != nil {
+			// Each community of the recent flows, taken out of the arrays.
+			unrolled := func(column string) *sb.Query {
+				return sb.Select(sb.Alias(
+					sb.Function("arrayJoin", sb.Function("arrayJoin", sb.Column(column))), "c")).
+					From(sb.Table("flows")).
+					Where(recentFlows(1)).
+					GroupBy(sb.Column("c")).
+					OrderBy(mostUsedFirst())
+			}
+			communities := sb.Select(
+				sb.Alias(sb.String("community"), "detail"),
+				sb.Alias(query.CommunityToString(sb.Column("c")), "label")).
+				FromSelect(unrolled(fmt.Sprintf("%sCommunities", columnNamePrefix)))
+			largeCommunities := sb.Select(
+				sb.Alias(sb.String("large community"), "detail"),
+				sb.Alias(query.LargeCommunityToString(sb.Column("c")), "label")).
+				FromSelect(unrolled(fmt.Sprintf("%sLargeCommunities", columnNamePrefix)))
+			sqlQuery := sb.Select(sb.Columns("label", "detail")...).
+				FromSelect(communities.UnionAll(largeCommunities)).
+				Where(sb.Function("startsWith", sb.Column("label"), sb.String(input.Prefix))).
+				Limit(input.Limit).
+				String()
+			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery); err != nil {
 				c.r.Err(err).Msg("unable to query database")
 				break
 			}
@@ -260,25 +290,44 @@ LIMIT %d`, columnNamePrefix, columnNamePrefix, input.Limit)
 			if columnName == "DstASPath" {
 				columnName = "DstAS"
 			}
-			sqlQuery := fmt.Sprintf(`
-SELECT label, detail FROM (
- SELECT concat('AS', toString(%s)) AS label, dictGet('%s', 'name', %s) AS detail, 1 AS rank
- FROM flows
- WHERE TimeReceived > date_sub(minute, 1, now())
- AND detail != ''
- AND positionCaseInsensitive(detail, $1) >= 1
- GROUP BY %s
- ORDER BY COUNT(*) DESC
- LIMIT %d
-UNION DISTINCT
- SELECT concat('AS', toString(asn)) AS label, name AS detail, 2 AS rank
- FROM asns
- WHERE positionCaseInsensitive(name, $1) >= 1
- ORDER BY positionCaseInsensitive(name, $1) ASC, asn ASC
- LIMIT %d
-) GROUP BY label, detail ORDER BY MIN(rank) ASC, MIN(rowNumberInBlock()) ASC LIMIT %d`,
-				columnName, schema.DictionaryASNs, columnName, columnName, input.Limit, input.Limit, input.Limit)
-			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery, input.Prefix); err != nil {
+			asns := c.dictionary(schema.DictionaryASNs)
+			column := sb.Column(columnName)
+			// The AS numbers seen in the recent flows, the most used first.
+			fromFlows := sb.Select(
+				sb.Alias(sb.Function("concat",
+					sb.String("AS"), sb.Function("toString", column)), "label"),
+				sb.Alias(sb.Function("dictGet",
+					sb.String(asns.String()), sb.String("name"), column), "detail"),
+				sb.Alias(sb.Uint(1), "rank")).
+				From(sb.Table("flows")).
+				Where(sb.And(
+					recentFlows(1),
+					sb.Op(sb.Column("detail"), "!=", sb.String("")),
+					matchPrefix(sb.Column("detail"), input.Prefix))).
+				GroupBy(column).
+				OrderBy(mostUsedFirst()).
+				Limit(input.Limit)
+			// The other AS numbers of the dictionary, whether they were seen or not.
+			fromDictionary := sb.Select(
+				sb.Alias(sb.Function("concat",
+					sb.String("AS"), sb.Function("toString", sb.Column("asn"))), "label"),
+				sb.Alias(sb.Column("name"), "detail"),
+				sb.Alias(sb.Uint(2), "rank")).
+				From(asns).
+				Where(matchPrefix(sb.Column("name"), input.Prefix)).
+				OrderBy(
+					sb.Order(prefixPosition(sb.Column("name"), input.Prefix)),
+					sb.Order(sb.Column("asn"))).
+				Limit(input.Limit)
+			sqlQuery := sb.Select(sb.Columns("label", "detail")...).
+				FromSelect(fromFlows.UnionDistinct(fromDictionary)).
+				GroupBy(sb.Columns("label", "detail")...).
+				OrderBy(
+					sb.Order(sb.Function("MIN", sb.Column("rank"))),
+					sb.Order(sb.Function("MIN", sb.Function("rowNumberInBlock")))).
+				Limit(input.Limit).
+				String()
+			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery); err != nil {
 				c.r.Err(err).Msg("unable to query database")
 				break
 			}
@@ -295,31 +344,56 @@ UNION DISTINCT
 				Label  string `ch:"label"`
 				Detail string `ch:"detail"`
 			}{}
-			columnName := c.fixQueryColumnName(input.Column)
-			c.r.Debug().Msg(columnName)
-			sqlQuery := fmt.Sprintf(`
-SELECT label, detail FROM (
- SELECT toString(%s) AS label, if(Proto = 6, dictGet('%s', 'name', %s), dictGet('%s', 'name', %s) ) AS detail, 1 AS rank, count(*) AS c
- FROM flows
- WHERE Proto IN (6, 17)
- AND TimeReceived > date_sub(minute, 1, now())
- AND detail != ''
- AND positionCaseInsensitive(detail, $1) >= 1
- GROUP BY %s, Proto
- ORDER BY COUNT(*) DESC
- LIMIT %d
-UNION DISTINCT
- SELECT toString(port) AS label, name AS detail, 2 AS rank, 0 AS c
- FROM (
-  SELECT port, name FROM tcp UNION DISTINCT SELECT port, name FROM tcp
- )
- WHERE positionCaseInsensitive(name, $1) >= 1
- ORDER BY positionCaseInsensitive(name, $1) ASC, port ASC
- LIMIT %d
-) GROUP BY rank, label, detail ORDER BY rank ASC, MAX(c) DESC, MIN(rowNumberInBlock()) ASC LIMIT %d`,
-				columnName, schema.DictionaryTCP, columnName, schema.DictionaryUDP, columnName, columnName, input.Limit, input.Limit, input.Limit,
-			)
-			if err := c.d.ClickHouseDB.Select(ctx, &results, sqlQuery, input.Prefix); err != nil {
+			column := sb.Column(c.fixQueryColumnName(input.Column))
+			tcp := c.dictionary(schema.DictionaryTCP)
+			udp := c.dictionary(schema.DictionaryUDP)
+			portName := func(dictionary sb.TableName) sb.Expr {
+				return sb.Function("dictGet",
+					sb.String(dictionary.String()), sb.String("name"), column)
+			}
+			// The ports seen in the recent flows, the most used first.
+			fromFlows := sb.Select(
+				sb.Alias(sb.Function("toString", column), "label"),
+				sb.Alias(sb.Function("if",
+					sb.Op(sb.Column("Proto"), "=", sb.Uint(constants.ProtoTCP)),
+					portName(tcp),
+					portName(udp)), "detail"),
+				sb.Alias(sb.Uint(1), "rank"),
+				sb.Alias(sb.Function("COUNT", sb.Star()), "c")).
+				From(sb.Table("flows")).
+				Where(sb.And(
+					sb.Op(sb.Column("Proto"), "IN", sb.Tuple(
+						sb.Uint(constants.ProtoTCP), sb.Uint(constants.ProtoUDP))),
+					recentFlows(1),
+					sb.Op(sb.Column("detail"), "!=", sb.String("")),
+					matchPrefix(sb.Column("detail"), input.Prefix))).
+				GroupBy(column, sb.Column("Proto")).
+				OrderBy(mostUsedFirst()).
+				Limit(input.Limit)
+			// The other ports of the dictionaries, whether they were seen or not.
+			knownPorts := sb.Select(sb.Columns("port", "name")...).From(tcp).
+				UnionDistinct(sb.Select(sb.Columns("port", "name")...).From(udp))
+			fromDictionaries := sb.Select(
+				sb.Alias(sb.Function("toString", sb.Column("port")), "label"),
+				sb.Alias(sb.Column("name"), "detail"),
+				sb.Alias(sb.Uint(2), "rank"),
+				sb.Alias(sb.Uint(0), "c")).
+				FromSelect(knownPorts).
+				Where(matchPrefix(sb.Column("name"), input.Prefix)).
+				OrderBy(
+					sb.Order(prefixPosition(sb.Column("name"), input.Prefix)),
+					sb.Order(sb.Column("port"))).
+				Limit(input.Limit)
+			sqlQuery := sb.Select(sb.Columns("label", "detail")...).
+				FromSelect(fromFlows.UnionDistinct(fromDictionaries)).
+				GroupBy(sb.Columns("rank", "label", "detail")...).
+				OrderBy(
+					sb.Order(sb.Column("rank")),
+					sb.Order(sb.Function("MAX", sb.Column("c"))).Desc(),
+					sb.Order(sb.Function("MIN", sb.Function("rowNumberInBlock")))).
+				Limit(input.Limit).
+				String()
+			if err := c.d.ClickHouseDB.Select(ctx, &results, sqlQuery); err != nil {
 				c.r.Err(err).Msg("unable to query database")
 				break
 			}
@@ -336,12 +410,15 @@ UNION DISTINCT
 			results := []struct {
 				Attribute string `ch:"attribute"`
 			}{}
-			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, fmt.Sprintf(`
-SELECT DISTINCT %s AS attribute
-FROM networks
-WHERE positionCaseInsensitive(%s, $1) >= 1
-ORDER BY %s
-LIMIT %d`, attributeName, attributeName, attributeName, input.Limit), input.Prefix); err != nil {
+			attribute := sb.Column(attributeName)
+			sqlQuery := sb.Select(sb.Alias(attribute, "attribute")).
+				Distinct().
+				From(sb.Table("networks")).
+				Where(matchPrefix(attribute, input.Prefix)).
+				OrderBy(sb.Order(attribute)).
+				Limit(input.Limit).
+				String()
+			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery); err != nil {
 				c.r.Err(err).Msg("unable to query database")
 				break
 			}
@@ -355,33 +432,48 @@ LIMIT %d`, attributeName, attributeName, attributeName, input.Limit), input.Pref
 			input.Prefix = ""
 		case "icmpv4", "icmpv6":
 			columnName := c.fixQueryColumnName(input.Column)
-			proto := constants.ProtoICMPv4
+			proto := uint64(constants.ProtoICMPv4)
 			if columnName == "ICMPv6" {
 				proto = constants.ProtoICMPv6
 			}
 			results := []struct {
 				Label string `ch:"label"`
 			}{}
-			err := c.d.ClickHouseDB.Conn.Select(ctx, &results, fmt.Sprintf(`
-SELECT label FROM (
- SELECT %s AS label, 1 AS rank
- FROM flows
- WHERE TimeReceived > date_sub(minute, 1, now())
- AND Proto = %d
- AND positionCaseInsensitive(label, $1) >= 1
- GROUP BY %s
- ORDER BY COUNT(*) DESC
- LIMIT %d
-UNION DISTINCT
- SELECT name AS label, 2 AS rank
- FROM icmp
- WHERE positionCaseInsensitive(label, $1) >= 1
- AND proto = %d
- ORDER BY positionCaseInsensitive(label, $1) ASC, type ASC, code ASC
- LIMIT %d
-) GROUP BY label ORDER BY MIN(rank) ASC, MIN(rowNumberInBlock()) ASC LIMIT %d`,
-				columnName, proto, columnName, input.Limit, proto, input.Limit, input.Limit),
-				input.Prefix)
+			column := sb.Column(columnName)
+			// The ICMP types seen in the recent flows, the most used first.
+			fromFlows := sb.Select(
+				sb.Alias(column, "label"),
+				sb.Alias(sb.Uint(1), "rank")).
+				From(sb.Table("flows")).
+				Where(sb.And(
+					recentFlows(1),
+					sb.Op(sb.Column("Proto"), "=", sb.Uint(proto)),
+					matchPrefix(sb.Column("label"), input.Prefix))).
+				GroupBy(column).
+				OrderBy(mostUsedFirst()).
+				Limit(input.Limit)
+			// The other ICMP types of the dictionary, whether they were seen or not.
+			fromDictionary := sb.Select(
+				sb.Alias(sb.Column("name"), "label"),
+				sb.Alias(sb.Uint(2), "rank")).
+				From(c.dictionary(schema.DictionaryICMP)).
+				Where(sb.And(
+					matchPrefix(sb.Column("label"), input.Prefix),
+					sb.Op(sb.Column("proto"), "=", sb.Uint(proto)))).
+				OrderBy(
+					sb.Order(prefixPosition(sb.Column("label"), input.Prefix)),
+					sb.Order(sb.Column("type")),
+					sb.Order(sb.Column("code"))).
+				Limit(input.Limit)
+			sqlQuery := sb.Select(sb.Column("label")).
+				FromSelect(fromFlows.UnionDistinct(fromDictionary)).
+				GroupBy(sb.Column("label")).
+				OrderBy(
+					sb.Order(sb.Function("MIN", sb.Column("rank"))),
+					sb.Order(sb.Function("MIN", sb.Function("rowNumberInBlock")))).
+				Limit(input.Limit).
+				String()
+			err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery)
 			if err != nil {
 				c.r.Err(err).Msg("unable to query database")
 				break
@@ -412,17 +504,20 @@ UNION DISTINCT
 		}
 		if column != "" {
 			// Query "exporter" table
-			sqlQuery := fmt.Sprintf(`
-SELECT %s AS label
-FROM exporters
-WHERE positionCaseInsensitive(%s, $1) >= 1
-GROUP BY %s
-ORDER BY positionCaseInsensitive(%s, $1) ASC, %s ASC
-LIMIT %d`, column, column, column, column, column, input.Limit)
+			name := sb.Column(column)
+			sqlQuery := sb.Select(sb.Alias(name, "label")).
+				From(sb.Table("exporters")).
+				Where(matchPrefix(name, input.Prefix)).
+				GroupBy(name).
+				OrderBy(
+					sb.Order(prefixPosition(name, input.Prefix)),
+					sb.Order(name)).
+				Limit(input.Limit).
+				String()
 			results := []struct {
 				Label string `ch:"label"`
 			}{}
-			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery, input.Prefix); err != nil {
+			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery); err != nil {
 				c.r.Err(err).Msg("unable to query database")
 				break
 			}
@@ -446,12 +541,18 @@ LIMIT %d`, column, column, column, column, column, input.Limit)
 				results := []struct {
 					Attribute string `ch:"attribute"`
 				}{}
-				if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, fmt.Sprintf(`
-SELECT DISTINCT %s AS attribute
-FROM flows
-WHERE TimeReceived > date_sub(minute, 10, now()) AND startsWith(attribute, $1)
-ORDER BY %s
-LIMIT %d`, col.Name, col.Name, input.Limit), input.Prefix); err != nil {
+				name := sb.Column(col.Name)
+				sqlQuery := sb.Select(sb.Alias(name, "attribute")).
+					Distinct().
+					From(sb.Table("flows")).
+					Where(sb.And(
+						recentFlows(10),
+						sb.Function("startsWith",
+							sb.Column("attribute"), sb.String(input.Prefix)))).
+					OrderBy(sb.Order(name)).
+					Limit(input.Limit).
+					String()
+				if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery); err != nil {
 					c.r.Err(err).Msg("unable to query database")
 					break
 				}
@@ -463,6 +564,8 @@ LIMIT %d`, col.Name, col.Name, input.Limit), input.Prefix); err != nil {
 				}
 			}
 		}
+
+		completions = append(completions, otherColumns...)
 	}
 
 	filteredCompletions := []filterCompletion{}
@@ -472,6 +575,49 @@ LIMIT %d`, col.Name, col.Name, input.Limit), input.Prefix); err != nil {
 		}
 	}
 	httpserver.WriteJSON(w, http.StatusOK, filterCompleteHandlerOutput{filteredCompletions})
+}
+
+// filterComparableColumns returns the columns which can be used on the right
+// side of the provided column and operator.
+func (c *Component) filterComparableColumns(name, operator, prefix string) []filterCompletion {
+	var parserType string
+	for _, column := range c.d.Schema.Columns() {
+		if strings.EqualFold(name, column.Name) {
+			parserType = column.ParserType
+			break
+		}
+	}
+	var operators []string
+	switch parserType {
+	case "uint":
+		operators = []string{"=", "!=", "<", "<=", ">", ">="}
+	case "asn", "string":
+		operators = []string{"=", "!="}
+	default:
+		return nil
+	}
+	if !slices.Contains(operators, operator) {
+		return nil
+	}
+
+	names := []string{}
+	for _, column := range c.d.Schema.Columns() {
+		if column.Disabled || column.ParserType != parserType || strings.EqualFold(name, column.Name) {
+			continue
+		}
+		if strings.HasPrefix(strings.ToLower(column.Name), strings.ToLower(prefix)) {
+			names = append(names, column.Name)
+		}
+	}
+	sort.Strings(names)
+	completions := make([]filterCompletion, 0, len(names))
+	for _, name := range names {
+		completions = append(completions, filterCompletion{
+			Label:  name,
+			Detail: "column name",
+		})
+	}
+	return completions
 }
 
 func (c *Component) filterSavedListHandlerFunc(w http.ResponseWriter, req *http.Request) {

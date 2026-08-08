@@ -1,0 +1,7 @@
+---
+paths:
+  outlet.0.kafkainput.brokers:
+    - kafka1:9092
+  outlet.0.kafkaoutput.topic: enriched
+  outlet.0.kafkaoutput.brokers:
+    - kafka2:9092

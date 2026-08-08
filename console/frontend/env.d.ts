@@ -5,7 +5,7 @@
 // Missing types for vue-resizer
 declare module "vue-resizer" {
   import type { DefineComponent } from "vue";
-  declare const ResizeRow: DefineComponent<{
+  const ResizeRow: DefineComponent<{
     sliderWidth?: number;
     height?: number;
     width?: number | "auto";

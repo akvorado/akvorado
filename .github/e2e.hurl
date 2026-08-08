@@ -71,7 +71,7 @@ variable "inlet_sentflows" > 10
 ## Check outlet received flows from Kafka
 GET http://127.0.0.1:8080/prometheus/api/v1/query
 [Query]
-query: akvorado_outlet_kafka_received_bytes_total{job="akvorado-outlet"}
+query: akvorado_outlet_kafkainput_received_bytes_total{job="akvorado-outlet"}
 HTTP 200
 [Captures]
 outlet_receivedrawflows: jsonpath "$.data.result[0].value[1]" toInt

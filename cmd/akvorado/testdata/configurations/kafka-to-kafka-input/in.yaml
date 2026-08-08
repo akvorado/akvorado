@@ -1,0 +1,16 @@
+---
+# The outlet "kafka" key is renamed to "kafka-input". The orchestrator and the
+# inlet keep their own "kafka" key.
+kafka:
+  topic: flows
+  brokers:
+    - kafka1:9092
+
+inlet:
+  kafka:
+    queue-size: 1024
+
+outlet:
+  kafka:
+    consumer-group: akvorado-outlet
+    min-workers: 2

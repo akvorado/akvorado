@@ -7,12 +7,13 @@ import (
 	"testing"
 
 	"akvorado/common/helpers"
+	"akvorado/common/kafka"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 )
 
-func TestDefaultConfiguration(t *testing.T) {
-	config := DefaultConfiguration()
+func TestDefaultInputConfiguration(t *testing.T) {
+	config := DefaultInputConfiguration()
 	if err := helpers.Validate.Struct(config); err != nil {
 		t.Fatalf("validate.Struct() error:\n%+v", err)
 	}
@@ -22,9 +23,9 @@ func TestDefaultConfiguration(t *testing.T) {
 }
 
 func TestManageTopicDisabled(t *testing.T) {
-	config := DefaultConfiguration()
+	config := DefaultInputConfiguration()
 	config.ManageTopic = false
-	c, err := New(reporter.NewMock(t), config, Dependencies{Schema: schema.NewMock(t)})
+	c, err := New(reporter.NewMock(t), config, nil, Dependencies{Schema: schema.NewMock(t)})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
@@ -32,6 +33,32 @@ func TestManageTopicDisabled(t *testing.T) {
 		t.Error("Component should be nil when ManageTopic is false")
 	}
 	helpers.StartStop(t, c)
+}
+
+func TestKafkaOutputDecoupledFromManageTopic(t *testing.T) {
+	config := DefaultInputConfiguration()
+	config.ManageTopic = false
+	output := &OutputConfiguration{
+		Configuration: kafka.Configuration{
+			Topic:   "flows-enriched",
+			Brokers: []string{"localhost:9092"},
+		},
+		TopicConfiguration: TopicConfiguration{
+			NumPartitions:     1,
+			ReplicationFactor: 1,
+		},
+	}
+	sch := schema.NewMock(t)
+	c, err := New(reporter.NewMock(t), config, output, Dependencies{Schema: sch})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	if c == nil {
+		t.Fatal("Component should be created when kafka-output is set, even with ManageTopic false")
+	}
+	if want := "flows-enriched-" + sch.ProtobufMessageHash(); c.outputTopic != want {
+		t.Errorf("kafka-output topic: got %q, want %q", c.outputTopic, want)
+	}
 }
 
 func TestShouldAlterConfiguration(t *testing.T) {

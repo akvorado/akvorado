@@ -7,9 +7,7 @@ VERSION ?= $(shell git describe --tags --always --dirty --match=v* 2> /dev/null 
 PKGS     = $(or $(PKG),$(shell $(GO) list ./...))
 
 GO      = go
-PNPM    = $(or $(shell command -v pnpm 2>/dev/null),\
-			$(shell command -v corepack 2>/dev/null | sed 's/$$/ pnpm/'),\
-			$(error No pnpm command found))
+PNPM    = $(CURDIR)/bin/external-tool pnpm
 CLANG   = clang
 TIMEOUT = 60s
 LSFILES = git ls-files -cmo --exclude-standard --
@@ -22,7 +20,6 @@ GENERATED_JS = \
 	console/frontend/node_modules
 GENERATED_GO = \
 	common/pb/rawflow.pb.go \
-	common/pb/rawflow_vtproto.pb.go \
 	common/schema/definition_gen.go \
 	inlet/flow/input/udp/reuseport_bpfeb.o \
 	inlet/flow/input/udp/reuseport_bpfel.o \
@@ -31,7 +28,7 @@ GENERATED_GO = \
 	orchestrator/clickhouse/data/tcp.csv \
 	orchestrator/clickhouse/data/udp.csv \
 	console/filter/parser.go \
-	inlet/kafka/loadbalancealgorithm_enumer.go \
+	common/kafka/loadbalancealgorithm_enumer.go \
 	outlet/core/asnprovider_enumer.go \
 	outlet/core/netprovider_enumer.go \
 	outlet/metadata/provider/snmp/authprotocol_enumer.go \
@@ -76,7 +73,7 @@ all-indep: $(GENERATED)
 
 # Tools
 
-BUF         = env GO=$(GO) ./bin/external-tool buf
+BUF         = env GO=$(GO) $(CURDIR)/bin/external-tool buf
 ENUMER      = go tool enumer
 GOIMPORTS   = go tool goimports
 GOTESTSUM   = go tool gotestsum
@@ -93,7 +90,7 @@ WWHRD       = go tool wwhrd
 
 $(filter %.go, $(GENERATED_GO) $(GENERATED_TEST_GO)): go.mod
 
-common/pb/rawflow.pb.go common/pb/rawflow_vtproto.pb.go &: .buf.gen.yaml common/pb/rawflow.proto
+common/pb/rawflow.pb.go: .buf.gen.yaml common/pb/rawflow.proto
 	$(call log,compiling protocol buffers $@…)
 	$Q $(BUF) generate --template $(PWD)/.buf.gen.yaml --path $(@:.pb.go=.proto)
 
@@ -108,9 +105,9 @@ inlet/flow/input/udp/reuseport_%.o: inlet/flow/input/udp/reuseport_kern.c inlet/
 	$Q ! $(CLANG) -print-targets 2> /dev/null | grep -qF $* || \
 		 $(CLANG) -O2 -g -Wall -target $* -c $< -o $@
 
-inlet/kafka/loadbalancealgorithm_enumer.go: inlet/kafka/config.go
+common/kafka/loadbalancealgorithm_enumer.go: common/kafka/config.go
 	$(call log,generate enums for LoadBalanceAlgorithm…)
-	$Q $(ENUMER) -type=LoadBalanceAlgorithm -text -transform=kebab -trimprefix=LoadBalance inlet/kafka/config.go
+	$Q $(ENUMER) -type=LoadBalanceAlgorithm -text -transform=kebab -trimprefix=LoadBalance common/kafka/config.go
 outlet/core/asnprovider_enumer.go: outlet/core/config.go
 	$(call log,generate enums for ASNProvider…)
 	$Q $(ENUMER) -type=ASNProvider -text -transform=kebab -trimprefix=ASNProvider outlet/core/config.go
@@ -151,18 +148,25 @@ console/filter/parser.go: console/filter/parser.peg
 console/frontend/node_modules: console/frontend/package.json console/frontend/pnpm-lock.yaml
 console/frontend/node_modules:
 	$(call log,fetching node modules…)
-	$Q (cd console/frontend ; $(PNPM) install --loglevel=error --frozen-lockfile) && touch $@
+	$Q (cd console/frontend ; NODE_OPTIONS=--trace-deprecation $(PNPM) install --loglevel=error --frozen-lockfile) && touch $@
 console/data/frontend: $(GENERATED_JS)
 console/data/frontend: $(shell $(LSFILES) console/frontend 2> /dev/null)
 console/data/frontend:
 	$(call log,building console frontend…)
 	$Q cd console/frontend && $(PNPM) run --silent build
 
-console/data/docs/98-metrics.md: $(shell git grep -c -l -P 'reporter\.(Counter|Gauge|Summary|Histogram)Opt' '*.go' 2> /dev/null)
-console/data/docs/98-metrics.md: $(shell $(LSFILES) cmd/helper)
-console/data/docs/98-metrics.md: cmd/helper/data/metrics.tmpl.md
+console/data/docs/53-metrics.md: $(shell git grep -c -l -P 'reporter\.(Counter|Gauge|Summary|Histogram)Opt' '*.go' 2> /dev/null)
+console/data/docs/53-metrics.md: $(shell $(LSFILES) cmd/helper)
+console/data/docs/53-metrics.md: cmd/helper/data/metrics.tmpl.md
 	$(call log,generate metric documentation…)
 	$Q go run ./cmd/helper metrics --format=markdown > $@
+
+# The screenshots are only regenerated on demand. This requires Firefox and
+# takes them on a running console.
+.PHONY: docs-screenshots
+docs-screenshots: console/frontend/node_modules ; @ ## Regenerate documentation screenshots
+	$(call log,generate documentation screenshots…)
+	$Q python3 console/data/screenshots.py
 
 ASNS_URL = https://vincentbernat.github.io/asn2org/asns.csv
 PROTOCOLS_URL = http://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv
@@ -207,7 +211,7 @@ default-%.pgo:
 	   curl -so $@ "http://$$ip:8080/debug/pprof/profile?seconds=30"
 
 common/embed/data/embed.zip: console/data/frontend console/authentication/data/avatars console/data/docs
-common/embed/data/embed.zip: console/data/docs/98-metrics.md
+common/embed/data/embed.zip: console/data/docs/53-metrics.md
 common/embed/data/embed.zip: orchestrator/clickhouse/data/protocols.csv orchestrator/clickhouse/data/icmp.csv orchestrator/clickhouse/data/asns.csv orchestrator/clickhouse/data/tcp.csv orchestrator/clickhouse/data/udp.csv
 common/embed/data/embed.zip:
 	$(call log,generate embed.zip…)
@@ -221,7 +225,7 @@ common/embed/data/embed.zip:
 # Tests
 
 .PHONY: check test tests test-race test-short test-bench test-coverage
-.PHONY: test-go test-go-units test-go-staticcheck test-js test-coverage-go test-coverage-js
+.PHONY: test-go test-go-units test-go-checks test-js test-coverage-go test-coverage-js
 check test tests: test-go test-js ## Run tests
 test-coverage: test-coverage-go test-coverage-js ## Run coverage tests
 

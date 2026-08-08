@@ -34,6 +34,16 @@ func (column Column) newProtoColumn() proto.Column {
 		// with a performance penalty due to conversion between key values.
 		return new(proto.ColEnum8)
 	}
+	if strings.HasPrefix(column.ClickHouseType, "FixedString(") {
+		// ColAuto does not know about FixedString, build the column ourselves.
+		var size int
+		if _, err := fmt.Sscanf(column.ClickHouseType, "FixedString(%d)", &size); err != nil || size == 0 {
+			panic(fmt.Sprintf("unhandled ClickHouse type %q", column.ClickHouseType))
+		}
+		col := &proto.ColFixedStr{}
+		col.SetSize(size)
+		return col
+	}
 
 	col := &proto.ColAuto{}
 	err := col.Infer(proto.ColumnType(column.ClickHouseType))
@@ -96,7 +106,7 @@ func (schema Schema) clickhouseIterate(fn func(Column), options ...ClickHouseTab
 		if slices.Contains(options, ClickHouseSkipMainOnlyColumns) && column.ClickHouseMainOnly {
 			continue
 		}
-		if slices.Contains(options, ClickHouseSkipGeneratedColumns) && column.ClickHouseGenerateFrom != "" && !column.ClickHouseSelfGenerated {
+		if slices.Contains(options, ClickHouseSkipGeneratedColumns) && column.ClickHouseGenerateFrom != "" {
 			continue
 		}
 		if slices.Contains(options, ClickHouseSkipAliasedColumns) && column.ClickHouseAlias != "" {
@@ -132,7 +142,7 @@ func (schema Schema) ClickHousePrimaryKeys() []string {
 	return cols
 }
 
-// ClickHouseHash returns an hash of the inpt table in ClickHouse
+// ClickHouseHash returns an hash of the input table in ClickHouse
 func (schema Schema) ClickHouseHash() string {
 	hash := fnv.New128()
 	create := schema.ClickHouseCreateTable(ClickHouseSkipGeneratedColumns, ClickHouseSkipAliasedColumns)
@@ -150,6 +160,7 @@ func (bf *FlowMessage) AppendDateTime(columnKey ColumnKey, value uint32) {
 	}
 	bf.batch.columnSet.Set(uint(columnKey))
 	col.(*proto.ColDateTime).AppendRaw(proto.DateTime(value))
+	bf.protobufAppendUint(columnKey, uint64(value))
 	bf.appendDebug(columnKey, value)
 }
 
@@ -180,6 +191,7 @@ func (bf *FlowMessage) AppendUint(columnKey ColumnKey, value uint64) {
 		panic(fmt.Sprintf("unhandled uint type %q", col.Type()))
 	}
 	bf.batch.columnSet.Set(uint(columnKey))
+	bf.protobufAppendUint(columnKey, value)
 }
 
 // AppendString adds a String value to the provided column
@@ -192,10 +204,22 @@ func (bf *FlowMessage) AppendString(columnKey ColumnKey, value string) {
 	switch col := col.(type) {
 	case *proto.ColLowCardinality[string]:
 		col.Append(value)
+	case *proto.ColFixedStr:
+		// Values shorter than the column size are padded with zeros, longer
+		// ones are cut.
+		start := len(col.Buf)
+		col.Buf = append(col.Buf, value...)
+		if len(col.Buf) > start+col.Size {
+			col.Buf = col.Buf[:start+col.Size]
+		}
+		for len(col.Buf) < start+col.Size {
+			col.Buf = append(col.Buf, 0)
+		}
 	default:
 		panic(fmt.Sprintf("unhandled string type %q", col.Type()))
 	}
 	bf.batch.columnSet.Set(uint(columnKey))
+	bf.protobufAppendString(columnKey, value)
 	bf.appendDebug(columnKey, value)
 }
 
@@ -215,6 +239,7 @@ func (bf *FlowMessage) AppendIPv6(columnKey ColumnKey, value netip.Addr) {
 		panic(fmt.Sprintf("unhandled string type %q", col.Type()))
 	}
 	bf.batch.columnSet.Set(uint(columnKey))
+	bf.protobufAppendIP(columnKey, value)
 	bf.appendDebug(columnKey, value)
 }
 
@@ -227,6 +252,7 @@ func (bf *FlowMessage) AppendArrayUInt32(columnKey ColumnKey, value []uint32) {
 	}
 	bf.batch.columnSet.Set(uint(columnKey))
 	col.(*proto.ColArr[uint32]).Append(value)
+	bf.protobufAppendArrayUint32(columnKey, value)
 	bf.appendDebug(columnKey, value)
 }
 
@@ -239,9 +265,11 @@ func (bf *FlowMessage) AppendArrayUInt128(columnKey ColumnKey, value []UInt128) 
 	}
 	bf.batch.columnSet.Set(uint(columnKey))
 	col.(*proto.ColArr[proto.UInt128]).Append(value)
+	bf.protobufAppendArrayUint128(columnKey, value)
 	bf.appendDebug(columnKey, value)
 }
 
+//akvorado:inline
 func (bf *FlowMessage) appendDebug(columnKey ColumnKey, value any) {
 	if !debug {
 		return
@@ -297,6 +325,11 @@ func (bf *FlowMessage) appendDefaultValues() {
 			col.Append(0)
 		case *proto.ColLowCardinality[string]:
 			col.Append("")
+		case *proto.ColFixedStr:
+			// Pad with zeros, like AppendString().
+			for range col.Size {
+				col.Buf = append(col.Buf, 0)
+			}
 		case *proto.ColLowCardinality[proto.IPv6]:
 			col.Append(proto.IPv6{})
 		case *proto.ColArr[uint32]:
@@ -335,6 +368,8 @@ func (bf *FlowMessage) Undo() {
 			*col = (*col)[:len(*col)-1]
 		case *proto.ColLowCardinality[string]:
 			col.Values = col.Values[:len(col.Values)-1]
+		case *proto.ColFixedStr:
+			col.Buf = col.Buf[:len(col.Buf)-col.Size]
 		case *proto.ColLowCardinality[proto.IPv6]:
 			col.Values = col.Values[:len(col.Values)-1]
 		case *proto.ColArr[uint32]:
@@ -386,6 +421,7 @@ func (bf *FlowMessage) Finalize() {
 		bf.AppendUint(ColumnSrcVlan, uint64(bf.SrcVlan))
 		bf.AppendUint(ColumnDstVlan, uint64(bf.DstVlan))
 	}
+	bf.protobufFinalize()
 	bf.batch.rowCount++
 	bf.appendDefaultValues()
 	bf.reset()

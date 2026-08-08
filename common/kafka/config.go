@@ -6,7 +6,9 @@
 package kafka
 
 import (
+	"encoding/binary"
 	"fmt"
+	"math/rand/v2"
 	"reflect"
 
 	"akvorado/common/helpers"
@@ -70,6 +72,76 @@ const (
 	// SASLOauth enables OAuth authentication
 	SASLOauth
 )
+
+// LoadBalanceAlgorithm represents the load-balance algorithm for Kafka partitions
+type LoadBalanceAlgorithm int
+
+const (
+	// LoadBalanceRandom randomly balances flows accross Kafka partitions.
+	LoadBalanceRandom LoadBalanceAlgorithm = iota
+	// LoadBalanceByExporter hashes exporter IP addresses for load balancing.
+	LoadBalanceByExporter
+)
+
+// RecordKey returns the key to use for a record coming from the provided
+// exporter. With LoadBalanceRandom, the key is random and the record lands on
+// any partition. Otherwise, the exporter is the key and all its records land on
+// the same partition.
+func (lb LoadBalanceAlgorithm) RecordKey(exporter string) []byte {
+	if lb == LoadBalanceRandom {
+		key := make([]byte, 4)
+		binary.BigEndian.PutUint32(key, rand.Uint32())
+		return key
+	}
+	return []byte(exporter)
+}
+
+// CompressionCodec represents a compression codec.
+type CompressionCodec kgo.CompressionCodec
+
+// UnmarshalText produces a compression codec
+func (cc *CompressionCodec) UnmarshalText(text []byte) error {
+	var codec kgo.CompressionCodec
+	switch string(text) {
+	case "none":
+		codec = kgo.NoCompression()
+	case "gzip":
+		codec = kgo.GzipCompression()
+	case "snappy":
+		codec = kgo.SnappyCompression()
+	case "lz4":
+		codec = kgo.Lz4Compression()
+	case "zstd":
+		codec = kgo.ZstdCompression()
+	default:
+		return fmt.Errorf("unknown compression codec: %s", text)
+	}
+	*cc = CompressionCodec(codec)
+	return nil
+}
+
+// String turns a compression codec into a string
+func (cc CompressionCodec) String() string {
+	switch kgo.CompressionCodec(cc) {
+	case kgo.NoCompression():
+		return "none"
+	case kgo.GzipCompression():
+		return "gzip"
+	case kgo.SnappyCompression():
+		return "snappy"
+	case kgo.Lz4Compression():
+		return "lz4"
+	case kgo.ZstdCompression():
+		return "zstd"
+	default:
+		return "unknown"
+	}
+}
+
+// MarshalText turns a compression codec into a string
+func (cc CompressionCodec) MarshalText() ([]byte, error) {
+	return []byte(cc.String()), nil
+}
 
 // NewConfig returns a slice of kgo.Opt configurations ready to use.
 func NewConfig(r *reporter.Reporter, config Configuration) ([]kgo.Opt, error) {

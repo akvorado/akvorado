@@ -35,7 +35,7 @@ func TestRequireMainTable(t *testing.T) {
 		if err := query.Columns(tc.Columns).Validate(sch); err != nil {
 			t.Fatalf("%sValidate() error:\n%+v", tc.Pos, err)
 		}
-		if err := tc.Filter.Validate(sch); err != nil {
+		if err := tc.Filter.Validate(sch, ""); err != nil {
 			t.Fatalf("%sValidate() error:\n%+v", tc.Pos, err)
 		}
 		got := requireMainTable(sch, tc.Columns, tc.Filter)

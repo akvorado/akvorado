@@ -14,6 +14,7 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/common/httpserver"
+	sb "akvorado/common/sqlbuilder"
 	"akvorado/console/query"
 )
 
@@ -71,82 +72,48 @@ func nearestPeriod(period time.Duration) (time.Duration, string) {
 	}
 }
 
-// previousPeriod shifts the provided input to the previous period.
-// The chosen period depend on the current period. For less than
-// 2-hour period, the previous period is the hour. For less than 2-day
-// period, this is the day. For less than 2-weeks, this is the week,
-// for less than 2-months, this is the month, otherwise, this is the
-// year. Also, dimensions are stripped.
-func (input graphLineHandlerInput) previousPeriod() graphLineHandlerInput {
+// previousPeriod shifts the provided input to the previous period and returns
+// by how much it moved. The chosen period depend on the current period. For
+// less than 2-hour period, the previous period is the hour. For less than 2-day
+// period, this is the day. For less than 2-weeks, this is the week, for less
+// than 2-months, this is the month, otherwise, this is the year. Also,
+// dimensions are stripped.
+func (input graphLineHandlerInput) previousPeriod() (graphLineHandlerInput, time.Duration) {
 	input.Dimensions = []query.Column{}
 	diff := input.End.Sub(input.Start)
 	period, _ := nearestPeriod(diff)
 	if period == 0 {
-		// We use a full year this time (think for example we
-		// want to see how was New Year Eve compared to last
-		// year)
-		input.Start = input.Start.AddDate(-1, 0, 0)
-		input.End = input.End.AddDate(-1, 0, 0)
-		return input
+		// We use a full year this time (think for example we want to see how
+		// was New Year Eve compared to last year). A year has no fixed length,
+		// so it is measured from the start of the period. Both ends have to
+		// move by the same amount, otherwise a leap day would give the previous
+		// period one point more or less than the main one.
+		period = input.Start.Sub(input.Start.AddDate(-1, 0, 0))
 	}
 	input.Start = input.Start.Add(-period)
 	input.End = input.End.Add(-period)
-	return input
+	return input, period
 }
 
 type toSQL1Options struct {
-	skipWithClause    bool
-	reverseDirection  bool
-	offsetedStart     time.Time
-	mainTableRequired bool
+	skipWithClause   bool
+	reverseDirection bool
+	// shiftedBy is how far back the range of this axis was moved. Its
+	// timestamps move forward by the same amount, so the axis is drawn on the
+	// time axis of the main period.
+	shiftedBy time.Duration
 }
 
-func (input graphLineHandlerInput) toSQL1(axis int, options toSQL1Options) templateQuery {
-	var startForInterval *time.Time
-	var offsetShift string
-	if !options.offsetedStart.IsZero() {
-		startForInterval = &options.offsetedStart
-		offsetShift = fmt.Sprintf(" + INTERVAL %d second",
-			int64(options.offsetedStart.Sub(input.Start).Seconds()))
-	}
-	where := templateWhere(input.Filter)
+func (input graphLineHandlerInput) toSQL1(axis int, r resolved, options toSQL1Options) *sb.Query {
+	where := r.where(input.Filter)
 
-	// Select
-	fields := []string{
-		fmt.Sprintf(`{{ .ToStartOfInterval }}%s AS time`, offsetShift),
-		`{{ .Units }}/{{ .Interval }} AS xps`,
-	}
-	selectFields := []string{}
-	dimensions := []string{}
-	dimensionsInterpolate := ""
-	others := []string{}
-	for _, column := range input.Dimensions {
-		field := column.ToSQLSelect(input.schema)
-		selectFields = append(selectFields, field)
-		dimensions = append(dimensions, column.String())
-		others = append(others, "'Other'")
-	}
-	if len(dimensions) > 0 {
-		fields = append(fields, fmt.Sprintf(`if((%s) IN rows, [%s], [%s]) AS dimensions`,
-			strings.Join(dimensions, ", "),
-			strings.Join(selectFields, ", "),
-			strings.Join(others, ", ")))
-		dimensionsInterpolate = fmt.Sprintf("[%s]", strings.Join(others, ", "))
-	} else {
-		fields = append(fields, "emptyArrayString() AS dimensions")
-		dimensionsInterpolate = "emptyArrayString()"
-	}
-
-	// With
-	withStr := ""
-	if !options.skipWithClause {
-		with := []string{fmt.Sprintf("source AS (%s)", input.sourceSelect())}
-		if len(dimensions) > 0 {
-			with = append(with, selectLineRowsByLimitType(input, dimensions, where))
+	// The previous period is drawn on the time axis of the main one, so its
+	// timestamps are shifted forward.
+	shift := func(expr sb.Expr) sb.Expr {
+		if options.shiftedBy == 0 {
+			return expr
 		}
-		if len(with) > 0 {
-			withStr = fmt.Sprintf("\nWITH\n %s", strings.Join(with, ",\n "))
-		}
+		return sb.Op(expr, "+", seconds(uint64(options.shiftedBy.Seconds())))
 	}
 
 	// Units
@@ -154,67 +121,95 @@ func (input graphLineHandlerInput) toSQL1(axis int, options toSQL1Options) templ
 	if options.reverseDirection {
 		units = reverseUnits(units)
 	}
+	unitsSQL := unitsExpr(units)
 
-	template := fmt.Sprintf(`%s
-SELECT %d AS axis, * FROM (
-SELECT
- %s
-FROM source
-WHERE %s
-GROUP BY time, dimensions
-ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}%s
- TO {{ .TimefilterEnd }} + INTERVAL 1 second%s
- STEP {{ .Interval }}
- INTERPOLATE (dimensions AS %s))`,
-		withStr, axis, strings.Join(fields, ",\n "), where, offsetShift, offsetShift,
-		dimensionsInterpolate,
-	)
-
-	context := inputContext{
-		Start:                  input.Start,
-		End:                    input.End,
-		StartForTableSelection: startForInterval,
-		MainTableRequired:      options.mainTableRequired,
-		Points:                 input.Points,
-		Units:                  units,
+	// Select
+	selectFields := []sb.Expr{}
+	dimensions := []sb.Expr{}
+	others := []sb.Expr{}
+	for _, column := range input.Dimensions {
+		selectFields = append(selectFields, column.ToSQLSelect(input.schema, input.database))
+		dimensions = append(dimensions, sb.Column(column.String()))
+		others = append(others, sb.String("Other"))
+	}
+	// Rows outside the selected ones are folded into a single "Other" row. The
+	// same value fills the gaps left by WITH FILL.
+	othersArray := func() sb.Expr {
+		if len(dimensions) == 0 {
+			return sb.Function("emptyArrayString")
+		}
+		return sb.Array(others...)
+	}
+	dimensionsField := othersArray()
+	if len(dimensions) > 0 {
+		dimensionsField = sb.Function("if",
+			sb.Op(sb.Tuple(dimensions...), "IN", sb.Column("rows")),
+			sb.Array(selectFields...),
+			othersArray())
 	}
 
-	return templateQuery{
-		Template: strings.TrimSpace(template),
-		Context:  context,
+	inner := sb.Select(
+		sb.Alias(shift(r.toStartOfInterval()), "time"),
+		sb.Alias(sb.Op(unitsSQL, "/", sb.Uint(r.Interval)), "xps"),
+		sb.Alias(dimensionsField, "dimensions"),
+	).
+		From(sb.Table("source")).
+		Where(where).
+		GroupBy(sb.Column("time"), sb.Column("dimensions")).
+		OrderBy(sb.Order(sb.Column("time")).Fill(
+			shift(r.timefilterStart()),
+			shift(sb.Op(r.timefilterEnd(), "+", seconds(1))),
+			sb.Uint(r.Interval))).
+		Interpolate("dimensions", othersArray())
+
+	query := sb.Select(
+		sb.Alias(sb.Int(int64(axis)), "axis"),
+		sb.Star()).
+		FromSelect(inner)
+	if !options.skipWithClause {
+		query.With("source", input.sourceSelect(r.Table))
+		if len(dimensions) > 0 {
+			query.With("rows", selectLineRowsByLimitType(input, r, dimensions, where, unitsSQL))
+		}
+	}
+	return query
+}
+
+// resolveContext returns what is needed to select the table for this query.
+func (input graphLineHandlerInput) resolveContext() inputContext {
+	return inputContext{
+		Start:             input.Start,
+		End:               input.End,
+		MainTableRequired: requireMainTable(input.schema, input.Dimensions, input.Filter),
+		Points:            input.Points,
 	}
 }
 
-// toSQL converts a graph input to an SQL request
-func (input graphLineHandlerInput) toSQL() []templateQuery {
-	// Calculate mainTableRequired once and use it for all axes to ensure
-	// consistency. This is useful as previous period will remove the
-	// dimensions.
-	mainTableRequired := requireMainTable(input.schema, input.Dimensions, input.Filter)
-	queries := []templateQuery{input.toSQL1(1, toSQL1Options{
-		mainTableRequired: mainTableRequired,
-	})}
+// toSQL converts a graph input to a list of SQL requests, one per axis.
+func (input graphLineHandlerInput) toSQL(res resolution) []*sb.Query {
+	// The resolution is applied once: the previous period reuses the resulting
+	// range, moved back in time, so both cover the same number of points.
+	main := res.forRange(input.Start, input.End)
+	queries := []*sb.Query{input.toSQL1(1, main, toSQL1Options{})}
 	if input.Bidirectional {
-		queries = append(queries, input.reverseDirection().toSQL1(2, toSQL1Options{
-			skipWithClause:    true,
-			reverseDirection:  true,
-			mainTableRequired: mainTableRequired,
+		queries = append(queries, input.reverseDirection().toSQL1(2, main, toSQL1Options{
+			skipWithClause:   true,
+			reverseDirection: true,
 		}))
 	}
 	if input.PreviousPeriod {
-		queries = append(queries, input.previousPeriod().toSQL1(3, toSQL1Options{
-			skipWithClause:    true,
-			offsetedStart:     input.Start,
-			mainTableRequired: mainTableRequired,
+		previous, period := input.previousPeriod()
+		queries = append(queries, previous.toSQL1(3, main.shiftBack(period), toSQL1Options{
+			skipWithClause: true,
+			shiftedBy:      period,
 		}))
 	}
 	if input.Bidirectional && input.PreviousPeriod {
-		queries = append(queries, input.reverseDirection().previousPeriod().toSQL1(4, toSQL1Options{
-			skipWithClause:    true,
-			reverseDirection:  true,
-			offsetedStart:     input.Start,
-			mainTableRequired: mainTableRequired,
+		previous, period := input.reverseDirection().previousPeriod()
+		queries = append(queries, previous.toSQL1(4, main.shiftBack(period), toSQL1Options{
+			skipWithClause:   true,
+			reverseDirection: true,
+			shiftedBy:        period,
 		}))
 	}
 	return queries
@@ -222,7 +217,10 @@ func (input graphLineHandlerInput) toSQL() []templateQuery {
 
 func (c *Component) graphLineHandlerFunc(w http.ResponseWriter, req *http.Request) {
 	ctx := c.t.Context(req.Context())
-	input := graphLineHandlerInput{graphCommonHandlerInput: graphCommonHandlerInput{schema: c.d.Schema}}
+	input := graphLineHandlerInput{graphCommonHandlerInput: graphCommonHandlerInput{
+		schema:   c.d.Schema,
+		database: c.d.ClickHouseDB.DatabaseName(),
+	}}
 	if err := httpserver.BindJSON(req, &input); err != nil {
 		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
@@ -231,7 +229,7 @@ func (c *Component) graphLineHandlerFunc(w http.ResponseWriter, req *http.Reques
 		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
-	if err := input.Filter.Validate(input.schema); err != nil {
+	if err := input.Filter.Validate(input.schema, input.database); err != nil {
 		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
@@ -242,8 +240,8 @@ func (c *Component) graphLineHandlerFunc(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	queries := input.toSQL()
-	sqlQuery := c.finalizeTemplateQueries(queries)
+	r := c.resolve(input.resolveContext())
+	sqlQuery := unionAll(input.toSQL(r))
 	w.Header().Set("X-SQL-Query", strings.ReplaceAll(sqlQuery, "\n", "  "))
 
 	results := []struct {
@@ -252,6 +250,7 @@ func (c *Component) graphLineHandlerFunc(w http.ResponseWriter, req *http.Reques
 		Xps        float64   `ch:"xps"`
 		Dimensions []string  `ch:"dimensions"`
 	}{}
+	c.metrics.clickhouseQueries.WithLabelValues(r.Table).Inc()
 	if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery); err != nil {
 		c.r.Err(err).Str("query", sqlQuery).Msg("unable to query database")
 		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})

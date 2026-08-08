@@ -24,77 +24,83 @@
       </div>
       <nav class="text-sm">
         <ul class="space-y-1">
-          <li
-            v-for="document in toc"
-            :key="document.name"
-            :class="{ 'mb-4': shouldShowTOCItem(document.name) }"
-          >
-            <div class="flex items-stretch items-center">
-              <button
-                type="button"
-                class="mr-2 flex-none text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 flex items-center justify-center w-4 h-4"
-                @click.stop="toggleTOCItem(document.name)"
-              >
-                <span
-                  class="transform transition-transform duration-200"
-                  :class="{ 'rotate-90': shouldShowTOCItem(document.name) }"
-                  >❯</span
-                >
-              </button>
-              <router-link
-                :to="{
-                  path: document.name,
-                  hash: `#${document.headers[0].id}`,
-                }"
-                class="block font-semibold flex-1"
-                :class="{
-                  'text-blue-600': activeDocument === document.name,
-                  'dark:text-blue-300': activeDocument === document.name,
-                  'text-gray-900': activeDocument !== document.name,
-                  'dark:text-gray-300': activeDocument !== document.name,
-                }"
-              >
-                {{ document.headers[0].title }}
-              </router-link>
-            </div>
-            <ul
-              class="space-y-1 mt-2"
-              :style="{
-                height: shouldShowTOCItem(document.name) ? 'auto' : '0',
-                overflow: shouldShowTOCItem(document.name)
-                  ? 'visible'
-                  : 'hidden',
-                visibility: shouldShowTOCItem(document.name)
-                  ? 'visible'
-                  : 'hidden',
-              }"
+          <template v-for="(document, index) in toc" :key="document.name">
+            <li
+              v-if="
+                document.section && document.section !== toc[index - 1]?.section
+              "
+              class="mt-4 mb-1 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400"
             >
-              <template v-for="header in document.headers" :key="header.id">
-                <li
-                  v-if="header.level >= 2 && header.level <= 3"
+              {{ document.section }}
+            </li>
+            <li :class="{ 'mb-4': shouldShowTOCItem(document.name) }">
+              <div class="flex items-stretch items-center">
+                <button
+                  type="button"
+                  class="mr-2 flex-none text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 flex items-center justify-center w-4 h-4"
+                  @click.stop="toggleTOCItem(document.name)"
+                >
+                  <span
+                    class="transform transition-transform duration-200"
+                    :class="{ 'rotate-90': shouldShowTOCItem(document.name) }"
+                    >❯</span
+                  >
+                </button>
+                <router-link
+                  :to="{
+                    path: document.name,
+                    hash: `#${document.headers[0].id}`,
+                  }"
+                  class="block font-semibold flex-1"
                   :class="{
-                    'ml-6': header.level == 2,
-                    'ml-8': header.level == 3,
+                    'text-blue-600': activeDocument === document.name,
+                    'dark:text-blue-300': activeDocument === document.name,
+                    'text-gray-900': activeDocument !== document.name,
+                    'dark:text-gray-300': activeDocument !== document.name,
                   }"
                 >
-                  <router-link
-                    :to="{ path: document.name, hash: `#${header.id}` }"
-                    class="block"
+                  {{ document.headers[0].title }}
+                </router-link>
+              </div>
+              <ul
+                class="space-y-1 mt-2"
+                :style="{
+                  height: shouldShowTOCItem(document.name) ? 'auto' : '0',
+                  overflow: shouldShowTOCItem(document.name)
+                    ? 'visible'
+                    : 'hidden',
+                  visibility: shouldShowTOCItem(document.name)
+                    ? 'visible'
+                    : 'hidden',
+                }"
+              >
+                <template v-for="header in document.headers" :key="header.id">
+                  <li
+                    v-if="header.level >= 2 && header.level <= 3"
                     :class="{
-                      'text-blue-600':
-                        activeDocument === document.name &&
-                        activeSlug?.slice(1) === header.id,
-                      'dark:text-blue-300':
-                        activeDocument === document.name &&
-                        activeSlug?.slice(1) === header.id,
+                      'ml-6': header.level == 2,
+                      'ml-8': header.level == 3,
                     }"
                   >
-                    {{ header.title }}
-                  </router-link>
-                </li>
-              </template>
-            </ul>
-          </li>
+                    <router-link
+                      :to="{ path: document.name, hash: `#${header.id}` }"
+                      class="block"
+                      :class="{
+                        'text-blue-600':
+                          activeDocument === document.name &&
+                          activeSlug?.slice(1) === header.id,
+                        'dark:text-blue-300':
+                          activeDocument === document.name &&
+                          activeSlug?.slice(1) === header.id,
+                      }"
+                    >
+                      {{ header.title }}
+                    </router-link>
+                  </li>
+                </template>
+              </ul>
+            </li>
+          </template>
         </ul>
       </nav>
     </div>
@@ -131,17 +137,24 @@ const props = defineProps<{ id: string }>();
 const title = inject(TitleKey)!;
 
 // Grab document
-const url = computed(() => `api/v0/console/docs/${props.id}`);
-const { data, error } = useFetch(url, { refetch: true }).get().json<
+type DocumentationAnswer =
   | { message: string } // on error
   | {
       markdown: string;
       toc: Array<{
         name: string;
+        section: string;
         headers: Array<{ level: number; id: string; title: string }>;
       }>;
-    }
->();
+    };
+const url = computed(() => `api/v0/console/docs/${props.id}`);
+const { data, error } = useFetch(
+  url,
+  { headers: { Accept: "application/json" } },
+  { refetch: true },
+)
+  .get()
+  .json<DocumentationAnswer>();
 const errorMessage = computed(
   () =>
     (error.value &&

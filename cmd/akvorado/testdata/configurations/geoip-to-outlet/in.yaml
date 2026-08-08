@@ -1,0 +1,17 @@
+---
+# GeoIP and network attributes used to be configured on the orchestrator. They
+# should be moved to the existing outlet configuration.
+geoip:
+  asn-database: /usr/share/GeoIP/asn.mmdb
+  geo-database: /usr/share/GeoIP/country.mmdb
+
+clickhouse:
+  networks:
+    192.0.2.0/24: customers
+  network-sources-timeout: 30s
+
+outlet:
+  core:
+    asn-providers:
+      - flow
+      - networks

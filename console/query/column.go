@@ -11,6 +11,7 @@ import (
 
 	"akvorado/common/constants"
 	"akvorado/common/schema"
+	sb "akvorado/common/sqlbuilder"
 )
 
 // Column represents a query column. It should be instantiated with NewColumn() or
@@ -100,35 +101,42 @@ func (qcs Columns) Validate(schema *schema.Component) error {
 	return nil
 }
 
-// ToSQLSelect transforms a column into an expression to use in SELECT
-func (qc Column) ToSQLSelect(sch *schema.Component) string {
-	var strValue string
+// ToSQLSelect transforms a column into an expression to use in SELECT. The
+// database is the one holding the dictionaries.
+func (qc Column) ToSQLSelect(sch *schema.Component, database string) sb.Expr {
 	key := qc.Key()
+	self := sb.Column(qc.String())
 	switch key {
 	// Special cases
 	case schema.ColumnSrcAS, schema.ColumnDstAS, schema.ColumnDst1stAS, schema.ColumnDst2ndAS, schema.ColumnDst3rdAS:
-		strValue = fmt.Sprintf(`concat(toString(%s), ': ', dictGetOrDefault('%s', 'name', %s, '???'))`,
-			qc, schema.DictionaryASNs, qc)
+		return sb.Function("concat",
+			sb.Function("toString", self),
+			sb.String(": "),
+			DictionaryLookup(database, schema.DictionaryASNs, self, "???"))
 	case schema.ColumnInIfBoundary, schema.ColumnOutIfBoundary:
-		strValue = fmt.Sprintf(`toString(%s)`, qc.String())
+		return sb.Function("toString", self)
 	case schema.ColumnEType:
-		strValue = fmt.Sprintf(`if(EType = %d, 'IPv4', if(EType = %d, 'IPv6', '???'))`,
-			constants.ETypeIPv4, constants.ETypeIPv6)
+		etype := sb.Column(schema.ColumnEType.String())
+		return sb.Function("if",
+			sb.Op(etype, "=", sb.Uint(constants.ETypeIPv4)),
+			sb.String("IPv4"),
+			sb.Function("if",
+				sb.Op(etype, "=", sb.Uint(constants.ETypeIPv6)),
+				sb.String("IPv6"),
+				sb.String("???")))
 	case schema.ColumnProto:
-		strValue = fmt.Sprintf(`dictGetOrDefault('%s', 'name', Proto, '???')`, schema.DictionaryProtocols)
-	case schema.ColumnMPLSLabels:
-		strValue = `arrayStringConcat(MPLSLabels, ' ')`
-	case schema.ColumnDstASPath:
-		strValue = `arrayStringConcat(DstASPath, ' ')`
+		return DictionaryLookup(database, schema.DictionaryProtocols, self, "???")
+	case schema.ColumnMPLSLabels, schema.ColumnDstASPath:
+		return sb.Function("arrayStringConcat", self, sb.String(" "))
 	case schema.ColumnSrcCommunities, schema.ColumnDstCommunities:
-		strValue = fmt.Sprintf(`arrayStringConcat(arrayConcat(
-			arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), %sCommunities),
-			arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':',
-								toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':',
-								toString(bitAnd(c, 0xffffffff))), %sLargeCommunities)
-			), ' ')`, qc.String()[:3], qc.String()[:3])
+		direction := qc.String()[:3]
+		return sb.Function("arrayStringConcat",
+			sb.Function("arrayConcat",
+				CommunitiesToStrings(fmt.Sprintf("%sCommunities", direction)),
+				LargeCommunitiesToStrings(fmt.Sprintf("%sLargeCommunities", direction))),
+			sb.String(" "))
 	case schema.ColumnSrcMAC, schema.ColumnDstMAC:
-		strValue = fmt.Sprintf("MACNumToString(%s)", qc)
+		return sb.Function("MACNumToString", self)
 	case schema.ColumnTCPFlags:
 		bits := []string{
 			"FIN",
@@ -141,25 +149,108 @@ func (qc Column) ToSQLSelect(sch *schema.Component) string {
 			"CWR",
 			"NS",
 		}
-		array := make([]string, len(bits))
-		for bit, v := range bits {
-			array[bit] = fmt.Sprintf("if(bitTest(%s, %d) = 1, '%s', '')", qc, bit, v[:1])
+		flags := make([]sb.Expr, len(bits))
+		for bit, name := range bits {
+			flags[bit] = sb.Function("if",
+				sb.Op(
+					sb.Function("bitTest", self, sb.Uint(uint64(bit))),
+					"=", sb.Uint(1)),
+				sb.String(name[:1]),
+				sb.String(""))
 		}
-		strValue = fmt.Sprintf("arrayStringConcat([%s], '')", strings.Join(array, ", "))
+		return sb.Function("arrayStringConcat",
+			sb.Array(flags...), sb.String(""))
 	case schema.ColumnDstPort, schema.ColumnSrcPort:
-		strValue = fmt.Sprintf(`replaceRegexpOne(multiIf(%s==6, concat(toString(%s), '/', dictGetOrDefault('%s', 'name', %s,'')), %s==17, concat(toString(%s), '/', dictGetOrDefault('%s', 'name', %s,'')), toString(%s)), '/$', '')`,
-			schema.ColumnProto, qc, schema.DictionaryTCP, qc, schema.ColumnProto, qc, schema.DictionaryUDP, qc, qc)
+		proto := sb.Column(schema.ColumnProto.String())
+		named := func(dictionary string) sb.Expr {
+			return sb.Function("concat",
+				sb.Function("toString", self),
+				sb.String("/"),
+				DictionaryLookup(database, dictionary, self, ""))
+		}
+		// The port may have no name in the dictionary, in which case the
+		// trailing slash is dropped.
+		return sb.Function("replaceRegexpOne",
+			sb.Function("multiIf",
+				sb.Op(proto, "=", sb.Uint(constants.ProtoTCP)),
+				named(schema.DictionaryTCP),
+				sb.Op(proto, "=", sb.Uint(constants.ProtoUDP)),
+				named(schema.DictionaryUDP),
+				sb.Function("toString", self)),
+			sb.String("/$"), sb.String(""))
 
 	// Generic cases
 	default:
-		strValue = qc.String()
 		if col, ok := sch.LookupColumnByKey(key); ok {
 			if strings.HasPrefix(col.ClickHouseType, "UInt") {
-				strValue = fmt.Sprintf(`toString(%s)`, qc)
-			} else if col.ClickHouseType == "IPv6" || col.ClickHouseType == "LowCardinality(IPv6)" {
-				strValue = fmt.Sprintf("replaceRegexpOne(IPv6NumToString(%s), '^::ffff:', '')", qc)
+				return sb.Function("toString", self)
+			}
+			if col.ClickHouseType == "IPv6" || col.ClickHouseType == "LowCardinality(IPv6)" {
+				return AddressToString(self)
 			}
 		}
+		return self
 	}
-	return strValue
+}
+
+// DictionaryLookup looks up the name matching a key in a ClickHouse dictionary.
+// When the key is unknown, the fallback is used instead. The dictionary is
+// qualified with the database it lives in, as the remote nodes of a cluster do
+// not resolve a bare name.
+func DictionaryLookup(database, dictionary string, key sb.Expr, fallback string) sb.Expr {
+	return sb.Function("dictGetOrDefault",
+		sb.String(sb.Table(dictionary).In(database).String()), sb.String("name"),
+		key, sb.String(fallback))
+}
+
+// AddressToString turns an address into a string. All addresses are stored as
+// IPv6 ones, so the prefix of an IPv4-mapped address is removed.
+func AddressToString(addr sb.Expr) sb.Expr {
+	return sb.Function("replaceRegexpOne",
+		sb.Function("IPv6NumToString", addr),
+		sb.String("^::ffff:"), sb.String(""))
+}
+
+// CommunityToString turns a BGP community into a string using the "AS:value"
+// notation.
+func CommunityToString(community sb.Expr) sb.Expr {
+	return sb.Function("concat",
+		sb.Function("toString",
+			sb.Function("bitShiftRight", community, sb.Uint(16))),
+		sb.String(":"),
+		sb.Function("toString",
+			sb.Function("bitAnd", community, sb.Number("0xffff"))))
+}
+
+// CommunitiesToStrings turns an array of BGP communities into an array of
+// strings using the "AS:value" notation.
+func CommunitiesToStrings(column string) sb.Expr {
+	return sb.Function("arrayMap",
+		sb.Lambda("c", CommunityToString(sb.Column("c"))),
+		sb.Column(column))
+}
+
+// LargeCommunityToString turns a large BGP community into a string using the
+// "AS:value:value" notation.
+func LargeCommunityToString(community sb.Expr) sb.Expr {
+	part := func(shift uint64) sb.Expr {
+		value := community
+		if shift > 0 {
+			value = sb.Function("bitShiftRight", value, sb.Uint(shift))
+		}
+		return sb.Function("toString",
+			sb.Function("bitAnd", value, sb.Number("0xffffffff")))
+	}
+	return sb.Function("concat",
+		part(64), sb.String(":"),
+		part(32), sb.String(":"),
+		part(0))
+}
+
+// LargeCommunitiesToStrings turns an array of large BGP communities into an
+// array of strings using the "AS:value:value" notation.
+func LargeCommunitiesToStrings(column string) sb.Expr {
+	return sb.Function("arrayMap",
+		sb.Lambda("c", LargeCommunityToString(sb.Column("c"))),
+		sb.Column(column))
 }

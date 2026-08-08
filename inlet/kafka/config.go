@@ -4,8 +4,6 @@
 package kafka
 
 import (
-	"fmt"
-
 	"github.com/twmb/franz-go/pkg/kgo"
 
 	"akvorado/common/helpers"
@@ -16,78 +14,21 @@ import (
 type Configuration struct {
 	kafka.Configuration `mapstructure:",squash" yaml:"-,inline"`
 	// CompressionCodec defines the compression to use.
-	CompressionCodec CompressionCodec
+	CompressionCodec kafka.CompressionCodec
 	// QueueSize defines the maximum number of messages to buffer.
 	QueueSize int `validate:"min=1"`
 	// LoadBalance defines the load-balancing algorithm to use for Kafka partitions.
-	LoadBalance LoadBalanceAlgorithm
+	LoadBalance kafka.LoadBalanceAlgorithm
 }
 
 // DefaultConfiguration represents the default configuration for the Kafka exporter.
 func DefaultConfiguration() Configuration {
 	return Configuration{
 		Configuration:    kafka.DefaultConfiguration(),
-		CompressionCodec: CompressionCodec(kgo.Lz4Compression()),
+		CompressionCodec: kafka.CompressionCodec(kgo.Lz4Compression()),
 		QueueSize:        4096,
-		LoadBalance:      LoadBalanceRandom,
+		LoadBalance:      kafka.LoadBalanceRandom,
 	}
-}
-
-// LoadBalanceAlgorithm represents the load-balance algorithm for Kafka partitions
-type LoadBalanceAlgorithm int
-
-const (
-	// LoadBalanceRandom randomly balances flows accross Kafka partitions.
-	LoadBalanceRandom LoadBalanceAlgorithm = iota
-	// LoadBalanceByExporter hashes exporter IP addresses for load balancing.
-	LoadBalanceByExporter
-)
-
-// CompressionCodec represents a compression codec.
-type CompressionCodec kgo.CompressionCodec
-
-// UnmarshalText produces a compression codec
-func (cc *CompressionCodec) UnmarshalText(text []byte) error {
-	var codec kgo.CompressionCodec
-	switch string(text) {
-	case "none":
-		codec = kgo.NoCompression()
-	case "gzip":
-		codec = kgo.GzipCompression()
-	case "snappy":
-		codec = kgo.SnappyCompression()
-	case "lz4":
-		codec = kgo.Lz4Compression()
-	case "zstd":
-		codec = kgo.ZstdCompression()
-	default:
-		return fmt.Errorf("unknown compression codec: %s", text)
-	}
-	*cc = CompressionCodec(codec)
-	return nil
-}
-
-// String turns a compression codec into a string
-func (cc CompressionCodec) String() string {
-	switch kgo.CompressionCodec(cc) {
-	case kgo.NoCompression():
-		return "none"
-	case kgo.GzipCompression():
-		return "gzip"
-	case kgo.SnappyCompression():
-		return "snappy"
-	case kgo.Lz4Compression():
-		return "lz4"
-	case kgo.ZstdCompression():
-		return "zstd"
-	default:
-		return "unknown"
-	}
-}
-
-// MarshalText turns a compression codec into a string
-func (cc CompressionCodec) MarshalText() ([]byte, error) {
-	return []byte(cc.String()), nil
 }
 
 func init() {

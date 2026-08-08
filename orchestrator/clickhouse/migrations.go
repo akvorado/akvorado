@@ -8,10 +8,9 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"strings"
 
-	"akvorado/common/clickhousedb"
 	"akvorado/common/schema"
+	sb "akvorado/common/sqlbuilder"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 )
@@ -64,23 +63,37 @@ func (c *Component) migrateDatabase() error {
 		ctx,
 		func(ctx context.Context) error {
 			return c.createDictionary(ctx, schema.DictionaryASNs, "hashed",
-				"`asn` UInt32 INJECTIVE, `name` String", "asn")
+				[]sb.DictionaryAttribute{
+					sb.Attribute("asn", "UInt32").Injective(),
+					sb.Attribute("name", "String"),
+				}, sb.Columns("asn"))
 		}, func(ctx context.Context) error {
 			return c.createDictionary(ctx, schema.DictionaryProtocols, "hashed",
-				"`proto` UInt8 INJECTIVE, `name` String, `description` String", "proto")
+				[]sb.DictionaryAttribute{
+					sb.Attribute("proto", "UInt8").Injective(),
+					sb.Attribute("name", "String"),
+					sb.Attribute("description", "String"),
+				}, sb.Columns("proto"))
 		}, func(ctx context.Context) error {
 			return c.createDictionary(ctx, schema.DictionaryICMP, "complex_key_hashed",
-				"`proto` UInt8, `type` UInt8, `code` UInt8, `name` String", "proto, type, code")
-		}, func(ctx context.Context) error {
-			return c.createDictionary(ctx, schema.DictionaryNetworks, "ip_trie",
-				"`network` String, `name` String, `role` String, `site` String, `region` String, `city` String, `state` String, `country` String, `tenant` String, `asn` UInt32",
-				"network")
+				[]sb.DictionaryAttribute{
+					sb.Attribute("proto", "UInt8"),
+					sb.Attribute("type", "UInt8"),
+					sb.Attribute("code", "UInt8"),
+					sb.Attribute("name", "String"),
+				}, sb.Columns("proto", "type", "code"))
 		}, func(ctx context.Context) error {
 			return c.createDictionary(ctx, schema.DictionaryTCP, "hashed",
-				"`port` UInt16 INJECTIVE, `name` String", "port")
+				[]sb.DictionaryAttribute{
+					sb.Attribute("port", "UInt16").Injective(),
+					sb.Attribute("name", "String"),
+				}, sb.Columns("port"))
 		}, func(ctx context.Context) error {
 			return c.createDictionary(ctx, schema.DictionaryUDP, "hashed",
-				"`port` UInt16 INJECTIVE, `name` String", "port")
+				[]sb.DictionaryAttribute{
+					sb.Attribute("port", "UInt16").Injective(),
+					sb.Attribute("name", "String"),
+				}, sb.Columns("port"))
 		})
 	if err != nil {
 		return err
@@ -89,12 +102,12 @@ func (c *Component) migrateDatabase() error {
 	// Prepare custom dictionary migrations
 	var dictMigrations []func(context.Context) error
 	for k, v := range c.d.Schema.GetCustomDictConfig() {
-		var schemaStr []string
-		var keys []string
+		var attributes []sb.DictionaryAttribute
+		var keys []sb.Expr
 		for _, a := range v.Keys {
 			// This is a key. We need it in the schema and in primary keys.
-			schemaStr = append(schemaStr, fmt.Sprintf("`%s` %s", a.Name, a.Type))
-			keys = append(keys, a.Name)
+			attributes = append(attributes, sb.Attribute(a.Name, a.Type))
+			keys = append(keys, sb.Column(a.Name))
 		}
 
 		for _, a := range v.Attributes {
@@ -103,16 +116,16 @@ func (c *Component) migrateDatabase() error {
 				defaultValue = a.Default
 			}
 			// This is only an attribute. We only need it in the schema
-			schemaStr = append(schemaStr, fmt.Sprintf("`%s` %s DEFAULT %s",
-				a.Name, a.Type, quoteString(defaultValue)))
+			attributes = append(attributes,
+				sb.Attribute(a.Name, a.Type).Default(defaultValue))
 		}
 		dictMigrations = append(dictMigrations, func(ctx context.Context) error {
 			return c.createDictionary(
 				ctx,
 				fmt.Sprintf("custom_dict_%s", k),
-				v.Layout,
-				strings.Join(schemaStr[:], ", "),
-				strings.Join(keys[:], ", "))
+				string(v.Layout),
+				attributes,
+				keys)
 		})
 	}
 	// Create custom dictionaries
@@ -210,9 +223,8 @@ func (c *Component) reloadDictionaries(ctx context.Context) {
 // ReloadDictionary will reload the specified dictionnary.
 func (c *Component) ReloadDictionary(ctx context.Context, dictName string) error {
 	if c.d.ClickHouse != nil {
-		return c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf("SYSTEM RELOAD DICTIONARY %s.%s",
-			clickhousedb.QuoteIdentifier(c.d.ClickHouse.DatabaseName()),
-			clickhousedb.QuoteIdentifier(dictName)))
+		return c.d.ClickHouse.ExecOnCluster(ctx,
+			sb.SystemReloadDictionary(sb.Table(dictName).In(c.d.ClickHouse.DatabaseName())))
 	}
 	return nil
 }

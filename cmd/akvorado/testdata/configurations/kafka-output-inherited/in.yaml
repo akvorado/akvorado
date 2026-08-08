@@ -1,0 +1,12 @@
+---
+# Without a top-level "kafka-output" block, the outlet kafka-output inherits the
+# connection settings of the input, but not its topic.
+
+kafka:
+  topic: flows
+  brokers:
+    - kafka1:9092
+
+outlet:
+  kafka-output:
+    enabled: true

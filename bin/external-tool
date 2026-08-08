@@ -1,19 +1,37 @@
 #!/bin/sh
 
-# Wrapper to execute an external tool. This is used a bit like "go tool", but in
-# a case we don't want to put the dependency in go.mod (which may be considered
-# by an anti-pattern for some tools).
-
-# See commit 414d626bf8f2 for an alternative.
+# Wrapper to execute an external tool.
 
 cmd="$1"
 shift
 
-GO=${GO:-go}
-export GOTOOLCHAIN=$(${GO} mod edit -print | sed -En 's/^toolchain //p')
-
 case "$cmd" in
     buf)
+        # We don't use "go tool" as it is discouraged to ensure we use the
+        # expected dependencies.
+        GO=${GO:-go}
+        export GOTOOLCHAIN=$(${GO} mod edit -print | sed -En 's/^toolchain //p')
         exec ${GO} run github.com/bufbuild/buf/cmd/buf@v1.57.0 "$@"
+        ;;
+    pnpm)
+        # Use the version from PATH if any.
+        command -v pnpm > /dev/null 2>&1 && exec pnpm "$@"
+        # Otherwise, use the pinned one from the npx cache. npx downloads it on
+        # first use, but it is too slow to be used on each invocation
+        # (https://github.com/npm/cli/issues/7295)
+        exec node -e '
+const fs = require("fs")
+const path = require("path")
+const [root, npx, ...args] = process.argv.slice(1)
+const spec = require(path.resolve(root, "console/frontend/package.json")).packageManager
+const hash = require("crypto").createHash("sha512").update(spec).digest("hex").slice(0, 16)
+const cache = process.env.npm_config_cache || path.join(require("os").homedir(), ".npm")
+const bin = path.join(cache, "_npx", hash, "node_modules/.bin")
+const pnpm = path.join(bin, "pnpm")
+const cmd = fs.existsSync(pnpm)
+      ? [pnpm, ...args]
+      : [npx, "--yes", spec, ...args]
+process.execve(cmd[0], cmd, { ...process.env, PATH: `${bin}:${process.env.PATH}` })
+' -- "$(dirname -- "$0")/.." "$(command -v npx)" "$@"
         ;;
 esac

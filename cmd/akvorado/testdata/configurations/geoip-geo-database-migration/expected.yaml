@@ -1,6 +1,6 @@
 ---
 paths:
-  geoip:
+  outlet.0.geoip:
     asndatabase:
       - /usr/share/GeoIP/GeoLite2-ASN.mmdb
     geodatabase:

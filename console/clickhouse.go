@@ -4,16 +4,21 @@
 package console
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"sort"
 	"strings"
-	"text/template"
 	"time"
 
+	sb "akvorado/common/sqlbuilder"
 	"akvorado/console/query"
 )
+
+// dictionary names a ClickHouse dictionary, qualified with the database it
+// lives in, as the remote nodes of a cluster do not resolve a bare name.
+func (c *Component) dictionary(name string) sb.TableName {
+	return sb.Table(name).In(c.d.ClickHouseDB.DatabaseName())
+}
 
 // flowsTable describe a consolidated or unconsolidated flows table.
 type flowsTable struct {
@@ -81,134 +86,185 @@ AND (engine LIKE '%MergeTree' OR engine = 'Distributed')
 	return nil
 }
 
-// inputContext is the intermeidate context provided by the input handler.
+// inputContext describes a time range, as requested by an input handler. It is
+// what the resolver needs to pick a table.
 type inputContext struct {
-	Start                  time.Time
-	End                    time.Time
-	StartForTableSelection *time.Time
-	MainTableRequired      bool
-	Points                 uint
-	Units                  string
+	Start             time.Time
+	End               time.Time
+	MainTableRequired bool
+	Points            uint
 }
 
-// context is the context to finalize the template.
-type context struct {
-	Table             string
-	Timefilter        string
-	TimefilterStart   string
-	TimefilterEnd     string
-	Units             string
-	Interval          uint64
-	ToStartOfInterval string
+// resolution is the table and the interval to use for a query. It depends on
+// the live table inventory. All axes of a query share the same resolution.
+type resolution struct {
+	// Table is the table the query should happen on.
+	Table string
+	// Interval is the number of seconds between two points.
+	Interval uint64
+	// TableInterval is the resolution of the table.
+	TableInterval time.Duration
 }
 
-// templateQuery holds a template string and its associated input context.
-type templateQuery struct {
-	Template string
-	Context  inputContext
+// resolved is a resolution applied to one time range. Axes get one each: the
+// previous period covers an earlier range than the main one.
+type resolved struct {
+	Table string
+	// Interval is the number of seconds between two points.
+	Interval uint64
+	// Start and End are the time range, aligned on the interval.
+	Start time.Time
+	End   time.Time
+	// Offset shifts the buckets of toStartOfInterval, which would otherwise not
+	// start on Start.
+	Offset uint64
 }
 
-// templateEscape escapes `{{` and `}}` from a string. In fact, only
-// the opening tag needs to be escaped.
-func templateEscape(input string) string {
-	return strings.ReplaceAll(input, `{{`, `{{"{{"}}`)
-}
-
-// templateWhere transforms a filter to a WHERE clause
-func templateWhere(qf query.Filter) string {
-	if qf.Direct() == "" {
-		return `{{ .Timefilter }}`
+// unionAll combines the per-axis queries into the single statement sent to
+// ClickHouse. Only the first axis carries the WITH clause, the others reference
+// its CTEs.
+func unionAll(queries []*sb.Query) string {
+	first := queries[0]
+	for _, other := range queries[1:] {
+		first.UnionAll(other)
 	}
-	return fmt.Sprintf(`{{ .Timefilter }} AND (%s)`, templateEscape(qf.Direct()))
+	return first.String()
 }
 
-// finalizeTemplateQueries builds the finalized queries from a list of templateQuery.
-// Each template is processed with its associated context and combined with UNION ALL.
-func (c *Component) finalizeTemplateQueries(queries []templateQuery) string {
-	parts := make([]string, len(queries))
-	for i, q := range queries {
-		parts[i] = c.finalizeTemplateQuery(q)
-	}
-	return strings.Join(parts, "\nUNION ALL\n")
+// seconds returns an interval of the provided number of seconds.
+func seconds(count uint64) sb.Expr {
+	return sb.Interval(sb.Uint(count), "second")
 }
 
-// finalizeTemplateQuery builds the finalized query for a single templateQuery
-func (c *Component) finalizeTemplateQuery(query templateQuery) string {
-	input := query.Context
-	table, computedInterval, targetInterval := c.computeTableAndInterval(query.Context)
+// dateTime turns a timestamp into a UTC date-time.
+func dateTime(when time.Time) sb.Expr {
+	return sb.Function("toDateTime",
+		sb.String(when.UTC().Format("2006-01-02 15:04:05")),
+		sb.String("UTC"))
+}
 
-	// Make start/end match the computed interval (currently equal to the table resolution)
-	start := input.Start.Truncate(computedInterval)
-	end := input.End.Truncate(computedInterval)
-	// Adapt the computed interval to match the target one more closely
-	if targetInterval > computedInterval {
-		computedInterval = targetInterval.Truncate(computedInterval)
+// timefilterStart is the beginning of the resolved time range.
+func (r resolved) timefilterStart() sb.Expr {
+	return dateTime(r.Start)
+}
+
+// timefilterEnd is the end of the resolved time range.
+func (r resolved) timefilterEnd() sb.Expr {
+	return dateTime(r.End)
+}
+
+// timefilter restricts a query to the resolved time range.
+func (r resolved) timefilter() sb.Expr {
+	return sb.Between(sb.Column("TimeReceived"),
+		r.timefilterStart(), r.timefilterEnd())
+}
+
+// toStartOfInterval puts TimeReceived into a bucket. The buckets are shifted so
+// that the first one starts at the beginning of the time range.
+func (r resolved) toStartOfInterval() sb.Expr {
+	return sb.Op(
+		sb.Function("toStartOfInterval",
+			sb.Op(sb.Column("TimeReceived"), "+", seconds(r.Offset)),
+			seconds(r.Interval)),
+		"-", seconds(r.Offset))
+}
+
+// where turns a filter into a WHERE clause, restricted to the resolved time
+// range.
+func (r resolved) where(qf query.Filter) sb.Expr {
+	return sb.And(r.timefilter(), qf.Direct())
+}
+
+// unitsExpr returns the aggregate expression matching the requested units.
+// These are fixed formulas, easier to read and to check as SQL than as a tree
+// of calls. They are parsed once, at startup.
+func unitsExpr(units string) sb.Expr {
+	return unitsExprs[units]
+}
+
+var unitsExprs = map[string]sb.Expr{
+	"fps":   sb.MustParseExpr(`COUNT(*)`),
+	"pps":   sb.MustParseExpr(`SUM(Packets*SamplingRate)`),
+	"l3bps": sb.MustParseExpr(`SUM(Bytes*SamplingRate*8)`),
+	// For each packet, we add the Ethernet header (14 bytes), the FCS (4
+	// bytes), the preamble and start frame delimiter (8 bytes) and the IPG
+	// (~ 12 bytes). We don't include the VLAN header (4 bytes) as it is
+	// often not used with external entities. Both sFlow and IPFIX may have
+	// a better view of that, but we don't collect it yet.
+	"l2bps": sb.MustParseExpr(`SUM((Bytes+38*Packets)*SamplingRate*8)`),
+	// That's like l2bps, but this time we use the interface speed to get a
+	// percent value
+	"inl2%": sb.MustParseExpr(`ifNotFinite(SUM((Bytes+38*Packets)*SamplingRate*8*100/(InIfSpeed*1000000))/COUNT(DISTINCT ExporterAddress, InIfName),0)`),
+	// Same but using output interface as reference
+	"outl2%": sb.MustParseExpr(`ifNotFinite(SUM((Bytes+38*Packets)*SamplingRate*8*100/(OutIfSpeed*1000000))/COUNT(DISTINCT ExporterAddress, OutIfName),0)`),
+}
+
+// unitsWeightExpr returns what one row is worth for the requested units. It is
+// the value the matching aggregate in unitsExprs sums up. There is nothing for
+// the percentage units, as they divide by a number of interfaces, which is not
+// known from a single row.
+func unitsWeightExpr(units string) sb.Expr {
+	return map[string]sb.Expr{
+		"fps":   sb.MustParseExpr(`1`),
+		"pps":   sb.MustParseExpr(`Packets*SamplingRate`),
+		"l3bps": sb.MustParseExpr(`Bytes*SamplingRate*8`),
+		"l2bps": sb.MustParseExpr(`(Bytes+38*Packets)*SamplingRate*8`),
+	}[units]
+}
+
+// resolve picks the best table for the requested time range and the interval
+// between two points.
+func (c *Component) resolve(input inputContext) resolution {
+	table, tableInterval, targetInterval := c.computeTableAndInterval(input)
+
+	// Adapt the table interval to match the target one more closely
+	interval := tableInterval
+	if targetInterval > tableInterval {
+		interval = targetInterval.Truncate(tableInterval)
 	}
+
+	return resolution{
+		Table:         table,
+		Interval:      uint64(interval.Seconds()),
+		TableInterval: tableInterval,
+	}
+}
+
+// forRange applies a resolution to a time range, aligning it on the interval.
+func (r resolution) forRange(start, end time.Time) resolved {
+	interval := time.Duration(r.Interval) * time.Second
+	// Make start/end match the table interval
+	start = start.Truncate(r.TableInterval)
+	end = end.Truncate(r.TableInterval)
 	// Adapt end to ensure we get a full interval
-	end = start.Add(end.Sub(start).Truncate(computedInterval))
-	// Now, toStartOfInterval will provide an incorrect value. We
-	// compute a correction offset. Go's truncate seems to
-	// be different from what we expect.
-	computedIntervalOffset := start.UTC().Sub(
-		time.Unix(start.UTC().Unix()/
-			int64(computedInterval.Seconds())*
-			int64(computedInterval.Seconds()), 0))
-	diffOffset := uint64(computedInterval.Seconds()) - uint64(computedIntervalOffset.Seconds())
+	end = start.Add(end.Sub(start).Truncate(interval))
 
-	// Compute all strings
-	timefilterStart := fmt.Sprintf(`toDateTime('%s', 'UTC')`, start.UTC().Format("2006-01-02 15:04:05"))
-	timefilterEnd := fmt.Sprintf(`toDateTime('%s', 'UTC')`, end.UTC().Format("2006-01-02 15:04:05"))
-	timefilter := fmt.Sprintf(`TimeReceived BETWEEN %s AND %s`, timefilterStart, timefilterEnd)
-	var units string
-	switch input.Units {
-	case "fps":
-		units = `COUNT(*)`
-	case "pps":
-		units = `SUM(Packets*SamplingRate)`
-	case "l3bps":
-		units = `SUM(Bytes*SamplingRate*8)`
-	case "l2bps":
-		// For each packet, we add the Ethernet header (14 bytes), the FCS (4
-		// bytes), the preamble and start frame delimiter (8 bytes) and the IPG
-		// (~ 12 bytes). We don't include the VLAN header (4 bytes) as it is
-		// often not used with external entities. Both sFlow and IPFIX may have
-		// a better view of that, but we don't collect it yet.
-		units = `SUM((Bytes+38*Packets)*SamplingRate*8)`
-	case "inl2%":
-		// That's like l2bps, but this time we use the interface speed to get a
-		// percent value
-		units = `ifNotFinite(SUM((Bytes+38*Packets)*SamplingRate*8*100/(InIfSpeed*1000000))/COUNT(DISTINCT ExporterAddress, InIfName),0)`
-	case "outl2%":
-		// Same but using output interface as reference
-		units = `ifNotFinite(SUM((Bytes+38*Packets)*SamplingRate*8*100/(OutIfSpeed*1000000))/COUNT(DISTINCT ExporterAddress, OutIfName),0)`
+	return resolved{
+		Table:    r.Table,
+		Interval: r.Interval,
+		Start:    start,
+		End:      end,
+		Offset:   intervalOffset(start, r.Interval),
 	}
+}
 
-	c.metrics.clickhouseQueries.WithLabelValues(table).Inc()
+// shiftBack moves a resolved range back in time. Both ends move by the same
+// amount, so the range keeps its length and therefore its number of points.
+// This is how the previous period is drawn on the time axis of the main one.
+func (r resolved) shiftBack(offset time.Duration) resolved {
+	r.Start = r.Start.Add(-offset)
+	r.End = r.End.Add(-offset)
+	r.Offset = intervalOffset(r.Start, r.Interval)
+	return r
+}
 
-	context := context{
-		Table:           table,
-		Timefilter:      timefilter,
-		TimefilterStart: timefilterStart,
-		TimefilterEnd:   timefilterEnd,
-		Units:           units,
-		Interval:        uint64(computedInterval.Seconds()),
-		ToStartOfInterval: fmt.Sprintf(
-			`toStartOfInterval(%s + INTERVAL %d second, INTERVAL %d second) - INTERVAL %d second`,
-			"TimeReceived",
-			diffOffset,
-			uint64(computedInterval.Seconds()),
-			diffOffset),
-	}
-
-	t := template.Must(template.New("query").
-		Option("missingkey=error").
-		Parse(strings.TrimSpace(query.Template)))
-	buf := bytes.NewBufferString("")
-	if err := t.Execute(buf, context); err != nil {
-		c.r.Err(err).Str("query", query.Template).Msg("invalid query")
-		panic(err)
-	}
-	return buf.String()
+// intervalOffset returns by how much the buckets of toStartOfInterval have to
+// be shifted, as they would otherwise not start on the beginning of the range.
+// Not using Go's truncate, but I don't remember why...
+func intervalOffset(start time.Time, interval uint64) uint64 {
+	seconds := int64(interval)
+	aligned := time.Unix(start.UTC().Unix()/seconds*seconds, 0)
+	return interval - uint64(start.UTC().Sub(aligned).Seconds())
 }
 
 func (c *Component) computeTableAndInterval(input inputContext) (string, time.Duration, time.Duration) {
@@ -216,15 +272,10 @@ func (c *Component) computeTableAndInterval(input inputContext) (string, time.Du
 	targetInterval = max(targetInterval, time.Second)
 
 	// Select table
-	targetIntervalForTableSelection := targetInterval
 	if input.MainTableRequired {
 		return "flows", time.Second, targetInterval
 	}
-	startForTableSelection := input.Start
-	if input.StartForTableSelection != nil {
-		startForTableSelection = *input.StartForTableSelection
-	}
-	table, computedInterval := c.getBestTable(startForTableSelection, targetIntervalForTableSelection)
+	table, computedInterval := c.getBestTable(input.Start, targetInterval)
 	return table, computedInterval, targetInterval
 }
 
@@ -236,9 +287,8 @@ func (c *Component) getBestTable(start time.Time, targetInterval time.Duration) 
 	table := "flows"
 	computedInterval := time.Second
 	if len(c.flowsTables) > 0 {
-		// We can use the consolidated data. The first
-		// criteria is to find the tables matching the time
-		// criteria.
+		// We can use the consolidated data. The first criteria is to find the
+		// tables matching the time criteria.
 		candidates := []int{}
 		for idx, table := range c.flowsTables {
 			if start.After(table.Oldest.Add(table.Resolution)) {

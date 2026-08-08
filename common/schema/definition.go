@@ -12,6 +12,8 @@ import (
 	"akvorado/common/helpers/bimap"
 
 	"github.com/bits-and-blooms/bitset"
+	"google.golang.org/protobuf/encoding/protowire"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 // InterfaceBoundary identifies wether the interface is facing inside or outside the network.
@@ -121,8 +123,6 @@ const (
 	DictionaryProtocols string = "protocols"
 	// DictionaryICMP is the name of the icmp clickhouse dictionary.
 	DictionaryICMP string = "icmp"
-	// DictionaryNetworks is the name of the networks clickhouse dictionary.
-	DictionaryNetworks string = "networks"
 	// DictionaryTCP is the name of the TCP clickhouse dictionary
 	DictionaryTCP string = "tcp"
 	// DictionaryUDP is the name of the UDP clickhouse dictionary
@@ -297,62 +297,23 @@ func flows() Schema {
  ELSE ''
 END`,
 			},
-			{
-				Key:                     ColumnSrcAS,
-				ParserType:              "asn",
-				ClickHouseType:          "UInt32",
-				ClickHouseGenerateFrom:  "if(SrcAS = 0, c_SrcNetworks[asn], SrcAS)",
-				ClickHouseSelfGenerated: true,
-			},
-			{
-				Key:                    ColumnSrcNetName,
-				ParserType:             "string",
-				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "c_SrcNetworks[name]",
-			},
-			{
-				Key:                    ColumnSrcNetRole,
-				ParserType:             "string",
-				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "c_SrcNetworks[role]",
-			},
-			{
-				Key:                    ColumnSrcNetSite,
-				ParserType:             "string",
-				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "c_SrcNetworks[site]",
-			},
-			{
-				Key:                    ColumnSrcNetRegion,
-				ParserType:             "string",
-				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "c_SrcNetworks[region]",
-			},
-			{
-				Key:                    ColumnSrcNetTenant,
-				ParserType:             "string",
-				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "c_SrcNetworks[tenant]",
-			},
+			{Key: ColumnSrcAS, ParserType: "asn", ClickHouseType: "UInt32"},
+			{Key: ColumnSrcNetName, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
+			{Key: ColumnSrcNetRole, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
+			{Key: ColumnSrcNetSite, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
+			{Key: ColumnSrcNetRegion, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
+			{Key: ColumnSrcNetTenant, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
 			{Key: ColumnSrcVlan, ParserType: "uint", ClickHouseType: "UInt16", Disabled: true, Group: ColumnGroupL2},
+			{Key: ColumnSrcCountry, ParserType: "string", ClickHouseType: "FixedString(2)"},
 			{
-				Key:                    ColumnSrcCountry,
-				ParserType:             "string",
-				ClickHouseType:         "FixedString(2)",
-				ClickHouseGenerateFrom: "c_SrcNetworks[country]",
+				Key:        ColumnSrcGeoCity,
+				ParserType: "string",
+				/* Cardinality is expected to be low. Maxmind may have ~100k
+				   cities, but it is unlikely we get traffic from all of
+				   them. And that would still be OK. */
+				ClickHouseType: "LowCardinality(String)",
 			},
-			{
-				Key:                    ColumnSrcGeoCity,
-				ParserType:             "string",
-				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "c_SrcNetworks[city]",
-			},
-			{
-				Key:                    ColumnSrcGeoState,
-				ParserType:             "string",
-				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "c_SrcNetworks[state]",
-			},
+			{Key: ColumnSrcGeoState, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
 			{
 				Key:                ColumnDstASPath,
 				ParserType:         "aspath",
@@ -579,8 +540,7 @@ END`,
 
 // shouldProvideValue tells if we should send a value for this column to ClickHouse.
 func (column *Column) shouldProvideValue() bool {
-	return (column.ClickHouseGenerateFrom == "" || column.ClickHouseSelfGenerated) &&
-		column.ClickHouseAlias == ""
+	return column.ClickHouseGenerateFrom == "" && column.ClickHouseAlias == ""
 }
 
 func (schema Schema) finalize() Schema {
@@ -634,6 +594,50 @@ func (schema Schema) finalize() Schema {
 		swapPrefix("InIf", "OutIf")
 	}
 	schema.columns = ncolumns
+
+	// Assign Protobuf field numbers and wire types (used only by the optional
+	// outlet Kafka output; ignored on the ClickHouse-only path). Indices are
+	// sequential over the exported columns; the type is derived from the
+	// ClickHouse type, mirroring the pre-2.0 encoder.
+	protobufIndex := 1
+	for i := range schema.columns {
+		column := &schema.columns[i]
+		if !column.shouldProvideValue() {
+			column.ProtobufIndex = -1
+			continue
+		}
+		if column.ProtobufIndex == 0 {
+			column.ProtobufIndex = protowire.Number(protobufIndex)
+			protobufIndex++
+		}
+		if column.ProtobufType == 0 {
+			switch column.ClickHouseType {
+			case "String", "LowCardinality(String)", "FixedString(2)":
+				column.ProtobufType = protoreflect.StringKind
+			case "UInt64":
+				column.ProtobufType = protoreflect.Uint64Kind
+			case "UInt32", "UInt16", "UInt8", "DateTime":
+				column.ProtobufType = protoreflect.Uint32Kind
+			case "IPv6", "LowCardinality(IPv6)":
+				column.ProtobufType = protoreflect.BytesKind
+			case "Array(UInt32)":
+				column.ProtobufType = protoreflect.Uint32Kind
+				column.ProtobufRepeated = true
+			case "Array(UInt128)":
+				column.ProtobufType = protoreflect.BytesKind
+				column.ProtobufRepeated = true
+			default:
+				// Enum8(...) and any other integer-backed type: encode the
+				// numeric value as a varint.
+				if strings.HasPrefix(column.ClickHouseType, "Enum8") {
+					column.ProtobufType = protoreflect.Uint32Kind
+				} else {
+					// Unknown/unsupported type: do not export.
+					column.ProtobufIndex = -1
+				}
+			}
+		}
+	}
 
 	// Build column index
 	maxKey := ColumnTimeReceived

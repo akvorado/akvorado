@@ -36,4 +36,24 @@ export function compareFields(f1: string, f2: string) {
   return f1.localeCompare(f2);
 }
 
+// Reverse the direction of a dimension name, the same way the backend does
+// for the reverse axis of a bidirectional query. The candidate name is only
+// used when it is part of the known dimensions, otherwise the name is kept
+// unchanged.
+export function reverseDimension(name: string, known: readonly string[]) {
+  const prefixes = [
+    ["Src", "Dst"],
+    ["Dst", "Src"],
+    ["In", "Out"],
+    ["Out", "In"],
+  ];
+  for (const [from, to] of prefixes) {
+    if (name.startsWith(from)) {
+      const candidate = `${to}${name.slice(from.length)}`;
+      return known.includes(candidate) ? candidate : name;
+    }
+  }
+  return name;
+}
+
 export { dataColor, dataColorGrey } from "./palette.js";

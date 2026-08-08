@@ -11,16 +11,12 @@ import (
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
-	"akvorado/orchestrator/geoip"
 )
 
 func TestHTTPEndpoints(t *testing.T) {
 	r := reporter.NewMock(t)
 	config := DefaultConfiguration()
 	config.SkipMigrations = true
-	config.Networks = helpers.MustNewSubnetMap(map[string]NetworkAttributes{
-		"::ffff:192.0.2.0/120": {Name: "infra"},
-	})
 	// setup schema config for custom dicts
 	schemaConfig := schema.DefaultConfiguration()
 	schemaConfig.CustomDictionaries = make(map[string]schema.CustomDict)
@@ -40,7 +36,6 @@ func TestHTTPEndpoints(t *testing.T) {
 		Daemon:     daemon.NewMock(t),
 		HTTP:       httpserver.NewMock(t, r),
 		Schema:     sch,
-		GeoIP:      geoip.NewMock(t, r, false),
 		ClickHouse: nil,
 	})
 	if err != nil {
@@ -63,13 +58,6 @@ func TestHTTPEndpoints(t *testing.T) {
 			FirstLines: []string{
 				`"asn","name"`,
 				`1,"Level 3 Communications"`,
-			},
-		}, {
-			URL:         "/api/v0/orchestrator/clickhouse/networks.csv",
-			ContentType: "text/csv; charset=utf-8",
-			FirstLines: []string{
-				`network,name,role,site,region,country,state,city,tenant,asn`,
-				`::ffff:192.0.2.0/120,infra,,,,,,,,`,
 			},
 		}, {
 			URL:         "/api/v0/orchestrator/clickhouse/custom_dict_none.csv",
@@ -101,7 +89,6 @@ func TestAdditionalASNs(t *testing.T) {
 		Daemon:     daemon.NewMock(t),
 		HTTP:       httpserver.NewMock(t, r),
 		Schema:     schema.NewMock(t),
-		GeoIP:      geoip.NewMock(t, r, false),
 		ClickHouse: nil,
 	})
 	if err != nil {

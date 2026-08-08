@@ -95,64 +95,50 @@
   name: SrcAS
   parsertype: asn
   clickhousetype: UInt32
-  clickhousegeneratefrom: if(SrcAS = 0, c_SrcNetworks[asn], SrcAS)
-  clickhouseselfgenerated: true
 - key: DstAS
   name: DstAS
   parsertype: asn
   clickhousetype: UInt32
-  clickhousegeneratefrom: if(DstAS = 0, c_DstNetworks[asn], DstAS)
-  clickhouseselfgenerated: true
 - key: SrcNetName
   name: SrcNetName
   parsertype: string
   clickhousetype: LowCardinality(String)
-  clickhousegeneratefrom: c_SrcNetworks[name]
 - key: DstNetName
   name: DstNetName
   parsertype: string
   clickhousetype: LowCardinality(String)
-  clickhousegeneratefrom: c_DstNetworks[name]
 - key: SrcNetRole
   name: SrcNetRole
   parsertype: string
   clickhousetype: LowCardinality(String)
-  clickhousegeneratefrom: c_SrcNetworks[role]
 - key: DstNetRole
   name: DstNetRole
   parsertype: string
   clickhousetype: LowCardinality(String)
-  clickhousegeneratefrom: c_DstNetworks[role]
 - key: SrcNetSite
   name: SrcNetSite
   parsertype: string
   clickhousetype: LowCardinality(String)
-  clickhousegeneratefrom: c_SrcNetworks[site]
 - key: DstNetSite
   name: DstNetSite
   parsertype: string
   clickhousetype: LowCardinality(String)
-  clickhousegeneratefrom: c_DstNetworks[site]
 - key: SrcNetRegion
   name: SrcNetRegion
   parsertype: string
   clickhousetype: LowCardinality(String)
-  clickhousegeneratefrom: c_SrcNetworks[region]
 - key: DstNetRegion
   name: DstNetRegion
   parsertype: string
   clickhousetype: LowCardinality(String)
-  clickhousegeneratefrom: c_DstNetworks[region]
 - key: SrcNetTenant
   name: SrcNetTenant
   parsertype: string
   clickhousetype: LowCardinality(String)
-  clickhousegeneratefrom: c_SrcNetworks[tenant]
 - key: DstNetTenant
   name: DstNetTenant
   parsertype: string
   clickhousetype: LowCardinality(String)
-  clickhousegeneratefrom: c_DstNetworks[tenant]
 - key: SrcVlan
   name: SrcVlan
   group: 1
@@ -167,32 +153,26 @@
   name: SrcCountry
   parsertype: string
   clickhousetype: FixedString(2)
-  clickhousegeneratefrom: c_SrcNetworks[country]
 - key: DstCountry
   name: DstCountry
   parsertype: string
   clickhousetype: FixedString(2)
-  clickhousegeneratefrom: c_DstNetworks[country]
 - key: SrcGeoCity
   name: SrcGeoCity
   parsertype: string
   clickhousetype: LowCardinality(String)
-  clickhousegeneratefrom: c_SrcNetworks[city]
 - key: DstGeoCity
   name: DstGeoCity
   parsertype: string
   clickhousetype: LowCardinality(String)
-  clickhousegeneratefrom: c_DstNetworks[city]
 - key: SrcGeoState
   name: SrcGeoState
   parsertype: string
   clickhousetype: LowCardinality(String)
-  clickhousegeneratefrom: c_SrcNetworks[state]
 - key: DstGeoState
   name: DstGeoState
   parsertype: string
   clickhousetype: LowCardinality(String)
-  clickhousegeneratefrom: c_DstNetworks[state]
 - key: DstASPath
   name: DstASPath
   parsertype: aspath

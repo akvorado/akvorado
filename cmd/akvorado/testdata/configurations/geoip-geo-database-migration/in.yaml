@@ -1,6 +1,6 @@
 ---
 inlet:
-  # This should move geoip to clickhouse but also transform country-database to
+  # This should move geoip to outlet but also transform country-database to
   # geo-database.
   geoip:
     asn-database: /usr/share/GeoIP/GeoLite2-ASN.mmdb

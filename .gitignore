@@ -11,9 +11,10 @@ mock_*.go
 *.pb.go
 
 /console/data/frontend/
-/console/data/docs/98-metrics.md
+/console/data/docs/53-metrics.md
 
 *~
+__pycache__/
 /outlet/routing/provider/bmp/testdata/*.svg
 /.go-cache
 /.npm-cache

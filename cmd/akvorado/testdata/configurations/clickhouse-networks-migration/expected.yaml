@@ -1,6 +1,6 @@
 ---
 paths:
-  clickhouse.networks:
+  outlet.0.networks.networks:
     192.0.2.0/24:
       asn: 0
       city: ""

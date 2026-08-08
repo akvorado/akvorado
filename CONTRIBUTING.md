@@ -70,6 +70,18 @@ setup, then in `console/frontend`, use `pnpm run dev` and point your browser to
 `http://localhost:5173` instead of `http://localhost:8080`. Any change of
 frontend-related files should be applied immediately.
 
+When working on the frontend only, you can skip the local setup entirely and use
+a public instance as the API backend. Set `AKVORADO_API_URL` before starting the
+development server:
+
+```console
+$ cd console/frontend
+$ AKVORADO_API_URL=https://demo.akvorado.net pnpm run dev
+```
+
+Then, point your browser to `http://localhost:5173`. All `/api` requests are
+proxied to the public instance, which provides real data to work with.
+
 # Licensing
 
 The code is licensed under AGPL-3.0-only. When creating new files, be sure to

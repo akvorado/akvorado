@@ -1,6 +1,6 @@
 ---
 paths:
-  clickhouse.networks:
+  outlet.0.networks.networks:
     192.0.2.0/24:
       asn: 0
       city: ""
@@ -45,7 +45,7 @@ paths:
     - kafka:9092
   inlet.0.kafka.brokers:
     - kafka:9092
-  outlet.0.kafka.brokers:
+  outlet.0.kafkainput.brokers:
     - kafka:9092
   outlet.0.metadata.providers.0.credentials:
     ::/0:

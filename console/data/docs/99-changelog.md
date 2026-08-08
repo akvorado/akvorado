@@ -12,6 +12,34 @@ identified with a specific icon:
 
 ## Unreleased
 
+*Akvorado* does not use the `networks` ClickHouse dictionary anymore. It is not
+removed on upgrade: it still holds a copy of the GeoIP databases in ClickHouse
+memory. Drop it on each cluster member once the new version runs:
+
+```console
+# docker compose exec clickhouse clickhouse-client --query "DROP DICTIONARY IF EXISTS networks"
+```
+
+- 💥 *outlet*: rename the Kafka input metrics from `akvorado_outlet_kafka_*` to
+  `akvorado_outlet_kafkainput_*`
+- ✨ *outlet*: optionally export decoded and enriched flows to a Kafka topic
+- ✨ *console*: add arrows in the time range fields to move it backward or forward
+- ✨ *console*: add an auto refresh selector for time ranges ending with `now`
+- ✨ *console*: allow filters to compare two columns, like `SrcPort < DstPort`,
+  `DstAS != SrcAS` or `InIfConnectivity != OutIfConnectivity`
+- 🩹 *console*: keep the apply button on the same line as the unit selector in the options panel
+- 🩹 *console*: fix the "max" and "last" limit types, which were selecting the same rows as "avg"
+- 🩹 *console*: fix the reverse direction of a filter on `SrcNetPrefix` or `DstNetPrefix`
+- 🩹 *console*: fix `NOT` in front of a filter on `SrcNetPrefix` or `DstNetPrefix`
+- 🩹 *orchestrator*: fix custom dictionaries with an IP prefix layout
+- 🌱 *console*: pick the top rows with `topKWeighted` on the unconsolidated table to use less memory
+- 🌱 *docs*: reorganize the documentation with the Diátaxis framework
+- 🌱 *docs*: serve the documentation as Markdown when explicitely asked
+- 🌱 *outlet*: move GeoIP and network attributes from ClickHouse to the outlet
+- 🌱 *docker*: update Kafka to 4.3.1 (not mandatory)
+
+## 2.4.1 - 2026-07-14
+
 - 🩹 *outlet*: fix decoding of destination MAC address for sFlow
 - 🩹 *console*: avoid clipped labels in Sankey graphs
 - 🩹 *console*: fix empty widgets when toggling dark mode
@@ -72,7 +100,7 @@ ClickHouse.
 
 - ✨ *inlet*: add per-exporter flow rate limiting with `rate-limit` option
 - 🌱 *outlet*: bufferize BMP messages to avoid being flagged “stuck”
-- 🌱 *docs*: export all metrics in [documentation](98-metrics.md)
+- 🌱 *docs*: export all metrics in [documentation](53-metrics.md)
 - 🌱 *build*: build with Go 1.26
 
 ## 2.1.1 - 2026-01-17
