@@ -44,6 +44,140 @@ func TestDecodeMPLSAndIPv4(t *testing.T) {
 	}
 }
 
+func TestDecodeMPLSExplicitNullIPv4(t *testing.T) {
+	sch := schema.NewMock(t).EnableAllColumns()
+	pcap := helpers.ReadPcapL2(t, filepath.Join("testdata", "mpls-explicit-null-ipv4.pcap"))
+	bf := sch.NewFlowMessage()
+	l := ParseEthernet(sch, bf, pb.RawFlow_DECAP_NONE, pcap)
+	if l != 40 {
+		t.Errorf("ParseEthernet() returned %d, expected 40", l)
+	}
+	expected := &schema.FlowMessage{
+		SrcAddr: netip.MustParseAddr("::ffff:10.31.0.1"),
+		DstAddr: netip.MustParseAddr("::ffff:10.34.0.1"),
+		OtherColumns: map[schema.ColumnKey]any{
+			schema.ColumnEType:        uint32(constants.ETypeIPv4),
+			schema.ColumnProto:        uint32(constants.ProtoTCP),
+			schema.ColumnSrcPort:      uint16(11001),
+			schema.ColumnDstPort:      uint16(23),
+			schema.ColumnTCPFlags:     uint16(16),
+			schema.ColumnMPLSLabels:   []uint32{0},
+			schema.ColumnIPTTL:        uint8(255),
+			schema.ColumnIPFragmentID: uint32(8),
+			schema.ColumnSrcMAC:       uint64(0x003096052838),
+			schema.ColumnDstMAC:       uint64(0x003096e6fc39),
+		},
+	}
+	if diff := helpers.Diff(bf, expected); diff != "" {
+		t.Fatalf("ParseEthernet() (-got, +want):\n%s", diff)
+	}
+}
+
+func TestDecodeMPLSExplicitNullIPv6(t *testing.T) {
+	sch := schema.NewMock(t).EnableAllColumns()
+	pcap := helpers.ReadPcapL2(t, filepath.Join("testdata", "mpls-explicit-null-ipv6.pcap"))
+	bf := sch.NewFlowMessage()
+	l := ParseEthernet(sch, bf, pb.RawFlow_DECAP_NONE, pcap)
+	if l != 60 {
+		t.Errorf("ParseEthernet() returned %d, expected 60", l)
+	}
+	expected := &schema.FlowMessage{
+		SrcAddr: netip.MustParseAddr("2001:db8::1"),
+		DstAddr: netip.MustParseAddr("2001:db8::2"),
+		OtherColumns: map[schema.ColumnKey]any{
+			schema.ColumnEType:      uint32(constants.ETypeIPv6),
+			schema.ColumnProto:      uint32(constants.ProtoTCP),
+			schema.ColumnSrcPort:    uint16(11001),
+			schema.ColumnDstPort:    uint16(80),
+			schema.ColumnTCPFlags:   uint16(16),
+			schema.ColumnMPLSLabels: []uint32{2},
+			schema.ColumnIPTTL:      uint8(64),
+			schema.ColumnSrcMAC:     uint64(0x003096052838),
+			schema.ColumnDstMAC:     uint64(0x003096e6fc39),
+		},
+	}
+	if diff := helpers.Diff(bf, expected); diff != "" {
+		t.Fatalf("ParseEthernet() (-got, +want):\n%s", diff)
+	}
+}
+
+func TestDecodeMPLSAndIPv6(t *testing.T) {
+	sch := schema.NewMock(t).EnableAllColumns()
+	pcap := helpers.ReadPcapL2(t, filepath.Join("testdata", "mpls-ipv6.pcap"))
+	bf := sch.NewFlowMessage()
+	l := ParseEthernet(sch, bf, pb.RawFlow_DECAP_NONE, pcap)
+	if l != 60 {
+		t.Errorf("ParseEthernet() returned %d, expected 60", l)
+	}
+	expected := &schema.FlowMessage{
+		SrcAddr: netip.MustParseAddr("2001:db8::1"),
+		DstAddr: netip.MustParseAddr("2001:db8::2"),
+		OtherColumns: map[schema.ColumnKey]any{
+			schema.ColumnEType:      uint32(constants.ETypeIPv6),
+			schema.ColumnProto:      uint32(constants.ProtoTCP),
+			schema.ColumnSrcPort:    uint16(11001),
+			schema.ColumnDstPort:    uint16(80),
+			schema.ColumnTCPFlags:   uint16(16),
+			schema.ColumnMPLSLabels: []uint32{100},
+			schema.ColumnIPTTL:      uint8(64),
+			schema.ColumnSrcMAC:     uint64(0x003096052838),
+			schema.ColumnDstMAC:     uint64(0x003096e6fc39),
+		},
+	}
+	if diff := helpers.Diff(bf, expected); diff != "" {
+		t.Fatalf("ParseEthernet() (-got, +want):\n%s", diff)
+	}
+}
+
+func TestDecodeMPLSControlWord(t *testing.T) {
+	sch := schema.NewMock(t).EnableAllColumns()
+	pcap := helpers.ReadPcapL2(t, filepath.Join("testdata", "mpls-eompls-cw.pcap"))
+	bf := sch.NewFlowMessage()
+	l := ParseEthernet(sch, bf, pb.RawFlow_DECAP_NONE, pcap)
+	if l != 40 {
+		t.Errorf("ParseEthernet() returned %d, expected 40", l)
+	}
+	expected := &schema.FlowMessage{
+		SrcAddr: netip.MustParseAddr("::ffff:10.31.0.1"),
+		DstAddr: netip.MustParseAddr("::ffff:10.34.0.1"),
+		OtherColumns: map[schema.ColumnKey]any{
+			schema.ColumnEType:        uint32(constants.ETypeIPv4),
+			schema.ColumnProto:        uint32(constants.ProtoTCP),
+			schema.ColumnSrcPort:      uint16(11001),
+			schema.ColumnDstPort:      uint16(23),
+			schema.ColumnTCPFlags:     uint16(16),
+			schema.ColumnMPLSLabels:   []uint32{300012, 17},
+			schema.ColumnIPTTL:        uint8(255),
+			schema.ColumnIPFragmentID: uint32(8),
+			schema.ColumnSrcMAC:       uint64(0x003096052838),
+			schema.ColumnDstMAC:       uint64(0x003096e6fc39),
+		},
+	}
+	if diff := helpers.Diff(bf, expected); diff != "" {
+		t.Fatalf("ParseEthernet() (-got, +want):\n%s", diff)
+	}
+}
+
+func TestDecodeMPLSInvalidControlWord(t *testing.T) {
+	sch := schema.NewMock(t).EnableAllColumns()
+	pcap := helpers.ReadPcapL2(t, filepath.Join("testdata", "mpls-eompls-invalid-cw.pcap"))
+	bf := sch.NewFlowMessage()
+	l := ParseEthernet(sch, bf, pb.RawFlow_DECAP_NONE, pcap)
+	if l != 0 {
+		t.Errorf("ParseEthernet() returned %d, expected 0", l)
+	}
+}
+
+func TestDecodeMPLSInvalidNibble(t *testing.T) {
+	sch := schema.NewMock(t).EnableAllColumns()
+	pcap := helpers.ReadPcapL2(t, filepath.Join("testdata", "mpls-invalid-nibble.pcap"))
+	bf := sch.NewFlowMessage()
+	l := ParseEthernet(sch, bf, pb.RawFlow_DECAP_NONE, pcap)
+	if l != 0 {
+		t.Errorf("ParseEthernet() returned %d, expected 0", l)
+	}
+}
+
 func TestDecodeVLANAndIPv6(t *testing.T) {
 	sch := schema.NewMock(t).EnableAllColumns()
 	pcap := helpers.ReadPcapL2(t, filepath.Join("testdata", "vlan-ipv6.pcap"))
