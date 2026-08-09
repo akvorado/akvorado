@@ -6,8 +6,8 @@ toolchain go1.26.5
 
 require (
 	github.com/AfterShip/clickhouse-sql-parser v0.5.5-0.20260806024314-44047b02ce05
-	github.com/ClickHouse/ch-go v0.73.0
-	github.com/ClickHouse/clickhouse-go/v2 v2.47.0
+	github.com/ClickHouse/ch-go v0.74.0
+	github.com/ClickHouse/clickhouse-go/v2 v2.48.0
 	github.com/alecthomas/chroma/v2 v2.23.1
 	github.com/aperturerobotics/protobuf-go-lite v0.16.0
 	github.com/benbjohnson/clock v1.3.5
@@ -74,7 +74,7 @@ require (
 	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/AlekSi/pointer v1.2.0 // indirect
 	github.com/BurntSushi/toml v1.6.0 // indirect
-	github.com/andybalholm/brotli v1.2.1 // indirect
+	github.com/andybalholm/brotli v1.2.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bio-routing/tflow2 v0.0.0-20181230153523-2e308a4a3c3a // indirect
 	github.com/bitfield/gotestdox v0.2.2 // indirect
@@ -119,7 +119,7 @@ require (
 	github.com/jessevdk/go-flags v1.6.1 // indirect
 	github.com/jhump/protoreflect v1.17.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
-	github.com/klauspost/compress v1.19.0 // indirect
+	github.com/klauspost/compress v1.19.1 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20260330125221-c963978e514e // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
