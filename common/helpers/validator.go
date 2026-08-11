@@ -64,9 +64,9 @@ func isListen(fl validator.FieldLevel) bool {
 		return false
 	}
 
-	// If host is specified, it should match a DNS name
+	// If host is specified, it should match an IP address or DNS name
 	if host != "" {
-		return Validate.Var(host, "hostname_rfc1123") == nil
+		return Validate.Var(host, "ip|hostname_rfc1123") == nil
 	}
 	return true
 }
