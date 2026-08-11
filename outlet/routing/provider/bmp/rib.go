@@ -405,9 +405,13 @@ func (r *rib) RemoveRoute(prefix netip.Prefix, rr rawRoute) (int, bool) {
 // FlushPeer removes a whole peer from the RIB, returning the number
 // of removed routes and the number of removed prefixes.
 func (r *rib) FlushPeer(peer uint32) (int, int) {
-	routesRemoved := 0
-	prefixesRemoved := 0
-	anyEmpty := false
+	type shardResults struct {
+		anyEmpty        bool
+		prefixesRemoved int
+		routesRemoved   int
+	}
+
+	results := make([]shardResults, len(r.shards))
 
 	// Lock all shards in order, then the tree writer lock.
 	for _, rs := range r.shards {
@@ -417,17 +421,34 @@ func (r *rib) FlushPeer(peer uint32) (int, int) {
 	tree := r.tree.Load()
 
 	// Iterate through all prefixes and remove peer routes.
-	for _, ref := range tree.All() {
-		rs := r.shards[ref.idx.shardIdx()]
-		removed, empty := rs.removeRoutes(ref.idx, func(route route) bool {
-			return route.peer == peer
-		}, false)
-		routesRemoved += removed
-		if empty {
-			rs.freePrefixIndex(ref.idx)
-			prefixesRemoved++
-		}
-		anyEmpty = anyEmpty || empty
+	var wg sync.WaitGroup
+	for i, rs := range r.shards {
+		wg.Go(func() {
+			for _, ref := range tree.All() {
+				if ref.idx.shardIdx() != rs.idx {
+					continue
+				}
+				removed, empty := rs.removeRoutes(ref.idx, func(route route) bool {
+					return route.peer == peer
+				}, false)
+				results[i].routesRemoved += removed
+				if empty {
+					rs.freePrefixIndex(ref.idx)
+					results[i].prefixesRemoved++
+					results[i].anyEmpty = true
+				}
+			}
+		})
+	}
+	wg.Wait()
+
+	anyEmpty := false
+	prefixesRemoved := 0
+	routesRemoved := 0
+	for _, r := range results {
+		anyEmpty = anyEmpty || r.anyEmpty
+		prefixesRemoved += r.prefixesRemoved
+		routesRemoved += r.routesRemoved
 	}
 
 	if anyEmpty {
