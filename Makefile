@@ -90,6 +90,21 @@ WWHRD       = go tool wwhrd
 
 $(filter %.go, $(GENERATED_GO) $(GENERATED_TEST_GO)): go.mod
 
+# Several generated files share a common name pattern. Ignoring the pattern in
+# .gitignore would also hide files left over by a branch switch. Instead, each
+# file is listed and the list is kept up-to-date here.
+.gitignore: Makefile
+	$(call log,update .gitignore…)
+	$Q { patterns=$$(sed -n 's/^# Auto: //p' $@) ; \
+	     sed '/^# Auto: /,$$d' $@ ; \
+	     for pattern in $$patterns; do \
+	       echo ; echo "# Auto: $$pattern" ; \
+	       for file in $(GENERATED) $(GENERATED_TEST_GO); do \
+	         case $$file in $$pattern|*/$$pattern) echo "/$$file" ;; esac ; \
+	       done | sort ; \
+	     done ; } | cat -s > $@.tmp
+	$Q mv $@.tmp $@
+
 common/pb/rawflow.pb.go: .buf.gen.yaml common/pb/rawflow.proto
 	$(call log,compiling protocol buffers $@…)
 	$Q $(BUF) generate --template $(PWD)/.buf.gen.yaml --path $(@:.pb.go=.proto)
@@ -286,7 +301,7 @@ test-coverage-js: ; @ ## Run JS coverage tests
 	$Q cd console/frontend && $(PNPM) run --silent type-check && $(PNPM) run --silent test -- --coverage
 
 .PHONY: lint
-lint: .lint-go~ .lint-js~ ## Run linting
+lint: .gitignore .lint-go~ .lint-js~ ## Run linting
 .lint-go~: .revive.toml $(shell $(LSFILES) '*.go' 2> /dev/null)
 	$(call log,running golint…)
 	$Q $(REVIVE) -config $(PWD)/.revive.toml -formatter stylish -set_exit_status ./...

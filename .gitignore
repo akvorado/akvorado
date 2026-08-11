@@ -6,9 +6,6 @@
 /console/filter/parser.go
 /common/schema/definition_gen.go
 /common/embed/data/embed.zip
-mock_*.go
-*_enumer.go
-*.pb.go
 
 /console/data/frontend/
 /console/data/docs/53-metrics.md
@@ -19,3 +16,23 @@ __pycache__/
 /.go-cache
 /.npm-cache
 /result
+
+## Do not add more files after this line!
+
+# Auto: mock_*.go
+/common/clickhousedb/mocks/mock_driver.go
+
+# Auto: *_enumer.go
+/common/kafka/loadbalancealgorithm_enumer.go
+/common/kafka/saslmechanism_enumer.go
+/common/remotedatasource/paginationtype_enumer.go
+/common/remotedatasource/parsertype_enumer.go
+/console/homepagetopwidget_enumer.go
+/outlet/core/asnprovider_enumer.go
+/outlet/core/netprovider_enumer.go
+/outlet/metadata/provider/gnmi/ifspeedpathunit_enumer.go
+/outlet/metadata/provider/snmp/authprotocol_enumer.go
+/outlet/metadata/provider/snmp/privprotocol_enumer.go
+
+# Auto: *.pb.go
+/common/pb/rawflow.pb.go
