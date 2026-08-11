@@ -405,7 +405,6 @@ func (r *rib) RemoveRoute(prefix netip.Prefix, rr rawRoute) (int, bool) {
 // of removed routes and the number of removed prefixes.
 func (r *rib) FlushPeer(peer uint32) (int, int) {
 	type shardResults struct {
-		anyEmpty        bool
 		prefixesRemoved int
 		routesRemoved   int
 	}
@@ -434,23 +433,20 @@ func (r *rib) FlushPeer(peer uint32) (int, int) {
 				if empty {
 					rs.freePrefixIndex(ref.idx)
 					results[i].prefixesRemoved++
-					results[i].anyEmpty = true
 				}
 			}
 		})
 	}
 	wg.Wait()
 
-	anyEmpty := false
 	prefixesRemoved := 0
 	routesRemoved := 0
 	for _, r := range results {
-		anyEmpty = anyEmpty || r.anyEmpty
 		prefixesRemoved += r.prefixesRemoved
 		routesRemoved += r.routesRemoved
 	}
 
-	if anyEmpty {
+	if prefixesRemoved > 0 {
 		// Rebuild the tree excluding empty prefixes and publish it.
 		newTree := &bart.Fast[prefixRef]{}
 		for prefix, ref := range tree.All() {
