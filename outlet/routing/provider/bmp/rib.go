@@ -418,11 +418,27 @@ func (r *rib) FlushPeer(peer uint32) (int, int) {
 	r.treeMu.Lock()
 	tree := r.tree.Load()
 
+	// Channel to communicate prefixes to remove
+	prefixesToRemove := make(chan netip.Prefix, len(r.shards)<<1)
+
+	// Goroutine to handle prefix removal
+	var wgDelete sync.WaitGroup
+	wgDelete.Go(func() {
+		if prefix, ok := <-prefixesToRemove; ok {
+			newTree := tree.Clone()
+			newTree.Delete(prefix)
+			for prefix = range prefixesToRemove {
+				newTree.Delete(prefix)
+			}
+			r.tree.Store(newTree)
+		}
+	})
+
 	// Iterate through all prefixes and remove peer routes.
 	var wg sync.WaitGroup
 	for i, rs := range r.shards {
 		wg.Go(func() {
-			for _, ref := range tree.All() {
+			for prefix, ref := range tree.All() {
 				if ref.idx.shardIdx() != rs.idx {
 					continue
 				}
@@ -433,28 +449,22 @@ func (r *rib) FlushPeer(peer uint32) (int, int) {
 				if empty {
 					rs.freePrefixIndex(ref.idx)
 					results[i].prefixesRemoved++
+					prefixesToRemove <- prefix
 				}
 			}
 		})
 	}
 	wg.Wait()
 
+	// Close the channel to signal the prefix removal goroutine to finish
+	close(prefixesToRemove)
+	wgDelete.Wait()
+
 	prefixesRemoved := 0
 	routesRemoved := 0
 	for _, r := range results {
 		prefixesRemoved += r.prefixesRemoved
 		routesRemoved += r.routesRemoved
-	}
-
-	if prefixesRemoved > 0 {
-		// Rebuild the tree excluding empty prefixes and publish it.
-		newTree := &bart.Fast[prefixRef]{}
-		for prefix, ref := range tree.All() {
-			if _, hasRoutes := r.shards[ref.idx.shardIdx()].routes[makeRouteKey(ref.idx, 0)]; hasRoutes {
-				newTree.Insert(prefix, ref)
-			}
-		}
-		r.tree.Store(newTree)
 	}
 
 	r.treeMu.Unlock()
