@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/ClickHouse/ch-go"
-	"github.com/cenkalti/backoff/v5"
+	"github.com/cenkalti/backoff/v7"
 
 	"akvorado/common/reporter"
 	"akvorado/common/schema"

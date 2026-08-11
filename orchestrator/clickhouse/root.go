@@ -9,7 +9,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/cenkalti/backoff/v5"
+	"github.com/cenkalti/backoff/v7"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/clickhousedb"

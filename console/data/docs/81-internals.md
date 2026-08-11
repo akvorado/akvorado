@@ -341,7 +341,7 @@ that are spawned by the other components and waits for signals to terminate. If
   the clock. This is used, for example, in the console and in the BMP
   provider. Newer tests rely on `testing/synctest` instead, which controls time
   without changing the code under test.
-- [github.com/cenkalti/backoff/v5](https://github.com/cenkalti/backoff)
+- [github.com/cenkalti/backoff/v7](https://github.com/cenkalti/backoff)
   provides an exponential backoff algorithm for retries.
 - [github.com/eapache/go-resiliency](https://github.com/eapache/go-resiliency)
   implements several resiliency patterns, including the breaker
