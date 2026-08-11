@@ -15,7 +15,7 @@ import (
 
 	"akvorado/outlet/metadata/provider"
 
-	"github.com/cenkalti/backoff/v5"
+	"github.com/cenkalti/backoff/v7"
 	"github.com/openconfig/gnmic/pkg/api"
 	"github.com/openconfig/gnmic/pkg/api/target"
 )

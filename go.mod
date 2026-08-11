@@ -13,7 +13,6 @@ require (
 	github.com/benbjohnson/clock v1.3.5
 	github.com/bio-routing/bio-rd v0.1.10
 	github.com/bits-and-blooms/bitset v1.24.5
-	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/cenkalti/backoff/v7 v7.0.0
 	github.com/cilium/ebpf v0.22.0
 	github.com/eapache/go-resiliency v1.7.0
