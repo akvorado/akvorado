@@ -20,6 +20,9 @@ memory. Drop it on each cluster member once the new version runs:
 # docker compose exec clickhouse clickhouse-client --query "DROP DICTIONARY IF EXISTS networks"
 ```
 
+*Akvorado* is also switching to [calendar versioning](https://calver.org/) using
+the `YYYY.0M.MICRO` format (like Ubuntu).
+
 - 💥 *outlet*: rename the Kafka input metrics from `akvorado_outlet_kafka_*` to
   `akvorado_outlet_kafkainput_*`
 - ✨ *outlet*: optionally export decoded and enriched flows to a Kafka topic
