@@ -21,7 +21,7 @@ memory. Drop it on each cluster member once the new version runs:
 ```
 
 *Akvorado* is also switching to [calendar versioning](https://calver.org/) using
-the `YYYY.0M.MICRO` format (like Ubuntu).
+the `YYYY.MM.MICRO` format.
 
 - 💥 *outlet*: rename the Kafka input metrics from `akvorado_outlet_kafka_*` to
   `akvorado_outlet_kafkainput_*`
