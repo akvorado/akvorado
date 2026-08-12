@@ -108,7 +108,7 @@ func (p *Provider) removePeer(pkey peerKey, reason string) {
 	if !ok {
 		return
 	}
-	routesRemoved, prefixesRemoved := p.rib.FlushPeer(pinfo.reference)
+	routesRemoved, prefixesRemoved := p.rib.FlushPeer(pinfo.reference, len(p.peers))
 	delete(p.peers, pkey)
 	p.metrics.routes.WithLabelValues(exporterStr).Sub(float64(routesRemoved))
 	p.metrics.prefixesRemoved.WithLabelValues(exporterStr).Add(float64(prefixesRemoved))
