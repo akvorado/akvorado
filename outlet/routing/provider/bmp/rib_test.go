@@ -579,7 +579,11 @@ func TestRIBHarness(t *testing.T) {
 
 		// Remove everything
 		for i, peer := range peers {
-			r.FlushPeer(peer, len(peers)-i)
+			if i&1 == 0 {
+				r.FlushPeer(peer, len(peers)-i)
+			} else {
+				r.FlushPeerConcurrent(peer)
+			}
 		}
 
 		// Check for leak of interned values across all shards
