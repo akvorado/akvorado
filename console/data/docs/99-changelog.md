@@ -10,12 +10,6 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
-
-- 🩹 *console*: fix the links between the documentation pages
-- 🌱 *console*: do not display spinner when autorefresh is in progress
-- 🌱 *docs*: serve a Markdown index of the documentation on `/docs`
-
 ## 2026.8.0 - 2026-08-12
 
 *Akvorado* does not use the `networks` ClickHouse dictionary anymore. It is not
@@ -33,6 +27,7 @@ memory. Drop it on each cluster member once the new version runs:
 - ✨ *console*: add an auto refresh selector for time ranges ending with `now`
 - ✨ *console*: allow filters to compare two columns, like `SrcPort < DstPort`,
   `DstAS != SrcAS` or `InIfConnectivity != OutIfConnectivity`
+- 🩹 *console*: fix the links between the documentation pages
 - 🩹 *console*: keep the apply button on the same line as the unit selector in the options panel
 - 🩹 *console*: fix the "max" and "last" limit types, which were selecting the same rows as "avg"
 - 🩹 *console*: fix the reverse direction of a filter on `SrcNetPrefix` or `DstNetPrefix`
