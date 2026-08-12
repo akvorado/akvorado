@@ -151,11 +151,14 @@ func TestPrefersOverMarkdown(t *testing.T) {
 		// The media type is named.
 		{"application/json", "application/json", true},
 		{"application/json; charset=utf-8", "application/json", true},
-		{"text/markdown, application/json", "application/json", true},
 		{"text/markdown", "application/json", false},
 		// What a browser sends.
 		{"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "text/html", true},
 		{"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "application/json", false},
+		// Both are named at the same level: the specific media type wins.
+		{"text/markdown, text/html, */*", "text/html", false},
+		{"text/markdown, application/json", "application/json", false},
+		{"text/markdown;q=0.9, text/html;q=0.9", "text/html", false},
 		// Quality values decide between the two.
 		{"text/markdown;q=0.9,text/html;q=1", "text/html", true},
 		{"text/markdown;q=0.9, text/html;q=0.1", "text/html", false},
@@ -239,6 +242,12 @@ func TestServeSPADocs(t *testing.T) {
 		// Quality values are respected: HTML is named, but ranked lower.
 		{"markdown-preferred", "/docs/intro", "text/markdown;q=0.9, text/html;q=0.1",
 			"text/markdown; charset=utf-8", "Accept", "# Introduction"},
+		// A client naming both without ranking them takes either: it gets the
+		// source. This is what an LLM agent sends.
+		{"markdown-and-html", "/docs/intro", "text/markdown, text/html, */*",
+			"text/markdown; charset=utf-8", "Accept", "# Introduction"},
+		{"index-markdown-and-html", "/docs", "text/markdown, text/html, */*",
+			"text/markdown; charset=utf-8", "Accept", "# Akvorado documentation"},
 		{"html-preferred", "/docs/intro", "text/markdown;q=0.9, text/html;q=0.99",
 			"text/html; charset=utf-8", "Accept", "<!doctype html>"},
 		// A browser names text/html, so it gets the application.

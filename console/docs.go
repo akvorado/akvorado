@@ -369,7 +369,7 @@ func mediaTypeQuality(accept, mediaType string) float64 {
 // rather than for Markdown, which is the default answer.
 func prefersOverMarkdown(accept, mediaType string) bool {
 	quality := mediaTypeQuality(accept, mediaType)
-	return quality > 0 && quality >= mediaTypeQuality(accept, docsTypeMarkdown)
+	return quality > 0 && quality > mediaTypeQuality(accept, docsTypeMarkdown)
 }
 
 // internalLinkTransformer rewrites the links to the other documents to URLs
