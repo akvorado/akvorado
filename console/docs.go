@@ -39,6 +39,9 @@ var (
 	// source this time.
 	markdownLinkRegexp = regexp.MustCompile(`\]\(([0-9]+)-([a-z]+)\.md(#[^)]*)?\)`)
 
+	// documentTitleRegexp matches the title of a document.
+	documentTitleRegexp = regexp.MustCompile(`(?m)^# +(.*\S)`)
+
 	// docSections gives the Diátaxis section a document belongs to, depending on
 	// the number prefixing its file name. The first matching upper bound wins.
 	// Documents outside any section (the introduction and the changelog) get an
@@ -226,6 +229,66 @@ func (c *Component) findDocument(name string) []byte {
 	return nil
 }
 
+// documentTitle returns the title of a document, which is its first level-1
+// heading.
+func (c *Component) documentTitle(docs fs.FS, fileName string) string {
+	f, err := docs.Open(fileName)
+	if err != nil {
+		c.r.Err(err).Str("path", fileName).Msg("unable to open documentation file")
+		return ""
+	}
+	defer f.Close()
+	// The title is on the first line, there is no need to read the whole file.
+	head, err := io.ReadAll(io.LimitReader(f, 1024))
+	if err != nil {
+		c.r.Err(err).Str("path", fileName).Msg("unable to read documentation file")
+		return ""
+	}
+	matches := documentTitleRegexp.FindSubmatch(head)
+	if matches == nil {
+		return ""
+	}
+	return string(matches[1])
+}
+
+// documentIndex builds a Markdown index of the documentation: each document
+// with its title, grouped by section. Documents without a title are left out.
+// It returns nil on error.
+func (c *Component) documentIndex() []byte {
+	docs := c.embedOrLiveFS("data/docs")
+	entries, err := fs.ReadDir(docs, ".")
+	if err != nil {
+		c.r.Err(err).Msg("unable to list documentation files")
+		return nil
+	}
+	var index strings.Builder
+	index.WriteString("# Akvorado documentation\n\n")
+	section := ""
+	for _, entry := range entries {
+		matches := internalLinkRegexp.FindStringSubmatch(entry.Name())
+		if matches == nil {
+			continue
+		}
+		title := c.documentTitle(docs, entry.Name())
+		if title == "" {
+			continue
+		}
+		if current := documentSection(matches[2]); current != section {
+			section = current
+			if section != "" {
+				fmt.Fprintf(&index, "- **%s**\n", section)
+			}
+		}
+		indent := ""
+		if section != "" {
+			indent = "  "
+		}
+		fmt.Fprintf(&index, "%s- [%s](%sdocs/%s)\n",
+			indent, title, c.urlPrefix(), matches[3])
+	}
+	return []byte(index.String())
+}
+
 // writeMarkdownDocument answers with the source of a document. Only the links
 // to the other documents are rewritten, to the matching URLs.
 func writeMarkdownDocument(w http.ResponseWriter, markdown []byte) {
@@ -233,12 +296,27 @@ func writeMarkdownDocument(w http.ResponseWriter, markdown []byte) {
 	w.Write(markdownLinkRegexp.ReplaceAll(markdown, []byte("](${2}${3})")))
 }
 
+// documentFromPath returns the document a URL of the web interface points to.
+// An empty name is for the index. The second value is false when the URL is not
+// a documentation page.
+func documentFromPath(path string) (string, bool) {
+	if path == "/docs" {
+		return "", true
+	}
+	name, ok := strings.CutPrefix(path, "/docs/")
+	if !ok || strings.Contains(name, "/") {
+		return "", false
+	}
+	return name, true
+}
+
 // serveMarkdownDocument answers with the source of a document when the request
 // is for a documentation page of the web interface and the client does not
-// prefer HTML. A browser asks for HTML, so it gets the application.
+// prefer HTML. A browser asks for HTML, so it gets the application. The
+// documentation root gets an index of the documents.
 func (c *Component) serveMarkdownDocument(w http.ResponseWriter, r *http.Request) bool {
-	name, ok := strings.CutPrefix(r.URL.Path, "/docs/")
-	if !ok || name == "" || strings.Contains(name, "/") {
+	name, ok := documentFromPath(r.URL.Path)
+	if !ok {
 		return false
 	}
 	// From now on, the answer depends on the Accept header, even when we let
@@ -247,7 +325,12 @@ func (c *Component) serveMarkdownDocument(w http.ResponseWriter, r *http.Request
 	if prefersOverMarkdown(r.Header.Get("Accept"), docsTypeHTML) {
 		return false
 	}
-	markdown := c.findDocument(name)
+	var markdown []byte
+	if name == "" {
+		markdown = c.documentIndex()
+	} else {
+		markdown = c.findDocument(name)
+	}
 	if markdown == nil {
 		// Let the application display its own error message.
 		return false

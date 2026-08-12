@@ -9,6 +9,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"slices"
 	"strings"
 	"testing"
 
@@ -21,6 +22,20 @@ func fetchDoc(t *testing.T, addr net.Addr, path, accept string) (*http.Response,
 	t.Helper()
 	req, err := http.NewRequest("GET",
 		fmt.Sprintf("http://%s/api/v0/console/docs/%s", addr, path), nil)
+	if err != nil {
+		t.Fatalf("NewRequest() error:\n%+v", err)
+	}
+	if accept != "" {
+		req.Header.Set("Accept", accept)
+	}
+	return http.DefaultClient.Do(req)
+}
+
+// fetchPage requests a page of the web interface with the provided Accept
+// header. An empty header is not sent at all.
+func fetchPage(t *testing.T, addr net.Addr, path, accept string) (*http.Response, error) {
+	t.Helper()
+	req, err := http.NewRequest("GET", fmt.Sprintf("http://%s%s", addr, path), nil)
 	if err != nil {
 		t.Fatalf("NewRequest() error:\n%+v", err)
 	}
@@ -225,6 +240,13 @@ func TestServeSPADocs(t *testing.T) {
 		{"browser", "/docs/intro", "text/html,application/xhtml+xml,*/*;q=0.8",
 			"text/html; charset=utf-8", "Accept", "<!doctype html>"},
 		{"html", "/docs/intro", "text/html", "text/html; charset=utf-8", "Accept", "<!doctype html>"},
+		// The documentation root gets an index of the documents.
+		{"index", "/docs", "text/markdown",
+			"text/markdown; charset=utf-8", "Accept", "# Akvorado documentation"},
+		{"index-trailing-slash", "/docs/", "text/markdown",
+			"text/markdown; charset=utf-8", "Accept", "# Akvorado documentation"},
+		{"index-browser", "/docs", "text/html,application/xhtml+xml,*/*;q=0.8",
+			"text/html; charset=utf-8", "Accept", "<!doctype html>"},
 		// A client accepting anything is not a browser: it gets the source.
 		{"anything", "/docs/intro", "*/*", "text/markdown; charset=utf-8", "Accept", "# Introduction"},
 		{"no-accept", "/docs/intro", "", "text/markdown; charset=utf-8", "Accept", "# Introduction"},
@@ -239,15 +261,7 @@ func TestServeSPADocs(t *testing.T) {
 			conf := DefaultConfiguration()
 			_, h, _, _ := NewMock(t, conf)
 
-			req, err := http.NewRequest("GET",
-				fmt.Sprintf("http://%s%s", h.LocalAddr(), tc.Path), nil)
-			if err != nil {
-				t.Fatalf("NewRequest() error:\n%+v", err)
-			}
-			if tc.Accept != "" {
-				req.Header.Set("Accept", tc.Accept)
-			}
-			resp, err := http.DefaultClient.Do(req)
+			resp, err := fetchPage(t, h.LocalAddr(), tc.Path, tc.Accept)
 			if err != nil {
 				t.Fatalf("GET %s:\n%+v", tc.Path, err)
 			}
@@ -264,6 +278,69 @@ func TestServeSPADocs(t *testing.T) {
 				t.Errorf("GET %s: does not contain %q", tc.Path, tc.Expect)
 			}
 		})
+	}
+}
+
+// The documentation root answers with an index of the documents, grouped by
+// section.
+func TestServeDocsIndex(t *testing.T) {
+	for _, live := range []bool{false, true} {
+		name := "embeddedfs"
+		if live {
+			name = "livefs"
+		}
+		t.Run(name, func(t *testing.T) {
+			conf := DefaultConfiguration()
+			conf.ServeLiveFS = live
+			_, h, _, _ := NewMock(t, conf)
+
+			resp, err := fetchPage(t, h.LocalAddr(), "/docs", "text/markdown")
+			if err != nil {
+				t.Fatalf("GET /docs:\n%+v", err)
+			}
+			defer resp.Body.Close()
+			body, _ := io.ReadAll(resp.Body)
+			got := strings.Split(string(body), "\n")
+
+			// Only check a few lines: adding a new document should not break
+			// this test.
+			expected := []string{
+				"# Akvorado documentation",
+				"- [Introduction](/docs/intro)",
+				"- **Tutorials**",
+				"  - [Explore the demo site](/docs/explore)",
+				"- **Reference**",
+				"  - [Configuration](/docs/configuration)",
+				"- [Changelog](/docs/changelog)",
+			}
+			for _, line := range expected {
+				if !slices.Contains(got, line) {
+					t.Errorf("GET /docs: does not contain line %q", line)
+				}
+			}
+			if t.Failed() {
+				t.Logf("Body:\n%s", string(body))
+			}
+		})
+	}
+}
+
+// The links of the index take the URL prefix into account.
+func TestServeDocsIndexWithURLPrefix(t *testing.T) {
+	conf := DefaultConfiguration()
+	conf.URLPrefix = "/akvorado"
+	_, h, _, _ := NewMock(t, conf)
+
+	resp, err := fetchPage(t, h.LocalAddr(), "/docs", "text/markdown")
+	if err != nil {
+		t.Fatalf("GET /docs:\n%+v", err)
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	expected := "- [Introduction](/akvorado/docs/intro)"
+	if !slices.Contains(strings.Split(string(body), "\n"), expected) {
+		t.Logf("Body:\n%s", string(body))
+		t.Errorf("GET /docs: does not contain line %q", expected)
 	}
 }
 

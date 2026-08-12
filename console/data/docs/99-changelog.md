@@ -13,6 +13,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🌱 *console*: do not display spinner when autorefresh is in progress
+- 🌱 *docs*: serve a Markdown index of the documentation on `/docs`
 
 ## 2026.8.0 - 2026-08-12
 
