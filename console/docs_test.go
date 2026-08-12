@@ -55,8 +55,13 @@ func TestServeDocs(t *testing.T) {
 			Path   string
 			Expect string
 		}{
-			{"usage", `<a href=\"configuration\">configuration section</a>`},
-			{"design", `../assets/docs/design.svg`},
+			// Links are relative to the <base> tag of the web interface, not to
+			// the page.
+			{"usage", `<a href=\"docs/configuration\">configuration section</a>`},
+			{"configuration", `<a href=\"docs/configuration#kafka-1\">orchestrator service</a>`},
+			// This includes the links to an anchor added by the footnotes.
+			{"intro", `<a href=\"docs/intro#fn:1\"`},
+			{"design", `<img src=\"assets/docs/design.svg\"`},
 			// Documents which do not exist anymore are served by their
 			// replacement.
 			{"operations", `<h1 id=\"configure-your-exporters\">`},

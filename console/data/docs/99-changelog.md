@@ -12,6 +12,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 🩹 *console*: fix the links between the documentation pages
 - 🌱 *console*: do not display spinner when autorefresh is in progress
 - 🌱 *docs*: serve a Markdown index of the documentation on `/docs`
 

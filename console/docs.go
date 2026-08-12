@@ -196,8 +196,16 @@ func (c *Component) docsHandlerFunc(w http.ResponseWriter, req *http.Request) {
 		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "Unable to render document."})
 		return
 	}
+
+	// Because of the <base> tag, the browser resolves a link to an anchor from
+	// the base URL instead of from the current page: name the page in each of
+	// them. This is done on the rendered document to also cover the links built
+	// by the footnote extension, which does it in its renderer.
+	rendered := strings.ReplaceAll(buf.String(), `href="#`,
+		fmt.Sprintf(`href="docs/%s#`, requestedDocument))
+
 	httpserver.WritePureJSON(w, http.StatusOK, helpers.M{
-		"markdown": buf.String(),
+		"markdown": rendered,
 		"toc":      toc,
 	})
 }
@@ -364,6 +372,9 @@ func prefersOverMarkdown(accept, mediaType string) bool {
 	return quality > 0 && quality >= mediaTypeQuality(accept, docsTypeMarkdown)
 }
 
+// internalLinkTransformer rewrites the links to the other documents to URLs
+// relative to the <base> tag of the web interface, which is where the browser
+// resolves them from.
 type internalLinkTransformer struct{}
 
 func (r *internalLinkTransformer) Transform(node *ast.Document, _ text.Reader, _ parser.Context) {
@@ -375,7 +386,7 @@ func (r *internalLinkTransformer) Transform(node *ast.Document, _ text.Reader, _
 		case *ast.Link:
 			matches := internalLinkRegexp.FindStringSubmatch(string(node.Destination))
 			if matches != nil {
-				node.Destination = fmt.Appendf(nil, "%s%s", matches[3], matches[4])
+				node.Destination = fmt.Appendf(nil, "docs/%s%s", matches[3], matches[4])
 			}
 		}
 		return ast.WalkContinue, nil
@@ -383,6 +394,8 @@ func (r *internalLinkTransformer) Transform(node *ast.Document, _ text.Reader, _
 	ast.Walk(node, replaceLinks)
 }
 
+// imageLinkTransformer rewrites the images of the documentation to URLs
+// relative to the <base> tag of the web interface.
 type imageLinkTransformer struct{}
 
 func (r *imageLinkTransformer) Transform(node *ast.Document, _ text.Reader, _ parser.Context) {
@@ -394,7 +407,7 @@ func (r *imageLinkTransformer) Transform(node *ast.Document, _ text.Reader, _ pa
 		case *ast.Image:
 			path := string(node.Destination)
 			if !strings.Contains(path, "/") {
-				node.Destination = fmt.Appendf(nil, "../assets/docs/%s", path)
+				node.Destination = fmt.Appendf(nil, "assets/docs/%s", path)
 			}
 		}
 		return ast.WalkContinue, nil
