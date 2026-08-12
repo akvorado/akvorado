@@ -497,7 +497,9 @@ jobs:
         with:
           persist-credentials: false
       - name: Generate changelog
-        run: make changelog.md
+        run: |
+          sudo apt-get install -qqy pandoc
+          make changelog.md
 
       # Get binary from build step
       - name: Download binary

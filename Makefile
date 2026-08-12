@@ -209,8 +209,11 @@ orchestrator/clickhouse/data/udp.csv orchestrator/clickhouse/data/tcp.csv: orche
 	$Q test -s $@
 
 changelog.md: docs/99-changelog.md # To be used by GitHub actions only.
-	$Q >  $@ < docs/99-changelog.md \
-		sed -n '/^## '$${GITHUB_REF##*/v}' -/,/^## /{//!p}'
+	$Q < docs/99-changelog.md \
+		sed -n '/^## '$${GITHUB_REF##*/v}' -/,/^## /{//!p}' \
+	  | pandoc -t gfm -f gfm --wrap=none \
+	  > $@
+	$Q >> $@ echo
 	$Q >> $@ echo "**Docker image**: \`docker pull quay.io/$${GITHUB_REPOSITORY}:$${GITHUB_REF##*/v}\`"
 	$Q >> $@ echo "**Full changelog**: https://github.com/$${GITHUB_REPOSITORY}/compare/v$$(< docs/99-changelog.md sed -n '/^## '$${GITHUB_REF##*/v}' -/,/^## /{s/^## \([0-9.a-z-]*\) -.*/\1/p}' | tail -1)...v$${GITHUB_REF##*/v}"
 
