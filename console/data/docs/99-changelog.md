@@ -10,6 +10,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🌱 *console*: do not display spinner when autorefresh is in progress
+
 ## 2026.8.0 - 2026-08-12
 
 *Akvorado* does not use the `networks` ClickHouse dictionary anymore. It is not

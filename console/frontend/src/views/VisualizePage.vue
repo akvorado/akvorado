@@ -11,7 +11,7 @@
       @cancel="canAbort && abort()"
     />
     <div class="grow overflow-y-auto">
-      <LoadingOverlay :loading="isFetching">
+      <LoadingOverlay :loading="isFetching && !autoQuery">
         <RequestSummary :request="request" />
         <div class="mx-4 my-2">
           <InfoBox v-if="errorMessage" kind="error">
@@ -75,7 +75,7 @@ const highlightedSerie = ref<number | null>(null);
 
 const updateTimeRange = ([start, end]: [Date, Date]) => {
   if (state.value === null) return;
-  replaceHistory.value = false;
+  autoQuery.value = false;
   state.value = {
     ...state.value,
     start: start.toISOString(),
@@ -87,11 +87,9 @@ const updateTimeRange = ([start, end]: [Date, Date]) => {
 
 // Main state
 const state = ref<ModelType>(null);
-// The auto refresh queries the same options again and again: replace the
-// current history entry instead of piling up one entry per refresh.
-const replaceHistory = ref(false);
+const autoQuery = ref(false);
 const updateState = (value: ModelType, auto?: boolean) => {
-  replaceHistory.value = !!auto;
+  autoQuery.value = !!auto;
   state.value = value;
 };
 
@@ -137,7 +135,7 @@ watch(
   () => {
     const newState = decodeState(props.routeState);
     if (!isEqual(newState, state.value)) {
-      replaceHistory.value = false;
+      autoQuery.value = false;
       state.value = newState;
     }
   },
@@ -265,7 +263,7 @@ const { data, execute, isFetching, aborted, abort, canAbort, error } = useFetch(
         name: "VisualizeWithState",
         params: { state: encodedState.value },
       };
-      if (route.name !== "VisualizeWithState" || replaceHistory.value) {
+      if (route.name !== "VisualizeWithState" || autoQuery.value) {
         await router.replace(routeTarget);
       } else {
         await router.push(routeTarget);
