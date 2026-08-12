@@ -4,7 +4,6 @@ The orchestrator service is configured through YAML files (provided in the
 `config/` directory) and includes the configuration of the other services.
 
 > [!TIP]
-
 > Other services query the orchestrator through HTTP on startup to get their
 > configuration. By default, the orchestrator restarts automatically if it
 > detects a configuration change, but this may fail if there is a configuration
