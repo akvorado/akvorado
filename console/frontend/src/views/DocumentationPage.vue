@@ -117,6 +117,7 @@
         <div
           class="prose-img:center prose prose-sm mx-auto pb-2 dark:prose-invert md:prose-base prose-h1:border-b-2 prose-h1:border-gray-200 prose-pre:whitespace-pre-wrap prose-pre:break-all prose-pre:rounded dark:prose-h1:border-gray-700"
           v-html="markdown"
+          @click="followLink"
         ></div>
         <!-- eslint-enable -->
       </div>
@@ -127,6 +128,7 @@
 <script lang="ts" setup>
 import { ref, computed, watch, inject, nextTick } from "vue";
 import { useFetch } from "@vueuse/core";
+import { useRouter } from "vue-router";
 import { useRouteHash } from "@vueuse/router";
 import InfoBox from "@/components/InfoBox.vue";
 import { TitleKey } from "@/components/TitleProvider.vue";
@@ -135,6 +137,33 @@ import { ServerConfigKey } from "@/components/ServerConfigProvider.vue";
 const serverConfiguration = inject(ServerConfigKey);
 const props = defineProps<{ id: string }>();
 const title = inject(TitleKey)!;
+const router = useRouter();
+
+// The links in a rendered document are plain links, so the browser loads the
+// whole application again. Hand over to the router the ones the application
+// knows about.
+const followLink = (event: MouseEvent) => {
+  if (
+    event.defaultPrevented ||
+    event.button !== 0 ||
+    event.altKey ||
+    event.ctrlKey ||
+    event.metaKey ||
+    event.shiftKey
+  )
+    return;
+  const link = (event.target as Element | null)?.closest("a");
+  if (!link || !link.getAttribute("href") || link.target) return;
+  const url = new URL(link.href);
+  const base = router.options.history.base;
+  if (url.origin !== window.location.origin) return;
+  if (!url.pathname.startsWith(base)) return;
+  const path = url.pathname.slice(base.length) || "/";
+  const target = router.resolve(`${path}${url.search}${url.hash}`);
+  if (target.name === "404") return;
+  event.preventDefault();
+  router.push(target);
+};
 
 // Grab document
 type DocumentationAnswer =
