@@ -404,13 +404,9 @@ func (r *rib) RemoveRoute(prefix netip.Prefix, rr rawRoute) (int, bool) {
 
 // FlushPeer removes a whole peer from the RIB, returning the number
 // of removed routes and the number of removed prefixes.
-func (r *rib) FlushPeer(peer uint32) (int, int) {
-	type shardResults struct {
-		prefixesRemoved int
-		routesRemoved   int
-	}
-
-	results := make([]shardResults, len(r.shards))
+func (r *rib) FlushPeer(peer uint32, peers int) (int, int) {
+	routesRemoved := 0
+	prefixesRemoved := 0
 
 	// Lock all shards in order, then the tree writer lock.
 	for _, rs := range r.shards {
@@ -419,53 +415,91 @@ func (r *rib) FlushPeer(peer uint32) (int, int) {
 	r.treeMu.Lock()
 	tree := r.tree.Load()
 
-	// Channel to communicate prefixes to remove
-	prefixesToRemove := make(chan netip.Prefix, len(r.shards)<<1)
-
-	// Goroutine to handle prefix removal
-	var wgDelete sync.WaitGroup
-	wgDelete.Go(func() {
-		if prefix, ok := <-prefixesToRemove; ok {
-			newTree := tree.Clone()
-			newTree.Delete(prefix)
-			for prefix = range prefixesToRemove {
-				newTree.Delete(prefix)
-			}
-			r.tree.Store(newTree)
+	if peers >= 4 && tree.Size() >= len(r.shards)<<9 {
+		type workerState struct {
+			prefixesRemoved int
+			routesRemoved   int
 		}
-	})
 
-	// Iterate through all prefixes and remove peer routes.
-	var wg sync.WaitGroup
-	for i, rs := range r.shards {
-		wg.Go(func() {
-			for prefix, ref := range tree.All() {
-				if ref.idx.shardIdx() != rs.idx {
-					continue
+		// Iterate through all prefixes and remove peer routes.
+		prefixesToRemove := make(chan netip.Prefix, len(r.shards)<<3)
+		states := make([]workerState, len(r.shards))
+
+		var wg sync.WaitGroup
+		for i, rs := range r.shards {
+			wg.Go(func() {
+				state := &states[i]
+				for prefix, ref := range tree.All() {
+					if ref.idx.shardIdx() != rs.idx {
+						continue
+					}
+					removed, empty := rs.removeRoutes(ref.idx, func(route route) bool {
+						return route.peer == peer
+					}, false)
+					state.routesRemoved += removed
+					if empty {
+						rs.freePrefixIndex(ref.idx)
+						state.prefixesRemoved++
+						prefixesToRemove <- prefix
+					}
 				}
-				removed, empty := rs.removeRoutes(ref.idx, func(route route) bool {
-					return route.peer == peer
-				}, false)
-				results[i].routesRemoved += removed
-				if empty {
-					rs.freePrefixIndex(ref.idx)
-					results[i].prefixesRemoved++
-					prefixesToRemove <- prefix
+			})
+		}
+
+		// Goroutine to remove empty prefixes from the tree and publish it.
+		go func() {
+			if prefix, ok := <-prefixesToRemove; ok {
+				newTree := tree.Clone()
+				newTree.Delete(prefix)
+				for prefix = range prefixesToRemove {
+					newTree.Delete(prefix)
 				}
+				r.tree.Store(newTree)
 			}
-		})
-	}
-	wg.Wait()
+		}()
 
-	// Close the channel to signal the prefix removal goroutine to finish
-	close(prefixesToRemove)
-	wgDelete.Wait()
+		wg.Wait()
+		close(prefixesToRemove)
 
-	prefixesRemoved := 0
-	routesRemoved := 0
-	for _, r := range results {
-		prefixesRemoved += r.prefixesRemoved
-		routesRemoved += r.routesRemoved
+		for _, state := range states {
+			prefixesRemoved += state.prefixesRemoved
+			routesRemoved += state.routesRemoved
+		}
+	} else {
+		// Iterate through all prefixes and remove peer routes.
+		for _, ref := range tree.All() {
+			rs := r.shards[ref.idx.shardIdx()]
+			removed, empty := rs.removeRoutes(ref.idx, func(route route) bool {
+				return route.peer == peer
+			}, false)
+			routesRemoved += removed
+			if empty {
+				rs.freePrefixIndex(ref.idx)
+				prefixesRemoved++
+			}
+		}
+
+		if routesRemoved > 0 {
+			if peers >= 4 {
+				// Remove empty prefixes from the tree and publish it.
+				newTree := tree.Clone()
+				for prefix, ref := range tree.All() {
+					if _, hasRoutes := r.shards[ref.idx.shardIdx()].routes[makeRouteKey(ref.idx, 0)]; !hasRoutes {
+						newTree.Delete(prefix)
+					}
+				}
+				r.tree.Store(newTree)
+			} else {
+				// Rebuild the tree excluding empty prefixes and publish it.
+				newTree := &bart.Fast[prefixRef]{}
+				for prefix, ref := range tree.All() {
+					if _, hasRoutes := r.shards[ref.idx.shardIdx()].routes[makeRouteKey(ref.idx, 0)]; hasRoutes {
+						newTree.Insert(prefix, ref)
+					}
+				}
+				r.tree.Store(newTree)
+			}
+		}
 	}
 
 	r.treeMu.Unlock()
