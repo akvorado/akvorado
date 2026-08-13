@@ -118,7 +118,7 @@ importers:
         version: 3.5.41(typescript@6.0.3)
       vue-echarts:
         specifier: ^8.0.1
-        version: 8.0.1(echarts@6.1.0)(vue@3.5.41(typescript@6.0.3))
+        version: 8.1.0(echarts@6.1.0)(vue@3.5.41(typescript@6.0.3))
       vue-resizer:
         specifier: ^1.1.9
         version: 1.2.0
@@ -1718,8 +1718,8 @@ packages:
   vscode-uri@3.1.0:
     resolution: {integrity: sha512-/BpdSx+yCQGnCvecbyXdxHDkuk55/G3xwnC0GqY4gmQ3j+A+g8kzzgB4Nk/SINjqn6+waqw3EgbVF2QKExkRxQ==}
 
-  vue-echarts@8.0.1:
-    resolution: {integrity: sha512-23rJTFLu1OUEGRWjJGmdGt8fP+8+ja1gVgzMYPIPaHWpXegcO1viIAaeu2H4QHESlVeHzUAHIxKXGrwjsyXAaA==}
+  vue-echarts@8.1.0:
+    resolution: {integrity: sha512-/uJVwijy3M2vIZ0NcPDgdZVqgboc6zZtC/vERfESau0eFpkHOIujj0sIiMiLP4kztQrckMFnDYWrid+gLI+IOg==}
     peerDependencies:
       echarts: ^6.0.0
       vue: ^3.3.0
@@ -3054,7 +3054,7 @@ snapshots:
 
   vscode-uri@3.1.0: {}
 
-  vue-echarts@8.0.1(echarts@6.1.0)(vue@3.5.41(typescript@6.0.3)):
+  vue-echarts@8.1.0(echarts@6.1.0)(vue@3.5.41(typescript@6.0.3)):
     dependencies:
       echarts: 6.1.0
       vue: 3.5.41(typescript@6.0.3)
