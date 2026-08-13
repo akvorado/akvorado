@@ -2,7 +2,7 @@ module akvorado
 
 go 1.26
 
-toolchain go1.26.5
+toolchain go1.26.6
 
 require (
 	github.com/AfterShip/clickhouse-sql-parser v0.5.5
