@@ -404,66 +404,6 @@ func (r *rib) RemoveRoute(prefix netip.Prefix, rr rawRoute) (int, bool) {
 // FlushPeer removes a whole peer from the RIB, returning the number
 // of removed routes and the number of removed prefixes.
 func (r *rib) FlushPeer(peer uint32, peers int) (int, int) {
-	if peers >= 4 && r.tree.Load().Size() >= len(r.shards)<<9 {
-		return r.FlushPeerConcurrent(peer)
-	}
-
-	routesRemoved := 0
-	prefixesRemoved := 0
-
-	// Lock all shards in order, then the tree writer lock.
-	for _, rs := range r.shards {
-		rs.mu.Lock()
-	}
-	r.treeMu.Lock()
-	tree := r.tree.Load()
-
-	// Iterate through all prefixes and remove peer routes.
-	for _, ref := range tree.All() {
-		rs := r.shards[ref.idx.shardIdx()]
-		removed, empty := rs.removeRoutes(ref.idx, func(route route) bool {
-			return route.peer == peer
-		}, false)
-		routesRemoved += removed
-		if empty {
-			rs.freePrefixIndex(ref.idx)
-			prefixesRemoved++
-		}
-	}
-
-	if routesRemoved > 0 {
-		if peers >= 4 {
-			// Remove empty prefixes from the tree and publish it.
-			newTree := tree.Clone()
-			for prefix, ref := range tree.All() {
-				if _, hasRoutes := r.shards[ref.idx.shardIdx()].routes[makeRouteKey(ref.idx, 0)]; !hasRoutes {
-					newTree.Delete(prefix)
-				}
-			}
-			r.tree.Store(newTree)
-		} else {
-			// Rebuild the tree excluding empty prefixes and publish it.
-			newTree := &bart.Fast[prefixRef]{}
-			for prefix, ref := range tree.All() {
-				if _, hasRoutes := r.shards[ref.idx.shardIdx()].routes[makeRouteKey(ref.idx, 0)]; hasRoutes {
-					newTree.Insert(prefix, ref)
-				}
-			}
-			r.tree.Store(newTree)
-		}
-	}
-
-	r.treeMu.Unlock()
-	for i := len(r.shards) - 1; i >= 0; i-- {
-		r.shards[i].mu.Unlock()
-	}
-
-	return routesRemoved, prefixesRemoved
-}
-
-// FlushPeerConcurrent behaves like FlushPeer, but removes the peer from all
-// shards concurrently.
-func (r *rib) FlushPeerConcurrent(peer uint32) (int, int) {
 	type workerState struct {
 		prefixesRemoved int
 		routesRemoved   int
@@ -476,8 +416,24 @@ func (r *rib) FlushPeerConcurrent(peer uint32) (int, int) {
 	r.treeMu.Lock()
 	tree := r.tree.Load()
 
+	// Goroutine to remove empty prefixes from the tree and publish it.
+	var prefixesToRemove chan netip.Prefix
+	if peers >= 4 {
+		prefixesToRemove = make(chan netip.Prefix, len(r.shards)<<3)
+
+		go func() {
+			if prefix, ok := <-prefixesToRemove; ok {
+				newTree := tree.Clone()
+				newTree.Delete(prefix)
+				for prefix = range prefixesToRemove {
+					newTree.Delete(prefix)
+				}
+				r.tree.Store(newTree)
+			}
+		}()
+	}
+
 	// Iterate through all prefixes and remove peer routes.
-	prefixesToRemove := make(chan netip.Prefix, len(r.shards)<<3)
 	states := make([]workerState, len(r.shards))
 
 	var wg sync.WaitGroup
@@ -485,9 +441,11 @@ func (r *rib) FlushPeerConcurrent(peer uint32) (int, int) {
 		wg.Go(func() {
 			state := &states[i]
 			for prefix, ref := range tree.All() {
+				// Only process the matching shard to avoid concurrent changes to intern pools
 				if ref.idx.shardIdx() != rs.idx {
 					continue
 				}
+
 				removed, empty := rs.removeRoutes(ref.idx, func(route route) bool {
 					return route.peer == peer
 				}, false)
@@ -495,26 +453,27 @@ func (r *rib) FlushPeerConcurrent(peer uint32) (int, int) {
 				if empty {
 					rs.freePrefixIndex(ref.idx)
 					state.prefixesRemoved++
-					prefixesToRemove <- prefix
+					if prefixesToRemove != nil {
+						prefixesToRemove <- prefix
+					}
 				}
 			}
 		})
 	}
-
-	// Goroutine to remove empty prefixes from the tree and publish it.
-	go func() {
-		if prefix, ok := <-prefixesToRemove; ok {
-			newTree := tree.Clone()
-			newTree.Delete(prefix)
-			for prefix = range prefixesToRemove {
-				newTree.Delete(prefix)
-			}
-			r.tree.Store(newTree)
-		}
-	}()
-
 	wg.Wait()
-	close(prefixesToRemove)
+
+	if prefixesToRemove != nil {
+		close(prefixesToRemove)
+	} else {
+		// Rebuild the tree excluding empty prefixes and publish it.
+		newTree := &bart.Fast[prefixRef]{}
+		for prefix, ref := range tree.All() {
+			if _, hasRoutes := r.shards[ref.idx.shardIdx()].routes[makeRouteKey(ref.idx, 0)]; hasRoutes {
+				newTree.Insert(prefix, ref)
+			}
+		}
+		r.tree.Store(newTree)
+	}
 
 	r.treeMu.Unlock()
 	for i := len(r.shards) - 1; i >= 0; i-- {
