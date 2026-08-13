@@ -6,6 +6,7 @@
     <div class="h-[300px]">
       <v-chart
         :option="option"
+        :update-options="{ notMerge: true }"
         :theme="isDark ? 'dark' : undefined"
         autoresize
       />
