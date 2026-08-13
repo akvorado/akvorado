@@ -101,9 +101,12 @@ These endpoints are exposed for ClickHouse to use:
 - `/api/v0/orchestrator/clickhouse/asns.csv` contains a CSV with the mapping
   between AS numbers and organization names
 
-ClickHouse clusters are not currently supported, but you can configure several
-servers in the configuration. Several servers are managed as if they are copies
-of each other.
+ClickHouse clusters are supported with the [`cluster`
+setting](50-configuration.md#clickhouse-database): the orchestrator then runs
+the schema migrations on the whole cluster and uses replicated tables. With more
+than one shard, it also creates the matching distributed tables. Without a
+cluster name, you can still configure several servers, but they are managed as
+if they are copies of each other.
 
 *Akvorado* also handles database migration during upgrades. When the protobuf
 schema is updated, new Kafka tables and the associated materialized view should
