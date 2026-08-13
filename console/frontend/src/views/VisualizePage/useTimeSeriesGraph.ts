@@ -106,7 +106,8 @@ export function useTimeSeriesGraph(
   onMounted(enableBrush);
   watch([graph, isTouchScreen] as const, enableBrush);
 
-  const updateTimeRange = (evt: BrushModel) => {
+  const updateTimeRange = (params: unknown) => {
+    const evt = params as BrushModel;
     if (
       !chartComponent.value ||
       evt.areas.length === 0 ||
