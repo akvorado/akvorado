@@ -29,6 +29,10 @@ type Configuration struct {
 	MaxOpenConns int `validate:"min=1"`
 	// DialTimeout tells how much time to wait when connecting to ClickHouse
 	DialTimeout time.Duration `validate:"min=100ms"`
+	// ZooKeeperSuffix allows the user to append a string to the zookeeper path
+	// when running in clusterized environments. It can be used to have multiple
+	// instances of Akvorado running in different databases on a single cluster.
+	ZooKeeperSuffix string
 	// TLS defines TLS connection parameters, if empty, plain TCP will be used.
 	TLS helpers.TLSConfiguration
 }
@@ -36,11 +40,12 @@ type Configuration struct {
 // DefaultConfiguration represents the default configuration for connecting to ClickHouse
 func DefaultConfiguration() Configuration {
 	return Configuration{
-		Servers:      []string{"127.0.0.1:9000"},
-		Database:     "default",
-		Username:     "default",
-		MaxOpenConns: 10,
-		DialTimeout:  5 * time.Second,
+		Servers:         []string{"127.0.0.1:9000"},
+		Database:        "default",
+		Username:        "default",
+		MaxOpenConns:    10,
+		DialTimeout:     5 * time.Second,
+		ZooKeeperSuffix: "",
 	}
 }
 
@@ -52,6 +57,11 @@ func (c *Component) ClusterName() string {
 // DatabaseName returns the database we operate on.
 func (c *Component) DatabaseName() string {
 	return c.config.Database
+}
+
+// ZooKeeperSuffix returns the zookeeper suffix to append to replicated engines
+func (c *Component) ZooKeeperSuffix() string {
+	return c.config.ZooKeeperSuffix
 }
 
 // ChGoOptions returns options suitable to use with ch-go and the list of

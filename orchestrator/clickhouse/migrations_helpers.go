@@ -167,10 +167,10 @@ func (c *Component) tableAlreadyExists(ctx context.Context, table, column string
 // Replicated if we are on a cluster.
 func (c *Component) mergeTreeEngine(table, variant string, args ...sb.Expr) sb.Engine {
 	if c.d.ClickHouse.ClusterName() != "" {
-		zkPath := fmt.Sprintf("/clickhouse/tables/shard-{shard}/%s", table)
+		zkPath := fmt.Sprintf("/clickhouse/tables/shard-{shard}/%s%s", table, c.d.ClickHouse.ZooKeeperSuffix())
 		if helpers.Testing() {
-			zkPath = fmt.Sprintf("/clickhouse/tables/shard-{shard}/%s/%s",
-				c.d.ClickHouse.DatabaseName(), table)
+			zkPath = fmt.Sprintf("/clickhouse/tables/shard-{shard}/%s/%s%s",
+				c.d.ClickHouse.DatabaseName(), table, c.d.ClickHouse.ZooKeeperSuffix())
 		}
 		return sb.NewEngine(fmt.Sprintf("Replicated%sMergeTree", variant),
 			slices.Concat([]sb.Expr{
