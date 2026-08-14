@@ -102,10 +102,7 @@ EOF
         ;;
 
     screenshots)
-        # Take the documentation screenshots on the running stack. They are only
-        # kept as an artifact: this is a way to check how they look with the
-        # current code, without having to wait for the next release of the demo
-        # site.
+        # Take the documentation screenshots on the running stack
         echo ::group::Generate screenshots
         make console/frontend/node_modules
         mkdir -p test/screenshots
