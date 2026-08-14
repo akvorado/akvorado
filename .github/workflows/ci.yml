@@ -221,7 +221,7 @@ jobs:
       - name: Generate screenshots
         timeout-minutes: 10
         run: |
-          sudo apt-get instal -qqy pngquant
+          sudo apt-get install -qqy pngquant
           ./.github/e2e.sh screenshots
       - name: Upload screenshots
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
