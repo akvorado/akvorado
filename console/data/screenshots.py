@@ -299,7 +299,7 @@ def main():
                 target = os.path.join(options.output, f"{name}.png")
                 marionette.screenshot(target)
                 subprocess.run(
-                    ["optipng", "-quiet", "-o5", "-strip", "all", target],
+                    ["pngquant", "--ext", ".png", "--force", "--strip", "--quiet", target],
                 )
                 print(f"  {os.path.getsize(target) // 1024} KB")
         finally:
