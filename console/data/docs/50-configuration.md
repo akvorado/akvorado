@@ -1255,7 +1255,6 @@ instruction for that, but it's mostly a matter of copying `flows` table to
 `flows_local`, and `flows_DDDD` (where `DDDD` is an interval) tables to
 `flows_DDDD_local`.
 
-
 ## Console service
 
 The console service is configured under the `console` key (or in
