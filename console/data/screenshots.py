@@ -298,11 +298,9 @@ def main():
                 time.sleep(6)  # let the animations of the charts finish
                 target = os.path.join(options.output, f"{name}.png")
                 marionette.screenshot(target)
-                if shutil.which("optipng"):
-                    subprocess.run(
-                        ["optipng", "-quiet", "-o5", "-strip", "all", target],
-                        check=False,
-                    )
+                subprocess.run(
+                    ["optipng", "-quiet", "-o5", "-strip", "all", target],
+                )
                 print(f"  {os.path.getsize(target) // 1024} KB")
         finally:
             process.terminate()
