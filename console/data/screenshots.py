@@ -200,6 +200,9 @@ def start_firefox(profile):
     with open(os.path.join(profile, "user.js"), "w") as f:
         f.write(f"""
 user_pref("layout.css.devPixelsPerPx", "{DEVICE_PIXEL_RATIO}");
+user_pref("ui.useOverlayScrollbars", 1);
+user_pref("ui.scrollbarFadeBeginDelay", 0);
+user_pref("ui.scrollbarFadeDuration", 0);
 user_pref("browser.shell.checkDefaultBrowser", false);
 user_pref("browser.startup.homepage_override.mstone", "ignore");
 user_pref("datareporting.policy.dataSubmissionEnabled", false);
