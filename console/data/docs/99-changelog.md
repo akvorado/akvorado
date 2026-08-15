@@ -12,6 +12,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 🩹 *console*: accept again an empty login for `auth.default-user` to require authentication
 - 🩹 *outlet*: rate-limit flows on their reception time instead of the processing time
 - 🌱 *outlet*: add `core.startup-delay` to delay flow processing at start
 
