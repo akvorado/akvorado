@@ -16,6 +16,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"akvorado/common/constants"
@@ -410,5 +411,116 @@ func TestCore(t *testing.T) {
 		if count != 4 {
 			t.Fatalf("GET /api/v0/outlet/flows got less than 4 flows (%d)", count)
 		}
+	})
+}
+
+// fakeKafkaInput counts how many times the workers were started.
+type fakeKafkaInput struct {
+	mu     sync.Mutex
+	starts int
+}
+
+func (c *fakeKafkaInput) StartWorkers(_ kafkainput.WorkerBuilderFunc) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.starts++
+	return nil
+}
+
+func (c *fakeKafkaInput) StopWorkers() {}
+
+func (c *fakeKafkaInput) Stop() error {
+	return nil
+}
+
+func (c *fakeKafkaInput) workerStarts() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.starts
+}
+
+func TestStartupDelay(t *testing.T) {
+	newComponent := func(t *testing.T, delay time.Duration) (*Component, *fakeKafkaInput) {
+		t.Helper()
+		r := reporter.NewMock(t)
+		kafkaInputComponent := &fakeKafkaInput{}
+		config := DefaultConfiguration()
+		config.StartupDelay = delay
+		c, err := New(r, config, Dependencies{
+			Daemon:     daemon.NewMock(t),
+			KafkaInput: kafkaInputComponent,
+			HTTP:       httpserver.NewMock(t, r),
+			Schema:     schema.NewMock(t),
+		})
+		if err != nil {
+			t.Fatalf("New() error:\n%+v", err)
+		}
+		return c, kafkaInputComponent
+	}
+
+	// startStop starts the component and returns a function to stop it. It can
+	// be called several times, but only stops once. The component has to be
+	// stopped before leaving the synctest bubble, hence the deferred call.
+	startStop := func(t *testing.T, c *Component) func() {
+		t.Helper()
+		if err := c.Start(); err != nil {
+			t.Fatalf("Start() error:\n%+v", err)
+		}
+		stop := sync.OnceValue(c.Stop)
+		return func() {
+			if err := stop(); err != nil {
+				t.Errorf("Stop() error:\n%+v", err)
+			}
+		}
+	}
+
+	t.Run("without delay", func(t *testing.T) {
+		c, kafkaInputComponent := newComponent(t, 0)
+		synctest.Test(t, func(t *testing.T) {
+			defer startStop(t, c)()
+			synctest.Wait()
+			if diff := helpers.Diff(kafkaInputComponent.workerStarts(), 1); diff != "" {
+				t.Fatalf("Worker starts on start (-got, +want):\n%s", diff)
+			}
+		})
+	})
+
+	t.Run("with delay", func(t *testing.T) {
+		c, kafkaInputComponent := newComponent(t, time.Minute)
+		synctest.Test(t, func(t *testing.T) {
+			defer startStop(t, c)()
+			synctest.Wait()
+			if diff := helpers.Diff(kafkaInputComponent.workerStarts(), 0); diff != "" {
+				t.Fatalf("Worker starts on start (-got, +want):\n%s", diff)
+			}
+
+			time.Sleep(59 * time.Second)
+			synctest.Wait()
+			if diff := helpers.Diff(kafkaInputComponent.workerStarts(), 0); diff != "" {
+				t.Fatalf("Worker starts before the end of the delay (-got, +want):\n%s", diff)
+			}
+
+			time.Sleep(2 * time.Second)
+			synctest.Wait()
+			if diff := helpers.Diff(kafkaInputComponent.workerStarts(), 1); diff != "" {
+				t.Fatalf("Worker starts after the delay (-got, +want):\n%s", diff)
+			}
+		})
+	})
+
+	t.Run("stop during delay", func(t *testing.T) {
+		c, kafkaInputComponent := newComponent(t, time.Minute)
+		synctest.Test(t, func(t *testing.T) {
+			stop := startStop(t, c)
+			defer stop()
+			synctest.Wait()
+			stop()
+
+			time.Sleep(2 * time.Minute)
+			synctest.Wait()
+			if diff := helpers.Diff(kafkaInputComponent.workerStarts(), 0); diff != "" {
+				t.Fatalf("Worker starts after stop (-got, +want):\n%s", diff)
+			}
+		})
 	})
 }

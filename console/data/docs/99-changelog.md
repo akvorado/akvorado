@@ -13,6 +13,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🩹 *outlet*: rate-limit flows on their reception time instead of the processing time
+- 🌱 *outlet*: add `core.startup-delay` to delay flow processing at start
 
 ## 2026.8.0 - 2026-08-12
 

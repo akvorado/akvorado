@@ -82,7 +82,6 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 // Start starts the core component.
 func (c *Component) Start() error {
 	c.r.Info().Msg("starting core component")
-	c.d.KafkaInput.StartWorkers(c.newWorker)
 
 	// Classifier cache expiration
 	c.t.Go(func() error {
@@ -99,7 +98,23 @@ func (c *Component) Start() error {
 	})
 
 	c.d.HTTP.APIRouter.GET("/api/v0/outlet/flows", c.FlowsHTTPHandler)
-	return nil
+
+	// Processing flows can be delayed to let the other components collect their
+	// data first.
+	if c.config.StartupDelay > 0 {
+		c.r.Info().Msgf("wait %s before processing flows", c.config.StartupDelay)
+		c.t.Go(func() error {
+			select {
+			case <-c.t.Dying():
+				return nil
+			case <-time.After(c.config.StartupDelay):
+			}
+			c.r.Info().Msg("start processing flows")
+			return c.d.KafkaInput.StartWorkers(c.newWorker)
+		})
+		return nil
+	}
+	return c.d.KafkaInput.StartWorkers(c.newWorker)
 }
 
 // Stop stops the core component.
@@ -109,7 +124,8 @@ func (c *Component) Stop() error {
 		c.r.Info().Msg("core component stopped")
 	}()
 	c.r.Info().Msg("stopping core component")
-	c.d.KafkaInput.StopWorkers()
 	c.t.Kill(nil)
-	return c.t.Wait()
+	err := c.t.Wait()
+	c.d.KafkaInput.StopWorkers()
+	return err
 }

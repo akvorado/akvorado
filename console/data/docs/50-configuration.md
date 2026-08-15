@@ -666,6 +666,10 @@ The following configuration keys are accepted:
   provided by the flow message (if any), while `routing` looks it up using the BMP
   component. If multiple sources are provided, the value of the first source
   providing a non-default route is taken. The default value is `flow` and `routing`.
+- `startup-delay` defines how long to wait at start before processing flows. It
+  is disabled by default. This is useful when using the [BMP
+  provider](#bmp-provider): the routers need some time to connect and send their
+  routes. Flows are not lost during that time, they accumulate in Kafka.
 
 #### Classification
 
