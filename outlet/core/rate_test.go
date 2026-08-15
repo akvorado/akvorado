@@ -6,113 +6,122 @@ package core
 import (
 	"net/netip"
 	"testing"
-	"testing/synctest"
-	"time"
 
 	"akvorado/common/helpers"
 )
 
 func TestRateLimiterEnforced(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) {
-		rl := newRateLimiter()
-		exporter := netip.MustParseAddr("::ffff:192.0.2.1")
-		var rateLimit uint64 = 100
+	rl := newRateLimiter()
+	exporter := netip.MustParseAddr("::ffff:192.0.2.1")
+	var rateLimit uint64 = 100
 
-		// Consume the initial burst (100/10 = 10 tokens)
-		allowed := 0
-		for range 20 {
-			if ok, _ := rl.allowOneMessage(exporter, rateLimit); ok {
-				allowed++
-			}
+	// Only the first 100 flows of a second are accepted
+	allowed := 0
+	for range 150 {
+		if ok, _ := rl.allowOneMessage(exporter, rateLimit, 1000); ok {
+			allowed++
 		}
-		if diff := helpers.Diff(allowed, 10); diff != "" {
-			t.Fatalf("allow() initial burst (-got, +want):\n%s", diff)
-		}
+	}
+	if diff := helpers.Diff(allowed, 100); diff != "" {
+		t.Fatalf("allow() during first second (-got, +want):\n%s", diff)
+	}
 
-		// After 1 second, we should have 100 more tokens (capped at burst=10)
-		time.Sleep(time.Second)
-		allowed = 0
-		for range 20 {
-			if ok, _ := rl.allowOneMessage(exporter, rateLimit); ok {
-				allowed++
-			}
+	// The next second starts with a fresh budget
+	allowed = 0
+	for range 150 {
+		if ok, _ := rl.allowOneMessage(exporter, rateLimit, 1001); ok {
+			allowed++
 		}
-		if diff := helpers.Diff(allowed, 10); diff != "" {
-			t.Fatalf("allow() after 1s (-got, +want):\n%s", diff)
-		}
-	})
+	}
+	if diff := helpers.Diff(allowed, 100); diff != "" {
+		t.Fatalf("allow() during second second (-got, +want):\n%s", diff)
+	}
 }
 
-func TestRateLimiterDropRate(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) {
-		rl := newRateLimiter()
-		exporter := netip.MustParseAddr("::ffff:192.0.2.1")
-		var rateLimit uint64 = 100
+func TestRateLimiterSamplingRateFactor(t *testing.T) {
+	rl := newRateLimiter()
+	exporter := netip.MustParseAddr("::ffff:192.0.2.1")
+	var rateLimit uint64 = 100
 
-		// Consume initial burst and some more to create drops
-		for range 20 {
-			rl.allowOneMessage(exporter, rateLimit)
+	// 150 flows received each second, 100 accepted. The factor of a second is
+	// only known once the next one starts and it does not accumulate over the
+	// seconds.
+	for second := range uint64(5) {
+		expected := float64(1.5)
+		if second == 0 {
+			expected = 1
 		}
-
-		// Move to next 200ms tick to update drop rate
-		time.Sleep(200 * time.Millisecond)
-		_, dropRate := rl.allowOneMessage(exporter, rateLimit)
-
-		// We had 10 allowed, 10 dropped out of 20 total = 50% drop rate
-		if diff := helpers.Diff(dropRate, 0.5); diff != "" {
-			t.Fatalf("allow() dropRate (-got, +want):\n%s", diff)
+		for range 150 {
+			_, factor := rl.allowOneMessage(exporter, rateLimit, 1000+second)
+			if diff := helpers.Diff(factor, expected); diff != "" {
+				t.Fatalf("allow() factor at second %d (-got, +want):\n%s", second, diff)
+			}
 		}
-	})
+	}
+}
+
+func TestRateLimiterLateFlow(t *testing.T) {
+	rl := newRateLimiter()
+	exporter := netip.MustParseAddr("::ffff:192.0.2.1")
+	var rateLimit uint64 = 100
+
+	// Use a part of the budget of a second
+	for range 60 {
+		rl.allowOneMessage(exporter, rateLimit, 1001)
+	}
+
+	// Flows from an earlier second share this budget instead of starting a new
+	// one: only the 40 remaining ones are accepted.
+	allowed := 0
+	for range 50 {
+		if ok, _ := rl.allowOneMessage(exporter, rateLimit, 1000); ok {
+			allowed++
+		}
+	}
+	if diff := helpers.Diff(allowed, 40); diff != "" {
+		t.Fatalf("allow() late flows (-got, +want):\n%s", diff)
+	}
 }
 
 func TestRateLimiterPerExporter(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) {
-		rl := newRateLimiter()
-		exporter1 := netip.MustParseAddr("::ffff:192.0.2.1")
-		exporter2 := netip.MustParseAddr("::ffff:192.0.2.2")
-		var rateLimit uint64 = 100
+	rl := newRateLimiter()
+	exporter1 := netip.MustParseAddr("::ffff:192.0.2.1")
+	exporter2 := netip.MustParseAddr("::ffff:192.0.2.2")
+	var rateLimit uint64 = 100
 
-		// Exhaust exporter1's burst
-		for range 20 {
-			rl.allowOneMessage(exporter1, rateLimit)
-		}
+	// Use up exporter1's budget
+	for range 150 {
+		rl.allowOneMessage(exporter1, rateLimit, 1000)
+	}
 
-		// Exporter2 should still have its full burst
-		allowed := 0
-		for range 20 {
-			if ok, _ := rl.allowOneMessage(exporter2, rateLimit); ok {
-				allowed++
-			}
+	// Exporter2 should still have its full budget
+	allowed := 0
+	for range 100 {
+		if ok, _ := rl.allowOneMessage(exporter2, rateLimit, 1000); ok {
+			allowed++
 		}
-		if diff := helpers.Diff(allowed, 10); diff != "" {
-			t.Fatalf("allow(exporter2) (-got, +want):\n%s", diff)
-		}
-	})
+	}
+	if diff := helpers.Diff(allowed, 100); diff != "" {
+		t.Fatalf("allow(exporter2) (-got, +want):\n%s", diff)
+	}
 }
 
-func TestRateLimiterSteadyState(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) {
-		rl := newRateLimiter()
-		exporter := netip.MustParseAddr("::ffff:192.0.2.1")
-		var rateLimit uint64 = 100
+func TestRateLimiterBelowLimit(t *testing.T) {
+	rl := newRateLimiter()
+	exporter := netip.MustParseAddr("::ffff:192.0.2.1")
+	var rateLimit uint64 = 100
 
-		// Consume initial burst
-		for range 20 {
-			rl.allowOneMessage(exporter, rateLimit)
-		}
-
-		// Send 10 flows per second (below limit) - all should be allowed
-		for range 5 {
-			time.Sleep(time.Second)
-			allowed := 0
-			for range 10 {
-				if ok, _ := rl.allowOneMessage(exporter, rateLimit); ok {
-					allowed++
-				}
+	// Send 10 flows per second, below the limit: nothing is dropped and the
+	// sampling rate is left alone.
+	for second := range uint64(5) {
+		for range 10 {
+			ok, factor := rl.allowOneMessage(exporter, rateLimit, 1000+second)
+			if !ok {
+				t.Fatalf("allow() dropped a flow at second %d", second)
 			}
-			if diff := helpers.Diff(allowed, 10); diff != "" {
-				t.Fatalf("allow() steady state (-got, +want):\n%s", diff)
+			if diff := helpers.Diff(factor, float64(1)); diff != "" {
+				t.Fatalf("allow() factor at second %d (-got, +want):\n%s", second, diff)
 			}
 		}
-	})
+	}
 }

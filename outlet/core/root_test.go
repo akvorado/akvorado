@@ -16,7 +16,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"testing/synctest"
 	"time"
 
 	"akvorado/common/constants"
@@ -108,14 +107,14 @@ func TestCore(t *testing.T) {
 		return expected
 	}
 
-	encodeFlow := func(flow *schema.FlowMessage, rateLimit uint64) []byte {
+	encodeFlow := func(flow *schema.FlowMessage, rateLimit, timeReceived uint64) []byte {
 		t.Helper()
 		var buf bytes.Buffer
 		if err := gob.NewEncoder(&buf).Encode(flow); err != nil {
 			t.Fatalf("gob.Encode() error:\n%+v", err)
 		}
 		rawFlow := &pb.RawFlow{
-			TimeReceived:    uint64(time.Now().Unix()),
+			TimeReceived:    timeReceived,
 			Payload:         buf.Bytes(),
 			SourceAddress:   flow.ExporterAddress.AsSlice(),
 			Decoder:         pb.RawFlow_DECODER_GOB,
@@ -130,7 +129,7 @@ func TestCore(t *testing.T) {
 	}
 	injectFlow := func(flow *schema.FlowMessage, rateLimit uint64) {
 		t.Helper()
-		incoming <- encodeFlow(flow, rateLimit)
+		incoming <- encodeFlow(flow, rateLimit, uint64(flow.TimeReceived))
 	}
 
 	t.Run("core", func(t *testing.T) {
@@ -207,66 +206,62 @@ func TestCore(t *testing.T) {
 		}
 	})
 
-	// Test rate limiting using synctest
+	// Test rate limiting
 	t.Run("rate limiting", func(t *testing.T) {
-		synctest.Test(t, func(t *testing.T) {
-			clickhouseMessagesMutex.Lock()
-			clickhouseMessages = clickhouseMessages[:0]
-			clickhouseMessagesMutex.Unlock()
+		clickhouseMessagesMutex.Lock()
+		clickhouseMessages = clickhouseMessages[:0]
+		clickhouseMessagesMutex.Unlock()
 
-			// Create a specific worker (for compatibility with synctest).
-			scaleRequestChan := make(chan kafkainput.ScaleRequest, 100)
-			receiveFunc, _ := c.newWorker(0, scaleRequestChan)
+		// Use a dedicated worker to process the flows synchronously.
+		scaleRequestChan := make(chan kafkainput.ScaleRequest, 100)
+		receiveFunc, _ := c.newWorker(0, scaleRequestChan)
 
-			// Inject 10 flows with rateLimit=20 (burst=int(20/10)=2).
-			// Under synctest all flows see the same fake time, so
-			// exactly 2 are allowed and 8 are dropped.
-			for range 10 {
-				receiveFunc(context.Background(), encodeFlow(flowMessage("192.0.2.144", 434, 677), 20))
-			}
+		// Inject 30 flows with rateLimit=20 for the same reception second: 20
+		// are allowed and 10 are dropped.
+		for range 30 {
+			receiveFunc(context.Background(), encodeFlow(flowMessage("192.0.2.144", 434, 677), 20, 1000))
+		}
 
-			gotMetrics := r.GetMetrics("akvorado_outlet_core_",
-				"received_flows_total", "forwarded_flows_total",
-				"flows_rate_limited_total", "-flows_processing_")
-			expectedMetrics := map[string]string{
-				`received_flows_total{exporter="192.0.2.142"}`:     "3",
-				`received_flows_total{exporter="192.0.2.143"}`:     "1",
-				`received_flows_total{exporter="192.0.2.144"}`:     "10",
-				`forwarded_flows_total{exporter="192.0.2.142"}`:    "2",
-				`forwarded_flows_total{exporter="192.0.2.143"}`:    "1",
-				`forwarded_flows_total{exporter="192.0.2.144"}`:    "2",
-				`flows_rate_limited_total{exporter="192.0.2.144"}`: "8",
-			}
-			if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
-				t.Fatalf("Metrics (-got, +want):\n%s", diff)
-			}
+		gotMetrics := r.GetMetrics("akvorado_outlet_core_",
+			"received_flows_total", "forwarded_flows_total",
+			"flows_rate_limited_total", "-flows_processing_")
+		expectedMetrics := map[string]string{
+			`received_flows_total{exporter="192.0.2.142"}`:     "3",
+			`received_flows_total{exporter="192.0.2.143"}`:     "1",
+			`received_flows_total{exporter="192.0.2.144"}`:     "30",
+			`forwarded_flows_total{exporter="192.0.2.142"}`:    "2",
+			`forwarded_flows_total{exporter="192.0.2.143"}`:    "1",
+			`forwarded_flows_total{exporter="192.0.2.144"}`:    "20",
+			`flows_rate_limited_total{exporter="192.0.2.144"}`: "10",
+		}
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+			t.Fatalf("Metrics (-got, +want):\n%s", diff)
+		}
 
-			clickhouseMessagesMutex.Lock()
-			clickhouseMessagesLen := len(clickhouseMessages)
-			clickhouseMessagesMutex.Unlock()
-			if diff := helpers.Diff(clickhouseMessagesLen, 2); diff != "" {
-				t.Fatalf("ClickHouse messages count (-got, +want):\n%s", diff)
-			}
+		clickhouseMessagesMutex.Lock()
+		clickhouseMessagesLen := len(clickhouseMessages)
+		clickhouseMessagesMutex.Unlock()
+		if diff := helpers.Diff(clickhouseMessagesLen, 20); diff != "" {
+			t.Fatalf("ClickHouse messages count (-got, +want):\n%s", diff)
+		}
 
-			// Advance to next 200ms tick so the drop rate (8/10 = 0.8)
-			// becomes visible, then inject one more flow.
-			time.Sleep(200 * time.Millisecond)
-			clickhouseMessagesMutex.Lock()
-			clickhouseMessages = clickhouseMessages[:0]
-			clickhouseMessagesMutex.Unlock()
-			receiveFunc(context.Background(), encodeFlow(flowMessage("192.0.2.144", 434, 677), 20))
+		// A flow received during the next second carries the correction
+		// factor of the previous one (30/20).
+		clickhouseMessagesMutex.Lock()
+		clickhouseMessages = clickhouseMessages[:0]
+		clickhouseMessagesMutex.Unlock()
+		receiveFunc(context.Background(), encodeFlow(flowMessage("192.0.2.144", 434, 677), 20, 1001))
 
-			clickhouseMessagesMutex.Lock()
-			clickhouseMessagesCopy := make([]*schema.FlowMessage, len(clickhouseMessages))
-			copy(clickhouseMessagesCopy, clickhouseMessages)
-			clickhouseMessagesMutex.Unlock()
-			if diff := helpers.Diff(len(clickhouseMessagesCopy), 1); diff != "" {
-				t.Fatalf("ClickHouse messages count after sleep (-got, +want):\n%s", diff)
-			}
-			if diff := helpers.Diff(clickhouseMessagesCopy[0].SamplingRate, uint64(1000/(1-0.8))); diff != "" {
-				t.Fatalf("SamplingRate (-got, +want):\n%s", diff)
-			}
-		})
+		clickhouseMessagesMutex.Lock()
+		clickhouseMessagesCopy := make([]*schema.FlowMessage, len(clickhouseMessages))
+		copy(clickhouseMessagesCopy, clickhouseMessages)
+		clickhouseMessagesMutex.Unlock()
+		if diff := helpers.Diff(len(clickhouseMessagesCopy), 1); diff != "" {
+			t.Fatalf("ClickHouse messages count for next second (-got, +want):\n%s", diff)
+		}
+		if diff := helpers.Diff(clickhouseMessagesCopy[0].SamplingRate, uint64(1000*30/20)); diff != "" {
+			t.Fatalf("SamplingRate (-got, +want):\n%s", diff)
+		}
 	})
 
 	// Test HTTP flow clients (JSON)

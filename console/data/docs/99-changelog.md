@@ -10,6 +10,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🩹 *outlet*: rate-limit flows on their reception time instead of the processing time
+
 ## 2026.8.0 - 2026-08-12
 
 *Akvorado* does not use the `networks` ClickHouse dictionary anymore. It is not

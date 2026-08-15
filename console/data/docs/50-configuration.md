@@ -95,7 +95,12 @@ For all available inputs, the following options are available:
   the rate is exceeded, excess flows are dropped before being written to
   ClickHouse. The sampling rate of the remaining flows is adjusted to compensate
   for the dropped flows. Flows are still sent through Kafka. Set to `0` to
-  disable (the default).
+  disable (the default). The rate is measured on the time the inlet received the
+  flow packet, whatever `timestamp-source` is set to. Each outlet counts only
+  the flows it gets: with the default `random` [load-balancing
+  algorithm](#kafka), the flows of an exporter are spread over all the outlets
+  and all the Kafka partitions, so the rate limiter is less accurate. Use
+  `by-exporter` to get an exact limit.
 
 For the UDP input, you can use the following keys:
 
@@ -162,7 +167,8 @@ The following keys are accepted:
   `by-exporter`: all flows from a given exporter is assigned to a single
   partition. This setting can be important if you have several outlets and IPFIX
   or NetFlow: each outlet needs to receive the templates before decoding flows
-  and this is less likely when using `random`.
+  and this is less likely when using `random`. It is also needed for an exact
+  [`rate-limit`](#flow).
 
 A version number is automatically added to the topic name. This is to prevent
 problems if the protobuf schema changes in a way that is not
