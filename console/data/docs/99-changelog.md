@@ -10,6 +10,12 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🩹 *console*: accept again an empty login for `auth.default-user` to require authentication
+- 🩹 *outlet*: rate-limit flows on their reception time instead of the processing time
+- 🌱 *outlet*: add `core.startup-delay` to delay flow processing at start
+
 ## 2026.8.0 - 2026-08-12
 
 *Akvorado* does not use the `networks` ClickHouse dictionary anymore. It is not

@@ -200,6 +200,9 @@ def start_firefox(profile):
     with open(os.path.join(profile, "user.js"), "w") as f:
         f.write(f"""
 user_pref("layout.css.devPixelsPerPx", "{DEVICE_PIXEL_RATIO}");
+user_pref("ui.useOverlayScrollbars", 1);
+user_pref("ui.scrollbarFadeBeginDelay", 0);
+user_pref("ui.scrollbarFadeDuration", 0);
 user_pref("browser.shell.checkDefaultBrowser", false);
 user_pref("browser.startup.homepage_override.mstone", "ignore");
 user_pref("datareporting.policy.dataSubmissionEnabled", false);
@@ -298,11 +301,9 @@ def main():
                 time.sleep(6)  # let the animations of the charts finish
                 target = os.path.join(options.output, f"{name}.png")
                 marionette.screenshot(target)
-                if shutil.which("optipng"):
-                    subprocess.run(
-                        ["optipng", "-quiet", "-o5", "-strip", "all", target],
-                        check=False,
-                    )
+                subprocess.run(
+                    ["pngquant", "--ext", ".png", "--force", "--strip", "--quiet", target],
+                )
                 print(f"  {os.path.getsize(target) // 1024} KB")
         finally:
             process.terminate()

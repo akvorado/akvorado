@@ -38,6 +38,7 @@ type Component struct {
 	providerBreakers       map[netip.Addr]*breaker.Breaker
 	providers              []provider.Provider
 	initialDeadline        time.Time
+	providerSkipLogger     reporter.Logger
 
 	metrics struct {
 		cacheRefreshRuns         reporter.Counter
@@ -45,6 +46,7 @@ type Component struct {
 		providerBreakerOpenCount *reporter.CounterVec
 		providerRequests         reporter.Counter
 		providerErrors           reporter.Counter
+		providerSkips            *reporter.CounterVec
 	}
 }
 
@@ -75,6 +77,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		providerBreakers:       make(map[netip.Addr]*breaker.Breaker),
 		providerBreakerLoggers: make(map[netip.Addr]reporter.Logger),
 		providers:              make([]provider.Provider, 0, 1),
+		providerSkipLogger:     r.Sample(reporter.BurstSampler(time.Minute, 3)),
 	}
 	c.d.Daemon.Track(&c.t, "outlet/metadata")
 
@@ -113,6 +116,12 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 			Name: "provider_errors_total",
 			Help: "Number of provider errors.",
 		})
+	c.metrics.providerSkips = r.CounterVec(
+		reporter.CounterOpts{
+			Name: "provider_skips_total",
+			Help: "Number of queries no provider had an answer for.",
+		},
+		[]string{"exporter"})
 	return &c, nil
 }
 
@@ -234,6 +243,10 @@ func (c *Component) queryProviders(query provider.Query) (provider.Answer, error
 			return nil
 		}
 		// All providers were skipped. Cache a negative result.
+		c.metrics.providerSkips.WithLabelValues(query.ExporterIP.Unmap().String()).Inc()
+		c.providerSkipLogger.Warn().
+			Str("exporter", query.ExporterIP.Unmap().String()).
+			Msg("no provider has metadata for exporter")
 		c.sc.Put(now, query, provider.Answer{})
 		return nil
 	})

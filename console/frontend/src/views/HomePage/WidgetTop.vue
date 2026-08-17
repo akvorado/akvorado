@@ -6,8 +6,8 @@
     <h1 class="font-semibold leading-relaxed">{{ title }}</h1>
     <div class="h-[200px]">
       <v-chart
-        :key="isDark ? 'dark' : 'light'"
         :option="options"
+        :update-options="{ notMerge: true }"
         :theme="isDark ? 'dark' : undefined"
         autoresize
       />

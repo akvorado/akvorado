@@ -15,7 +15,7 @@ import (
 
 // UserInformation contains information about the current user.
 type UserInformation struct {
-	Login     string `json:"login" validate:"required"`
+	Login     string `json:"login"`
 	Name      string `json:"name,omitempty"`
 	Email     string `json:"email,omitempty" validate:"omitempty,email"`
 	LogoutURL string `json:"logout-url,omitempty" validate:"omitempty,uri"`
@@ -46,7 +46,7 @@ func (c *Component) UserAuthentication() httpserver.Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			info := c.userFromHeaders(req)
-			if err := helpers.Validate.Struct(info); err != nil {
+			if info.Login == "" || helpers.Validate.Struct(info) != nil {
 				if c.config.DefaultUser.Login == "" {
 					httpserver.WriteJSON(w, http.StatusUnauthorized,
 						helpers.M{"message": "No user logged in."})

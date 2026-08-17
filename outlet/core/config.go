@@ -30,6 +30,8 @@ type Configuration struct {
 	ASNProviders []ASNProvider `validate:"dive"`
 	// NetProviders defines the source used to get Prefix/Network Information
 	NetProviders []NetProvider `validate:"dive"`
+	// StartupDelay defines how long to wait at start before processing flows.
+	StartupDelay time.Duration `validate:"eq=0|min=1s"`
 }
 
 // DefaultConfiguration represents the default configuration for the core component.

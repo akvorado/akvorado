@@ -5,10 +5,8 @@ package core
 
 import (
 	"net/netip"
-	"time"
 
 	"github.com/puzpuzpuz/xsync/v4"
-	"golang.org/x/time/rate"
 )
 
 // rateLimiter tracks per-exporter rate limiting state.
@@ -17,11 +15,10 @@ type rateLimiter struct {
 }
 
 type perExporterRateLimiter struct {
-	l           *rate.Limiter
-	dropped     uint64  // dropped during the current second
-	total       uint64  // total during the current second
-	dropRate    float64 // drop rate during the last second
-	currentTick time.Time
+	dropped       uint64  // dropped during the current second
+	total         uint64  // received during the current second
+	factor        float64 // sampling rate correction computed from the last second
+	currentSecond uint64  // second the two counters above apply to
 }
 
 // newRateLimiter returns a new per-exporter rate limiter.
@@ -32,32 +29,37 @@ func newRateLimiter() rateLimiter {
 }
 
 // allowOneMessage checks if a flow from the given exporter should be allowed,
-// given the configured rateLimit (flows/s). It returns the drop rate which can
-// be used to adjust the sampling rate. rateLimit is assumed to be > 0.
-func (rl rateLimiter) allowOneMessage(exporter netip.Addr, rateLimit uint64) (bool, float64) {
-	now := time.Now()
-	tick := now.Truncate(200 * time.Millisecond) // we use a 200-millisecond resolution
+// given the configured rateLimit (flows/s). timeReceived is the second the
+// inlet got the flow. It returns the factor the sampling rate should be
+// multiplied by to compensate for the dropped flows. rateLimit is assumed to be
+// > 0.
+func (rl rateLimiter) allowOneMessage(exporter netip.Addr, rateLimit, timeReceived uint64) (bool, float64) {
 	verdict := true
 	update := func(value perExporterRateLimiter, loaded bool) (perExporterRateLimiter, xsync.ComputeOp) {
 		if !loaded {
-			value = perExporterRateLimiter{
-				l:           rate.NewLimiter(rate.Limit(rateLimit), int(rateLimit/10)),
-				currentTick: now,
-			}
+			value = perExporterRateLimiter{factor: 1, currentSecond: timeReceived}
 		}
-		if value.currentTick.UnixMilli() != tick.UnixMilli() {
-			value.dropRate = float64(value.dropped) / float64(value.total)
+		if timeReceived > value.currentSecond {
+			// The accepted flows stand for the dropped ones, so their sampling
+			// rate is multiplied by the ratio between what was received and
+			// what was accepted.
+			if accepted := value.total - value.dropped; accepted > 0 {
+				value.factor = float64(value.total) / float64(accepted)
+			}
 			value.dropped = 0
 			value.total = 0
-			value.currentTick = tick
+			value.currentSecond = timeReceived
 		}
+		// A flow older than the current second is counted with it. Kafka
+		// partitions are read in parallel, so flows do not always come in
+		// order.
 		value.total++
-		if !value.l.AllowN(now, 1) {
+		if value.total > rateLimit {
 			value.dropped++
 			verdict = false
 		}
 		return value, xsync.UpdateOp
 	}
 	value, _ := rl.Compute(exporter, update)
-	return verdict, value.dropRate
+	return verdict, value.factor
 }

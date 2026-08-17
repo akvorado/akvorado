@@ -2,10 +2,10 @@ module akvorado
 
 go 1.26
 
-toolchain go1.26.5
+toolchain go1.26.6
 
 require (
-	github.com/AfterShip/clickhouse-sql-parser v0.5.5
+	github.com/AfterShip/clickhouse-sql-parser v0.5.6
 	github.com/ClickHouse/ch-go v0.74.0
 	github.com/ClickHouse/clickhouse-go/v2 v2.48.0
 	github.com/alecthomas/chroma/v2 v2.23.1
@@ -60,7 +60,6 @@ require (
 	golang.org/x/sync v0.22.0
 	golang.org/x/sys v0.47.0
 	golang.org/x/text v0.40.0
-	golang.org/x/time v0.15.0
 	golang.org/x/tools v0.48.0
 	google.golang.org/grpc v1.82.1
 	google.golang.org/protobuf v1.36.12

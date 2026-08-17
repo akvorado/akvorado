@@ -361,20 +361,25 @@ func TestNegativeCache(t *testing.T) {
 		configuration.Providers = []ProviderConfiguration{{Config: skipProviderConfiguration{}}}
 		c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 
-		// First lookup: no cached result, provider is queried and skips.
+		// First lookup: no cached result, provider is queried and skips. The
+		// skip is visible in metrics, labelled with the exporter address.
 		expectMockLookup(t, c, "127.0.0.1", 765, provider.Answer{})
-		gotMetrics := r.GetMetrics("akvorado_outlet_metadata_provider_", "requests_total")
-		if diff := helpers.Diff(gotMetrics, map[string]string{`requests_total`: "1"}); diff != "" {
+		gotMetrics := r.GetMetrics("akvorado_outlet_metadata_provider_", "requests_total", "skips_total")
+		expectedMetrics := map[string]string{
+			`requests_total`:                    "1",
+			`skips_total{exporter="127.0.0.1"}`: "1",
+		}
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Fatalf("after first lookup, metrics (-got, +want):\n%s", diff)
 		}
 
 		// Second lookup within CacheDuration: negative cache hit, provider must
-		// NOT be queried again.
+		// NOT be queried again and the skip must not be counted again.
 		time.Sleep(10 * time.Minute)
 		synctest.Wait()
 		expectMockLookup(t, c, "127.0.0.1", 765, provider.Answer{})
-		gotMetrics = r.GetMetrics("akvorado_outlet_metadata_provider_", "requests_total")
-		if diff := helpers.Diff(gotMetrics, map[string]string{`requests_total`: "1"}); diff != "" {
+		gotMetrics = r.GetMetrics("akvorado_outlet_metadata_provider_", "requests_total", "skips_total")
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Fatalf("after cached lookup, metrics (-got, +want):\n%s", diff)
 		}
 
@@ -383,8 +388,12 @@ func TestNegativeCache(t *testing.T) {
 		time.Sleep(32 * time.Minute)
 		synctest.Wait()
 		expectMockLookup(t, c, "127.0.0.1", 765, provider.Answer{})
-		gotMetrics = r.GetMetrics("akvorado_outlet_metadata_provider_", "requests_total")
-		if diff := helpers.Diff(gotMetrics, map[string]string{`requests_total`: "2"}); diff != "" {
+		gotMetrics = r.GetMetrics("akvorado_outlet_metadata_provider_", "requests_total", "skips_total")
+		expectedMetrics = map[string]string{
+			`requests_total`:                    "2",
+			`skips_total{exporter="127.0.0.1"}`: "2",
+		}
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Fatalf("after negative cache expiry, metrics (-got, +want):\n%s", diff)
 		}
 	})
