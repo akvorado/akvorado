@@ -25,8 +25,8 @@ github.com/alecthomas/repr v0.5.2 h1:SU73FTI9D1P5UNtvseffFSGmdNci/O6RsqzeXJtP0Qs
 github.com/alecthomas/repr v0.5.2/go.mod h1:Fr0507jx4eOXV7AlPV6AVZLYrLIuIeSOWtW57eE/O/4=
 github.com/andybalholm/brotli v1.2.2 h1:HzTuoo2ErYQqf5qvcJInB8uvqSVxRttzkFexPWtnceM=
 github.com/andybalholm/brotli v1.2.2/go.mod h1:rzTDkvFWvIrjDXZHkuS16NPggd91W3kUSvPlQ1pLaKY=
-github.com/aperturerobotics/protobuf-go-lite v0.16.0 h1:McGR0jrc15ZkH8HUpAARDOtazjwqr+uYXVHrrR59K28=
-github.com/aperturerobotics/protobuf-go-lite v0.16.0/go.mod h1:3Ay/E7iaw2KWLirK3+dDdNJZHK0hu8Y1/kKeYeUa+8s=
+github.com/aperturerobotics/protobuf-go-lite v0.17.0 h1:paEC3KNvw+JnIyKAQZlMLh2h4nY6P/Hm0oc20eubYe4=
+github.com/aperturerobotics/protobuf-go-lite v0.17.0/go.mod h1:3Ay/E7iaw2KWLirK3+dDdNJZHK0hu8Y1/kKeYeUa+8s=
 github.com/benbjohnson/clock v1.3.5 h1:VvXlSJBzZpA/zum6Sj74hxwYI2DIxRWuNIoXAzHZz5o=
 github.com/benbjohnson/clock v1.3.5/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
