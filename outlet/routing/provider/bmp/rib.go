@@ -403,7 +403,7 @@ func (r *rib) RemoveRoute(prefix netip.Prefix, rr rawRoute) (int, bool) {
 
 // FlushPeer removes a whole peer from the RIB, returning the number
 // of removed routes and the number of removed prefixes.
-func (r *rib) FlushPeer(peer uint32, peers int) (int, int) {
+func (r *rib) FlushPeer(peers map[uint32]struct{}, totalPeers int) (int, int) {
 	type prefixEntry struct {
 		prefix netip.Prefix
 		ref    prefixRef
@@ -425,7 +425,7 @@ func (r *rib) FlushPeer(peer uint32, peers int) (int, int) {
 	// Group prefixes by shard to avoid traversing the full tree in each goroutine.
 	states := make([]workerState, len(r.shards))
 	for i := 0; i < len(r.shards); i++ {
-		states[i].prefixesRemoved = make([]netip.Prefix, 0, tree.Size()/(peers*len(r.shards)))
+		states[i].prefixesRemoved = make([]netip.Prefix, 0, tree.Size()/max(1, totalPeers*len(r.shards)))
 		states[i].prefixes = make([]prefixEntry, 0, tree.Size()/len(r.shards))
 	}
 	for prefix, ref := range tree.All() {
@@ -440,7 +440,8 @@ func (r *rib) FlushPeer(peer uint32, peers int) (int, int) {
 			state := &states[rs.idx]
 			for _, entry := range state.prefixes {
 				removed, empty := rs.removeRoutes(entry.ref.idx, func(route route) bool {
-					return route.peer == peer
+					_, found := peers[route.peer]
+					return found
 				}, false)
 				state.routesRemoved += removed
 				if empty {

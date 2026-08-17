@@ -366,7 +366,7 @@ func BenchmarkRIBFlush(b *testing.B) {
 					}
 
 					b.StartTimer()
-					rib.FlushPeer(0, peers)
+					rib.FlushPeer(map[uint32]struct{}{0: {}}, peers)
 				}
 				b.ReportMetric(0, "ns/op")
 				b.ReportMetric(float64(b.Elapsed())/float64(b.N)/1_000_000, "ms/op")
