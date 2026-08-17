@@ -402,9 +402,9 @@ func (r *rib) RemoveRoute(prefix netip.Prefix, rr rawRoute) (int, bool) {
 	return removedCount, prefixRemoved
 }
 
-// FlushPeer removes a whole peer from the RIB, returning the number
+// FlushPeer removes one or more peers from the RIB, returning the number
 // of removed routes and the number of removed prefixes.
-func (r *rib) FlushPeer(peer uint32) (int, int) {
+func (r *rib) FlushPeer(peers map[uint32]struct{}) (int, int) {
 	type prefixEntry struct {
 		prefix netip.Prefix
 		ref    prefixRef
@@ -441,7 +441,8 @@ func (r *rib) FlushPeer(peer uint32) (int, int) {
 			state := &states[rs.idx]
 			for i, entry := range state.prefixes {
 				removed, empty := rs.removeRoutes(entry.ref.idx, func(route route) bool {
-					return route.peer == peer
+					_, found := peers[route.peer]
+					return found
 				}, false)
 				state.routesRemoved += removed
 				if empty {
