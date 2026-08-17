@@ -55,7 +55,7 @@ func peerKeyFromBMPPeerHeader(exporter netip.AddrPort, header *bmp.BMPPeerHeader
 func (p *Provider) scheduleStalePeersRemoval(after time.Time) {
 	var next time.Time
 	for _, pinfo := range p.peers {
-		if pinfo.staleUntil.IsZero() {
+		if pinfo.staleUntil.IsZero() || !pinfo.staleUntil.After(after) {
 			continue
 		}
 		if next.IsZero() || pinfo.staleUntil.Before(next) {
@@ -67,9 +67,7 @@ func (p *Provider) scheduleStalePeersRemoval(after time.Time) {
 		p.staleTimer.Stop()
 	} else {
 		p.r.Debug().Msgf("next removal for stale peer scheduled on %s", next)
-		if next.After(after) {
-			p.staleTimer.Reset(p.d.Clock.Until(next))
-		}
+		p.staleTimer.Reset(p.d.Clock.Until(next))
 	}
 }
 
@@ -102,6 +100,19 @@ func (p *Provider) addPeer(pkey peerKey) *peerInfo {
 	}
 	p.peers[pkey] = pinfo
 	return pinfo
+}
+
+func (p *Provider) cancelRemovePeer(pkey peerKey) bool {
+	p.muPeersToRemove.Lock()
+	defer p.muPeersToRemove.Unlock()
+	if _, found := p.peersToRemove[pkey]; found {
+		delete(p.peersToRemove, pkey)
+		if len(p.peersToRemove) == 0 {
+			p.removePeersTimer.Stop()
+		}
+		return true
+	}
+	return false
 }
 
 // removePeer queues a peer for removal. Its routes are flushed from the
@@ -152,11 +163,7 @@ func (p *Provider) removePeers() {
 
 	p.mu.Lock()
 	for pkey, queuedPeer := range queued {
-		// The peer may have come back up since it was queued, in which
-		// case it has a new reference and should be kept.
-		if pinfo, ok := p.peers[pkey]; ok && pinfo.reference == queuedPeer.reference {
-			delete(p.peers, pkey)
-		}
+		delete(p.peers, pkey)
 		exporterCounts[queuedPeer.exporterStr]++
 		peers[queuedPeer.reference] = struct{}{}
 	}
@@ -238,8 +245,10 @@ func (p *Provider) handlePeerUpNotification(pkey peerKey, body *bmp.BMPPeerUpNot
 	peerStr := pkey.ip.Unmap().String()
 	pinfo, ok := p.peers[pkey]
 	if ok {
-		p.r.Info().Msgf("received extra peer up from exporter %s for peer %s",
-			exporterStr, peerStr)
+		if !p.cancelRemovePeer(pkey) {
+			p.r.Info().Msgf("received extra peer up from exporter %s for peer %s",
+				exporterStr, peerStr)
+		}
 	} else {
 		// Peer does not exist at all
 		p.metrics.peers.WithLabelValues(exporterStr).Inc()
