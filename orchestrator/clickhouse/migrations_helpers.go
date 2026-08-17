@@ -16,7 +16,6 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 
-	"akvorado/common/helpers"
 	"akvorado/common/schema"
 	sb "akvorado/common/sqlbuilder"
 )
@@ -168,10 +167,9 @@ func (c *Component) tableAlreadyExists(ctx context.Context, table, column string
 func (c *Component) mergeTreeEngine(table, variant string, args ...sb.Expr) sb.Engine {
 	if c.d.ClickHouse.ClusterName() != "" {
 		zkPath := c.d.ClickHouse.ZooKeeperPath()
-		if helpers.Testing() {
-			zkPath = fmt.Sprintf("/clickhouse/tables/shard-{shard}/%s/%s",
-				c.d.ClickHouse.DatabaseName(), table)
-		}
+		zkPath = strings.ReplaceAll(zkPath, "{database}", c.d.ClickHouse.DatabaseName())
+		zkPath = strings.ReplaceAll(zkPath, "{table}", table)
+
 		return sb.NewEngine(fmt.Sprintf("Replicated%sMergeTree", variant),
 			slices.Concat([]sb.Expr{
 				sb.String(zkPath),

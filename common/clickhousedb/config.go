@@ -39,13 +39,18 @@ type Configuration struct {
 
 // DefaultConfiguration represents the default configuration for connecting to ClickHouse
 func DefaultConfiguration() Configuration {
+	zkPath := "/clickhouse/tables/shard-{shard}/{table}"
+	if helpers.Testing() {
+		zkPath = "/clickhouse/tables/shard-{shard}/{database}/{table}"
+	}
+
 	return Configuration{
 		Servers:       []string{"127.0.0.1:9000"},
 		Database:      "default",
 		Username:      "default",
 		MaxOpenConns:  10,
 		DialTimeout:   5 * time.Second,
-		ZooKeeperPath: "/clickhouse/tables/shard-{shard}/{table}",
+		ZooKeeperPath: zkPath,
 	}
 }
 

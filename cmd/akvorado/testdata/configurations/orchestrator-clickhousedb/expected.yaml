@@ -10,7 +10,7 @@ paths:
     database: default
     maxopenconns: 10
     dialtimeout: 5s
-    zookeeperpath: "/clickhouse/tables/shard-{shard}/{table}"
+    zookeeperpath: "/clickhouse/tables/shard-{shard}/{database}/{table}"
     tls:
       enable: true
       skipverify: false
