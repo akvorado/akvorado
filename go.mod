@@ -5,7 +5,7 @@ go 1.26
 toolchain go1.26.6
 
 require (
-	github.com/AfterShip/clickhouse-sql-parser v0.5.5
+	github.com/AfterShip/clickhouse-sql-parser v0.5.6
 	github.com/ClickHouse/ch-go v0.74.0
 	github.com/ClickHouse/clickhouse-go/v2 v2.48.0
 	github.com/alecthomas/chroma/v2 v2.23.1
