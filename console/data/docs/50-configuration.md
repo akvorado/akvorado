@@ -806,6 +806,14 @@ following keys:
 
 [MaxMind DB file format]: https://maxmind.github.io/MaxMind-DB/
 
+The database provider is detected from the file metadata. MaxMind (GeoLite2 /
+GeoIP2), [IPinfo][] and [DB-IP][] databases are supported. DB-IP databases do
+not carry subdivision ISO codes, so the subdivision (state) is taken from its
+English name (e.g. `California`, `Saxony`) instead.
+
+[IPinfo]: https://ipinfo.io/
+[DB-IP]: https://db-ip.com/
+
 If the files are updated while *Akvorado* is running, they are automatically
 refreshed.
 

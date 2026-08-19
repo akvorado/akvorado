@@ -61,6 +61,9 @@ func TestIterASNDatabases(t *testing.T) {
 		// maxmind databases
 		"1.0.0.0",
 		"67.43.156.77",
+		// dbip databases
+		"5.42.100.10",
+		"23.128.50.10",
 		// not in any database
 		"203.0.113.5",
 	}
@@ -70,6 +73,8 @@ func TestIterASNDatabases(t *testing.T) {
 		{ASNumber: 43519},
 		{ASNumber: 15169},
 		{ASNumber: 35908},
+		{ASNumber: 64500},
+		{ASNumber: 64501},
 		{},
 	}
 	if diff := helpers.Diff(iterASN(t, c, ips), expected); diff != "" {
@@ -91,6 +96,10 @@ func TestIterGeoDatabases(t *testing.T) {
 		"2.125.160.216",
 		"2a02:ff00::1:1",
 		"67.43.156.77",
+		// dbip databases
+		"5.42.100.10",
+		"23.128.50.10",
+		"80.200.30.10",
 		// not in any database
 		"203.0.113.5",
 	}
@@ -102,6 +111,9 @@ func TestIterGeoDatabases(t *testing.T) {
 		{Country: "GB", State: "ENG", City: "Boxford"},
 		{Country: "IT"},
 		{Country: "BT"},
+		{Country: "US", State: "California", City: "Mountain View"},
+		{Country: "DE", State: "Saxony", City: "Dresden"},
+		{Country: "FR"},
 		{},
 	}
 	if diff := helpers.Diff(iterGeo(t, c, ips), expected); diff != "" {

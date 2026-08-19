@@ -36,10 +36,12 @@ func NewMock(t testing.TB, r *reporter.Reporter, withData bool) *Component {
 			TestDataPath("GeoLite2-City-Test.mmdb"),
 			TestDataPath("ip_country_asn_sample.mmdb"),
 			TestDataPath("ip_geolocation_sample.mmdb"),
+			TestDataPath("dbip_city_sample.mmdb"),
 		}
 		config.ASNDatabase = []string{
 			TestDataPath("GeoLite2-ASN-Test.mmdb"),
 			TestDataPath("ip_country_asn_sample.mmdb"),
+			TestDataPath("dbip_asn_sample.mmdb"),
 		}
 	}
 	c, err := New(r, config, Dependencies{Daemon: daemon.NewMock(t)})
