@@ -31,6 +31,8 @@ type Component struct {
 
 	migrationsDone chan bool // closed when migrations are done
 	migrationsOnce chan bool // closed after first attempt to migrate
+
+	useZkPathCompatibility bool // set to true if tables are created <= 2026.8.0 and in cluster
 }
 
 // Dependencies define the dependencies of the orchestrator.

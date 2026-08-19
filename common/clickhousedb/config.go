@@ -29,28 +29,18 @@ type Configuration struct {
 	MaxOpenConns int `validate:"min=1"`
 	// DialTimeout tells how much time to wait when connecting to ClickHouse
 	DialTimeout time.Duration `validate:"min=100ms"`
-	// ZooKeeperPath allows the user to edit the zookeeper path used when running
-	// in clusterized environments. It can be used to have multiple instances of
-	// Akvorado running in different databases on a single cluster.
-	ZooKeeperPath string
 	// TLS defines TLS connection parameters, if empty, plain TCP will be used.
 	TLS helpers.TLSConfiguration
 }
 
 // DefaultConfiguration represents the default configuration for connecting to ClickHouse
 func DefaultConfiguration() Configuration {
-	zkPath := "/clickhouse/tables/shard-{shard}/{table}"
-	if helpers.Testing() {
-		zkPath = "/clickhouse/tables/shard-{shard}/{database}/{table}"
-	}
-
 	return Configuration{
-		Servers:       []string{"127.0.0.1:9000"},
-		Database:      "default",
-		Username:      "default",
-		MaxOpenConns:  10,
-		DialTimeout:   5 * time.Second,
-		ZooKeeperPath: zkPath,
+		Servers:      []string{"127.0.0.1:9000"},
+		Database:     "default",
+		Username:     "default",
+		MaxOpenConns: 10,
+		DialTimeout:  5 * time.Second,
 	}
 }
 
@@ -62,11 +52,6 @@ func (c *Component) ClusterName() string {
 // DatabaseName returns the database we operate on.
 func (c *Component) DatabaseName() string {
 	return c.config.Database
-}
-
-// ZooKeeperPath returns the zookeeper path to use when creating tables on replicated engines
-func (c *Component) ZooKeeperPath() string {
-	return c.config.ZooKeeperPath
 }
 
 // ChGoOptions returns options suitable to use with ch-go and the list of

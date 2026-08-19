@@ -166,9 +166,11 @@ func (c *Component) tableAlreadyExists(ctx context.Context, table, column string
 // Replicated if we are on a cluster.
 func (c *Component) mergeTreeEngine(table, variant string, args ...sb.Expr) sb.Engine {
 	if c.d.ClickHouse.ClusterName() != "" {
-		zkPath := c.d.ClickHouse.ZooKeeperPath()
-		zkPath = strings.ReplaceAll(zkPath, "{database}", c.d.ClickHouse.DatabaseName())
-		zkPath = strings.ReplaceAll(zkPath, "{table}", table)
+		zkPath := "/clickhouse/tables/shard-{shard}/" + c.d.ClickHouse.DatabaseName() + "/" + table
+		if c.useZkPathCompatibility {
+			zkPath = "/clickhouse/tables/shard-{shard}/" + table
+			c.r.Info().Msgf("Using compatibility zookeeper path for table %s", table)
+		}
 
 		return sb.NewEngine(fmt.Sprintf("Replicated%sMergeTree", variant),
 			slices.Concat([]sb.Expr{

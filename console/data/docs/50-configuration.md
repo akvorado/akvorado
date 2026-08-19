@@ -1174,7 +1174,6 @@ ClickHouse database. The following keys should be provided inside
 - `password` is the password to use for authentication
 - `database` defines the database to use to create tables
 - `cluster` defines the cluster for replicated and distributed tables, see the next section for more information
-- `zookeeperpath` define the ZooKeeper path to be used when running in clusterized environnement.
 - `tls` defines the TLS configuration to connect to the database (it uses the same configuration as for [Kafka](#kafka-1))
 
 ### ClickHouse
