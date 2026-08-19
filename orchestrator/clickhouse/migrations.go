@@ -61,10 +61,11 @@ func (c *Component) migrateDatabase() error {
 		c.useZkPathCompatibility = false
 		var enginePath string
 		var tableName string
-		row = c.d.ClickHouse.QueryRow(ctx, `SELECT table, engine_full FROM system.tables WHERE database = $1 AND engine = 'ReplicatedMergeTree' LIMIT 1`,
-			c.d.ClickHouse.DatabaseName())
+		row = c.d.ClickHouse.QueryRow(ctx, `SELECT table, engine_full FROM system.tables WHERE database = $1 AND
+			engine = 'ReplicatedMergeTree' LIMIT 1`, c.d.ClickHouse.DatabaseName())
 		if err := row.Scan(&tableName, &enginePath); err == nil {
-			if strings.Contains(enginePath, "ReplicatedMergeTree('/clickhouse/tables/shard-{shard}/"+tableName+"',") {
+			expectedZkPath := fmt.Sprintf("ReplicatedMergeTree('/clickhouse/tables/shard-{shard}/%s',", tableName)
+			if strings.Contains(enginePath, expectedZkPath) {
 				c.useZkPathCompatibility = true
 			}
 		}
