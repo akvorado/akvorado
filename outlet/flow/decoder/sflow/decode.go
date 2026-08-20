@@ -124,7 +124,7 @@ func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.
 		appliedDecapsulationProtocol := options.DecapsulationProtocol
 		bfTmp := nd.d.Schema.NewFlowMessage()
 		var dstOuterAddr, srcOuterAddr netip.Addr
-		if appliedDecapsulationProtocol == pb.RawFlow_DECAP_NONE && decapProtocols.Size() > 0 {
+		if appliedDecapsulationProtocol == pb.RawFlow_DECAP_NONE && decapProtocols != nil {
 			// get source ip
 			for _, record := range records {
 				switch recordData := record.Data.(type) {
@@ -161,7 +161,7 @@ func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.
 				if needsIPData || needsL2Data || needsL3L4Data || needDecap {
 					if l := nd.parseSampledHeader(bf, appliedDecapsulationProtocol, &recordData); l > 0 {
 						l3length = l
-						if appliedDecapsulationProtocol != pb.RawFlow_DECAP_NONE && decapProtocols.Size() > 0 {
+						if appliedDecapsulationProtocol != pb.RawFlow_DECAP_NONE && decapProtocols != nil {
 							bf.AppendIPv6(schema.ColumnDstOuterAddr, dstOuterAddr)
 							bf.AppendIPv6(schema.ColumnSrcOuterAddr, srcOuterAddr)
 							if name, err := appliedDecapsulationProtocol.MarshalText(); err == nil {
