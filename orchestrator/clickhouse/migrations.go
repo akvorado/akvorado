@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"strings"
 
 	"akvorado/common/schema"
 	sb "akvorado/common/sqlbuilder"
@@ -57,18 +56,6 @@ func (c *Component) migrateDatabase() error {
 		ctx = clickhouse.Context(ctx, clickhouse.WithSettings(clickhouse.Settings{
 			"alter_sync": 2,
 		}))
-		// Query engine from existing tables and set useZkPathCompatibility to true if it matches the previous path
-		c.useZkPathCompatibility = false
-		var enginePath string
-		var tableName string
-		row = c.d.ClickHouse.QueryRow(ctx, `SELECT table, engine_full FROM system.tables WHERE database = $1 AND
-			engine = 'ReplicatedMergeTree' LIMIT 1`, c.d.ClickHouse.DatabaseName())
-		if err := row.Scan(&tableName, &enginePath); err == nil {
-			expectedZkPath := fmt.Sprintf("ReplicatedMergeTree('/clickhouse/tables/shard-{shard}/%s',", tableName)
-			if strings.Contains(enginePath, expectedZkPath) {
-				c.useZkPathCompatibility = true
-			}
-		}
 	}
 
 	// Create dictionaries
