@@ -230,7 +230,7 @@ func BenchmarkDecodeNetFlow(b *testing.B) {
 	for _, data := range packets[:len(packets)-1] {
 		_, err := nfdecoder.Decode(
 			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-			options, bf, finalize, nil)
+			options, bf, nil, finalize)
 		if err != nil {
 			b.Fatalf("Decode() error:\n%+v", err)
 		}
@@ -240,7 +240,7 @@ func BenchmarkDecodeNetFlow(b *testing.B) {
 	for b.Loop() {
 		nfdecoder.Decode(
 			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-			options, bf, finalize, nil)
+			options, bf, nil, finalize)
 	}
 }
 
@@ -256,7 +256,7 @@ func BenchmarkDecodeBidirNetFlow(b *testing.B) {
 	packets := slices.Collect(helpers.ReadManyPcapL4(b, filepath.Join("decoder", "netflow", "testdata", "ipfixprobe.pcap")))
 	_, err := nfdecoder.Decode(
 		decoder.RawFlow{Payload: packets[0], Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize, nil)
+		options, bf, nil, finalize)
 	if err != nil {
 		b.Fatalf("Decode() error on template:\n%+v", err)
 	}
@@ -265,7 +265,7 @@ func BenchmarkDecodeBidirNetFlow(b *testing.B) {
 	for b.Loop() {
 		nfdecoder.Decode(
 			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-			options, bf, finalize, nil)
+			options, bf, nil, finalize)
 	}
 }
 
@@ -282,6 +282,6 @@ func BenchmarkDecodeSflow(b *testing.B) {
 	for b.Loop() {
 		sdecoder.Decode(
 			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-			options, bf, finalize, nil)
+			options, bf, nil, finalize)
 	}
 }

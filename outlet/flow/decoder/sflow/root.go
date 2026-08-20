@@ -74,7 +74,7 @@ func New(r *reporter.Reporter, dependencies decoder.Dependencies) decoder.Decode
 }
 
 // Decode decodes an sFlow payload.
-func (nd *Decoder) Decode(in decoder.RawFlow, options decoder.Options, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc, decapProtocols *bart.Fast[pb.RawFlow_DecapsulationProtocol]) (int, error) {
+func (nd *Decoder) Decode(in decoder.RawFlow, options decoder.Options, bf *schema.FlowMessage, decapProtocols *bart.Fast[pb.RawFlow_DecapsulationProtocol], finalize decoder.FinalizeFlowFunc) (int, error) {
 	buf := bytes.NewBuffer(in.Payload)
 	key := in.Source.String()
 	ts := uint64(in.TimeReceived.UTC().Unix())

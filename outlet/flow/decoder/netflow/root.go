@@ -91,7 +91,7 @@ func New(r *reporter.Reporter, dependencies decoder.Dependencies) decoder.Decode
 }
 
 // Decode decodes a NetFlow payload.
-func (nd *Decoder) Decode(in decoder.RawFlow, options decoder.Options, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc, _ *bart.Fast[pb.RawFlow_DecapsulationProtocol]) (int, error) {
+func (nd *Decoder) Decode(in decoder.RawFlow, options decoder.Options, bf *schema.FlowMessage, _ *bart.Fast[pb.RawFlow_DecapsulationProtocol], finalize decoder.FinalizeFlowFunc) (int, error) {
 	if len(in.Payload) < 2 {
 		return 0, errors.New("payload too small")
 	}
