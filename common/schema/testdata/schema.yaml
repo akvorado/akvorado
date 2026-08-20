@@ -491,3 +491,15 @@
   name: EgressVRFID
   parsertype: uint
   clickhousetype: UInt32
+- key: SrcOuterAddr
+  name: SrcOuterAddr
+  parsertype: ip
+  clickhousetype: IPv6
+- key: DstOuterAddr
+  name: DstOuterAddr
+  parsertype: ip
+  clickhousetype: IPv6
+- key: DecapsulationProto
+  name: DecapsulationProto
+  parsertype: string
+  clickhousetype: LowCardinality(String)

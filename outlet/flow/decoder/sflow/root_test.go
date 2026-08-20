@@ -15,6 +15,8 @@ import (
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 	"akvorado/outlet/flow/decoder"
+
+	"github.com/gaissmai/bart"
 )
 
 func TestDecode(t *testing.T) {
@@ -38,7 +40,7 @@ func TestDecode(t *testing.T) {
 		data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-1140.pcap"))
 		_, err := sdecoder.Decode(
 			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-			decoder.Options{}, bf, finalize)
+			decoder.Options{}, bf, finalize, &bart.Fast[pb.RawFlow_DecapsulationProtocol]{})
 		if err != nil {
 			t.Fatalf("Decode() error:\n%+v", err)
 		}
@@ -192,7 +194,7 @@ func TestDecode(t *testing.T) {
 		data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-local-interface.pcap"))
 		_, err := sdecoder.Decode(
 			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-			decoder.Options{}, bf, finalize)
+			decoder.Options{}, bf, finalize, &bart.Fast[pb.RawFlow_DecapsulationProtocol]{})
 		if err != nil {
 			t.Fatalf("Decode() error:\n%+v", err)
 		}
@@ -233,7 +235,7 @@ func TestDecode(t *testing.T) {
 		data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-discard-interface.pcap"))
 		_, err := sdecoder.Decode(
 			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-			decoder.Options{}, bf, finalize)
+			decoder.Options{}, bf, finalize, &bart.Fast[pb.RawFlow_DecapsulationProtocol]{})
 		if err != nil {
 			t.Fatalf("Decode() error:\n%+v", err)
 		}
@@ -275,7 +277,7 @@ func TestDecode(t *testing.T) {
 		data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-multiple-interfaces.pcap"))
 		_, err := sdecoder.Decode(
 			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-			decoder.Options{}, bf, finalize)
+			decoder.Options{}, bf, finalize, &bart.Fast[pb.RawFlow_DecapsulationProtocol]{})
 		if err != nil {
 			t.Fatalf("Decode() error:\n%+v", err)
 		}
@@ -316,7 +318,7 @@ func TestDecode(t *testing.T) {
 		data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-sflow-expanded-sample.pcap"))
 		_, err := sdecoder.Decode(
 			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-			decoder.Options{}, bf, finalize)
+			decoder.Options{}, bf, finalize, &bart.Fast[pb.RawFlow_DecapsulationProtocol]{})
 		if err != nil {
 			t.Fatalf("Decode() error:\n%+v", err)
 		}
@@ -364,7 +366,7 @@ func TestDecode(t *testing.T) {
 		data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-sflow-ipv4-data.pcap"))
 		_, err := sdecoder.Decode(
 			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-			decoder.Options{}, bf, finalize)
+			decoder.Options{}, bf, finalize, &bart.Fast[pb.RawFlow_DecapsulationProtocol]{})
 		if err != nil {
 			t.Fatalf("Decode() error:\n%+v", err)
 		}
@@ -409,7 +411,7 @@ func TestDecode(t *testing.T) {
 		data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-sflow-ipv4-data.pcap"))
 		_, err := sdecoder.Decode(
 			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-			decoder.Options{}, bf, finalize)
+			decoder.Options{}, bf, finalize, &bart.Fast[pb.RawFlow_DecapsulationProtocol]{})
 		if err != nil {
 			t.Fatalf("Decode() error:\n%+v", err)
 		}
@@ -445,7 +447,7 @@ func TestDecode(t *testing.T) {
 		data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-sflow-raw-ipv4.pcap"))
 		_, err := sdecoder.Decode(
 			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-			decoder.Options{}, bf, finalize)
+			decoder.Options{}, bf, finalize, &bart.Fast[pb.RawFlow_DecapsulationProtocol]{})
 		if err != nil {
 			t.Fatalf("Decode() error:\n%+v", err)
 		}
@@ -495,7 +497,7 @@ func TestDecode(t *testing.T) {
 		data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-icmpv4.pcap"))
 		_, err := sdecoder.Decode(
 			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-			decoder.Options{}, bf, finalize)
+			decoder.Options{}, bf, finalize, &bart.Fast[pb.RawFlow_DecapsulationProtocol]{})
 		if err != nil {
 			t.Fatalf("Decode() error:\n%+v", err)
 		}
@@ -530,7 +532,7 @@ func TestDecode(t *testing.T) {
 		data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-icmpv6.pcap"))
 		_, err := sdecoder.Decode(
 			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-			decoder.Options{}, bf, finalize)
+			decoder.Options{}, bf, finalize, &bart.Fast[pb.RawFlow_DecapsulationProtocol]{})
 		if err != nil {
 			t.Fatalf("Decode() error:\n%+v", err)
 		}
@@ -564,7 +566,7 @@ func TestDecode(t *testing.T) {
 		data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-qinq.pcap"))
 		_, err := sdecoder.Decode(
 			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-			decoder.Options{}, bf, finalize)
+			decoder.Options{}, bf, finalize, &bart.Fast[pb.RawFlow_DecapsulationProtocol]{})
 		if err != nil {
 			t.Fatalf("Decode() error:\n%+v", err)
 		}
@@ -604,7 +606,7 @@ func TestDecode(t *testing.T) {
 		data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-encap-vxlan.pcap"))
 		_, err := sdecoder.Decode(
 			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-			decoder.Options{DecapsulationProtocol: pb.RawFlow_DECAP_VXLAN}, bf, finalize)
+			decoder.Options{DecapsulationProtocol: pb.RawFlow_DECAP_VXLAN}, bf, finalize, &bart.Fast[pb.RawFlow_DecapsulationProtocol]{})
 		if err != nil {
 			t.Fatalf("Decode() error:\n%+v", err)
 		}
@@ -651,7 +653,7 @@ func TestDecode(t *testing.T) {
 				decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
 				decoder.Options{
 					DecapsulationProtocol: pb.RawFlow_DECAP_VXLAN,
-				}, bf, finalize)
+				}, bf, finalize, &bart.Fast[pb.RawFlow_DecapsulationProtocol]{})
 			if err != nil {
 				t.Fatalf("Decode(%q) error:\n%+v", pcapFile, err)
 			}
