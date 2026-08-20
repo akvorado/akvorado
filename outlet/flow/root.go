@@ -5,6 +5,7 @@
 package flow
 
 import (
+	"net/netip"
 	"time"
 
 	"akvorado/common/pb"
@@ -68,7 +69,12 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 	// Create lookup table decapsulation protocols
 	c.decapProtocols = &bart.Fast[pb.RawFlow_DecapsulationProtocol]{}
 	for _, decapConfig := range config.Decapsulation {
-		c.decapProtocols.Insert(decapConfig.SrcPrefix, decapConfig.Protocol)
+		srcPrefix := decapConfig.SrcPrefix
+		srcAddr := srcPrefix.Addr()
+		if srcAddr.Is4() {
+			srcPrefix = netip.PrefixFrom(netip.AddrFrom16(srcAddr.As16()), srcPrefix.Bits()+96)
+		}
+		c.decapProtocols.Insert(srcPrefix, decapConfig.Protocol)
 	}
 
 	return &c, nil
