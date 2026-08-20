@@ -32,6 +32,12 @@ type peerInfo struct {
 	marshallingOptions []*bgp.MarshallingOption // decoding option (add-path mostly)
 }
 
+// peerToRemove describes a peer queued for batched removal.
+type peerToRemove struct {
+	reference   uint32 // reference of the peer in the RIB when it was queued
+	exporterStr string // exporter the peer belongs to, for metrics
+}
+
 // peerKeyFromBMPPeerHeader computes the peer key from the BMP peer header.
 func peerKeyFromBMPPeerHeader(exporter netip.AddrPort, header *bmp.BMPPeerHeader) peerKey {
 	return peerKey{
@@ -46,7 +52,7 @@ func peerKeyFromBMPPeerHeader(exporter netip.AddrPort, header *bmp.BMPPeerHeader
 
 // scheduleStalePeersRemoval schedule the next time a peer should be
 // removed. This should be called with the lock held.
-func (p *Provider) scheduleStalePeersRemoval() {
+func (p *Provider) scheduleStalePeersRemoval(after time.Time) {
 	var next time.Time
 	for _, pinfo := range p.peers {
 		if pinfo.staleUntil.IsZero() {
@@ -61,7 +67,9 @@ func (p *Provider) scheduleStalePeersRemoval() {
 		p.staleTimer.Stop()
 	} else {
 		p.r.Debug().Msgf("next removal for stale peer scheduled on %s", next)
-		p.staleTimer.Reset(p.d.Clock.Until(next))
+		if next.After(after) {
+			p.staleTimer.Reset(p.d.Clock.Until(next))
+		}
 	}
 }
 
@@ -77,7 +85,7 @@ func (p *Provider) removeStalePeers() {
 		}
 		p.removePeer(pkey, "stale")
 	}
-	p.scheduleStalePeersRemoval()
+	p.scheduleStalePeersRemoval(start)
 }
 
 func (p *Provider) addPeer(pkey peerKey) *peerInfo {
@@ -96,24 +104,90 @@ func (p *Provider) addPeer(pkey peerKey) *peerInfo {
 	return pinfo
 }
 
-// removePeer remove a peer (with lock held)
+func (p *Provider) cancelRemovePeer(pkey peerKey) bool {
+	p.muPeersToRemove.Lock()
+	defer p.muPeersToRemove.Unlock()
+	if _, found := p.peersToRemove[pkey]; found {
+		delete(p.peersToRemove, pkey)
+		if len(p.peersToRemove) == 0 {
+			p.removePeersTimer.Stop()
+		}
+		return true
+	}
+	return false
+}
+
+// removePeer queues a peer for removal. Its routes are flushed from the
+// RIB later, in batch, by removePeers. This should be called with the
+// lock held.
 func (p *Provider) removePeer(pkey peerKey, reason string) {
-	exporterStr := pkey.exporter.Addr().Unmap().String()
-	peerStr := pkey.ip.Unmap().String()
-	p.r.Info().Msgf("remove peer %s for exporter %s (reason: %s)", peerStr, exporterStr, reason)
-	start := p.d.Clock.Now()
-	defer p.metrics.locked.WithLabelValues("peer-removal").Observe(
-		float64(p.d.Clock.Now().Sub(start).Nanoseconds()) / 1000 / 1000 / 1000)
 	pinfo, ok := p.peers[pkey]
 	if !ok {
 		return
 	}
-	routesRemoved, prefixesRemoved := p.rib.FlushPeer(pinfo.reference)
-	delete(p.peers, pkey)
+
+	exporterStr := pkey.exporter.Addr().Unmap().String()
+	peerStr := pkey.ip.Unmap().String()
+	p.r.Info().Msgf("remove peer %s for exporter %s (reason: %s)", peerStr, exporterStr, reason)
+
+	p.muPeersToRemove.Lock()
+	defer p.muPeersToRemove.Unlock()
+	// (Re)start the timer if the queue was empty
+	if len(p.peersToRemove) == 0 {
+		p.removePeersTimer.Reset(10 * time.Second)
+	}
+	p.peersToRemove[pkey] = peerToRemove{
+		reference:   pinfo.reference,
+		exporterStr: exporterStr,
+	}
+}
+
+// removePeers flushes the peers queued for removal.
+func (p *Provider) removePeers() {
+	p.muRemovePeers.Lock()
+	defer p.muRemovePeers.Unlock()
+
+	start := p.d.Clock.Now()
+	defer p.metrics.locked.WithLabelValues("peer-removal").Observe(
+		float64(p.d.Clock.Now().Sub(start).Nanoseconds()) / 1000 / 1000 / 1000)
+
+	p.muPeersToRemove.Lock()
+	p.removePeersTimer.Stop()
+	queued := p.peersToRemove
+	p.peersToRemove = make(map[peerKey]peerToRemove, len(queued))
+	p.muPeersToRemove.Unlock()
+	if len(queued) == 0 {
+		return
+	}
+
+	exporterCounts := make(map[string]float64)
+	peers := make(map[uint32]struct{}, len(queued))
+
+	p.mu.Lock()
+	for pkey, queuedPeer := range queued {
+		delete(p.peers, pkey)
+		exporterCounts[queuedPeer.exporterStr]++
+		peers[queuedPeer.reference] = struct{}{}
+	}
+	totalPeers := len(p.peers)
+	p.mu.Unlock()
+
+	routesRemoved, prefixesRemoved := p.rib.FlushPeer(peers, totalPeers)
+
+	// FlushPeer does not separate removed routes and prefixes by exporter, so
+	// they can only be assigned if all peers were from a single exporter.
+	exporterStr := "batched"
+	if len(exporterCounts) == 1 {
+		for e := range exporterCounts {
+			exporterStr = e
+		}
+	}
 	p.metrics.routes.WithLabelValues(exporterStr).Sub(float64(routesRemoved))
 	p.metrics.prefixesRemoved.WithLabelValues(exporterStr).Add(float64(prefixesRemoved))
-	p.metrics.peers.WithLabelValues(exporterStr).Dec()
-	p.metrics.peerRemovalDone.WithLabelValues(exporterStr).Inc()
+	for exporterStr, count := range exporterCounts {
+		p.metrics.peers.WithLabelValues(exporterStr).Sub(count)
+		p.metrics.peerRemovalDone.WithLabelValues(exporterStr).Add(count)
+	}
 }
 
 // markExporterAsStale marks all peers from an exporter as stale.
@@ -126,7 +200,7 @@ func (p *Provider) markExporterAsStale(exporter netip.AddrPort, until time.Time)
 		}
 		pinfo.staleUntil = until
 	}
-	p.scheduleStalePeersRemoval()
+	p.scheduleStalePeersRemoval(p.d.Clock.Now())
 }
 
 // handlePeerDownNotification handles a peer-down notification by
@@ -174,8 +248,10 @@ func (p *Provider) handlePeerUpNotification(pkey peerKey, body *bmp.BMPPeerUpNot
 	peerStr := pkey.ip.Unmap().String()
 	pinfo, ok := p.peers[pkey]
 	if ok {
-		p.r.Info().Msgf("received extra peer up from exporter %s for peer %s",
-			exporterStr, peerStr)
+		if !p.cancelRemovePeer(pkey) {
+			p.r.Info().Msgf("received extra peer up from exporter %s for peer %s",
+				exporterStr, peerStr)
+		}
 	} else {
 		// Peer does not exist at all
 		p.metrics.peers.WithLabelValues(exporterStr).Inc()

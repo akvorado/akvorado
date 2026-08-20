@@ -330,7 +330,7 @@ func BenchmarkRIBLookup(b *testing.B) {
 
 func BenchmarkRIBFlush(b *testing.B) {
 	for _, routes := range []int{1_000, 10_000, 100_000} {
-		for _, peers := range []int{1, 2, 5} {
+		for _, peers := range []int{1, 2, 5, 10} {
 			name := fmt.Sprintf("%d routes, %d peers", routes, peers)
 
 			b.Run(name, func(b *testing.B) {
@@ -366,7 +366,7 @@ func BenchmarkRIBFlush(b *testing.B) {
 					}
 
 					b.StartTimer()
-					rib.FlushPeer(0)
+					rib.FlushPeer(map[uint32]struct{}{0: {}}, peers)
 				}
 				b.ReportMetric(0, "ns/op")
 				b.ReportMetric(float64(b.Elapsed())/float64(b.N)/1_000_000, "ms/op")
