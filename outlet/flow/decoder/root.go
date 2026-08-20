@@ -23,7 +23,7 @@ type Decoder interface {
 	// function. On error, the caller is not expected to do any cleanup.
 	// Therefore, the decoder should either not raise errors once flows are
 	// being built or it should do the cleanup itself (by calling `Undo()`).
-	Decode(in RawFlow, options Options, bf *schema.FlowMessage, finalize FinalizeFlowFunc, decapProtocols *bart.Fast[pb.RawFlow_DecapsulationProtocol]) (int, error)
+	Decode(in RawFlow, options Options, bf *schema.FlowMessage, decapProtocols *bart.Fast[pb.RawFlow_DecapsulationProtocol], finalize FinalizeFlowFunc) (int, error)
 
 	// Name returns the decoder name
 	Name() string
