@@ -10,14 +10,17 @@ import (
 	"akvorado/common/pb"
 	"akvorado/common/reporter"
 	"akvorado/outlet/flow/decoder"
+
+	"github.com/gaissmai/bart"
 )
 
 // Component represents the flow decoder component.
 type Component struct {
-	r         *reporter.Reporter
-	d         *Dependencies
-	config    Configuration
-	errLogger reporter.Logger
+	r              *reporter.Reporter
+	d              *Dependencies
+	config         Configuration
+	decapProtocols *bart.Fast[pb.RawFlow_DecapsulationProtocol]
+	errLogger      reporter.Logger
 
 	metrics struct {
 		decoderStats  *reporter.CounterVec
@@ -61,6 +64,12 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 		},
 		[]string{"name"},
 	)
+
+	// Create lookup table decapsulation protocols
+	c.decapProtocols = &bart.Fast[pb.RawFlow_DecapsulationProtocol]{}
+	for _, decapConfig := range config.Decapsulation {
+		c.decapProtocols.Insert(decapConfig.SrcPrefix, decapConfig.Protocol)
+	}
 
 	return &c, nil
 }

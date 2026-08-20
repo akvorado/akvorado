@@ -13,9 +13,12 @@ import (
 	"time"
 
 	"akvorado/common/helpers"
+	"akvorado/common/pb"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 	"akvorado/outlet/flow/decoder"
+
+	"github.com/gaissmai/bart"
 )
 
 func TestGobDecoder(t *testing.T) {
@@ -66,7 +69,7 @@ func TestGobDecoder(t *testing.T) {
 		Source:       netip.MustParseAddr("::ffff:192.0.2.1"),
 	}
 
-	nb, err := d.Decode(rawFlow, decoder.Options{}, bf, finalize)
+	nb, err := d.Decode(rawFlow, decoder.Options{}, bf, finalize, &bart.Fast[pb.RawFlow_DecapsulationProtocol]{})
 	if err != nil {
 		t.Fatalf("Decode() error:\n%+v", err)
 	}
@@ -92,7 +95,7 @@ func TestGobDecoderInvalidPayload(t *testing.T) {
 		Source:       netip.MustParseAddr("::ffff:192.0.2.1"),
 	}
 
-	nb, err := d.Decode(rawFlow, decoder.Options{}, bf, func() {})
+	nb, err := d.Decode(rawFlow, decoder.Options{}, bf, func() {}, &bart.Fast[pb.RawFlow_DecapsulationProtocol]{})
 	if err == nil {
 		t.Errorf("expected error for invalid payload")
 	}

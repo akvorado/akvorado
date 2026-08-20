@@ -225,6 +225,7 @@ const (
 	ColumnSrcOuterAddr
 	ColumnDstOuterAddr
 	ColumnIPOuterTos
+	ColumnDecapsulationProto
 
 	// ColumnLast points to after the last static column, custom dictionaries
 	// (dynamic columns) come after ColumnLast
@@ -557,6 +558,7 @@ END`,
 				ClickHouseCodec:    "ZSTD(1)",
 			},
 			{Key: ColumnIPOuterTos, Disabled: true, Group: ColumnGroupOuter, ParserType: "uint", ClickHouseType: "UInt8"},
+			{Key: ColumnDecapsulationProto, Disabled: true, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
 		},
 	}.finalize()
 }

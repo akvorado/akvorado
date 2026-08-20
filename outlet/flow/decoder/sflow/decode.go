@@ -7,6 +7,7 @@ package sflow
 import (
 	"cmp"
 	"net"
+	"net/netip"
 
 	"akvorado/common/constants"
 	"akvorado/common/helpers"
@@ -14,6 +15,7 @@ import (
 	"akvorado/common/schema"
 	"akvorado/outlet/flow/decoder"
 
+	"github.com/gaissmai/bart"
 	"github.com/netsampler/goflow2/v3/decoders/sflow"
 )
 
@@ -57,7 +59,7 @@ var sflowDiscardReasonToForwardingStatus = map[uint32]int{
 	302: 140, // uc_reverse_path_forwarding → RPF
 }
 
-func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.Options, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) error {
+func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.Options, bf *schema.FlowMessage, decapProtocols *bart.Fast[pb.RawFlow_DecapsulationProtocol], finalize decoder.FinalizeFlowFunc) error {
 	for _, flowSample := range packet.Samples {
 		var records []sflow.FlowRecord
 		forwardingStatus := 0
@@ -100,12 +102,31 @@ func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.
 			bf.OutIf = 0
 		}
 
+		// Selectively apply decapsulation based on source address
+		appliedDecapsulationProtocol := options.DecapsulationProtocol
+		if appliedDecapsulationProtocol == pb.RawFlow_DECAP_NONE && decapProtocols.Size() > 0 {
+			// get source ip
+			var srcAddr netip.Addr
+			for _, record := range records {
+				switch recordData := record.Data.(type) {
+				case sflow.SampledIPv4:
+					srcAddr = decoder.DecodeIP(recordData.SrcIP)
+				case sflow.SampledIPv6:
+					srcAddr = decoder.DecodeIP(recordData.SrcIP)
+				}
+			}
+			// look up decapsulation protocol to apply
+			if proto, found := decapProtocols.Lookup(srcAddr); found {
+				appliedDecapsulationProtocol = proto
+			}
+		}
+
 		// Optimization: avoid parsing sampled header if we have everything already parsed
 		hasSampledIPv4 := false
 		hasSampledIPv6 := false
 		hasSampledEthernet := false
 		hasExtendedSwitch := false
-		needDecap := options.DecapsulationProtocol != pb.RawFlow_DECAP_NONE
+		needDecap := appliedDecapsulationProtocol != pb.RawFlow_DECAP_NONE
 		for _, record := range records {
 			switch record.Data.(type) {
 			case sflow.SampledIPv4:

@@ -510,3 +510,7 @@
   group: 4
   parsertype: uint
   clickhousetype: UInt8
+- key: DecapsulationProto
+  name: DecapsulationProto
+  parsertype: string
+  clickhousetype: LowCardinality(String)
