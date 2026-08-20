@@ -45,7 +45,7 @@ func (d *Decoder) Name() string {
 }
 
 // Decode decodes a gob-encoded FlowMessage.
-func (d *Decoder) Decode(in decoder.RawFlow, _ decoder.Options, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc, _ *bart.Fast[pb.RawFlow_DecapsulationProtocol]) (int, error) {
+func (d *Decoder) Decode(in decoder.RawFlow, _ decoder.Options, bf *schema.FlowMessage, _ *bart.Fast[pb.RawFlow_DecapsulationProtocol], finalize decoder.FinalizeFlowFunc) (int, error) {
 	var decoded schema.FlowMessage
 
 	buf := bytes.NewReader(in.Payload)

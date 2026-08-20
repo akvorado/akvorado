@@ -42,7 +42,7 @@ func TestGetNetFlowData(t *testing.T) {
 	for payload := range ch {
 		if _, err := nfdecoder.Decode(decoder.RawFlow{
 			Payload: payload, Source: netip.MustParseAddr("::ffff:127.0.0.1"),
-		}, decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}, bf, finalize, nil); err != nil {
+		}, decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}, bf, nil, finalize); err != nil {
 			t.Fatalf("Decode() error:\n%+v", err)
 		}
 	}
@@ -107,7 +107,7 @@ func TestGetNetFlowData(t *testing.T) {
 	for payload := range ch {
 		if _, err := nfdecoder.Decode(decoder.RawFlow{
 			Payload: payload, Source: netip.MustParseAddr("::ffff:127.0.0.1"),
-		}, decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}, bf, finalize, nil); err != nil {
+		}, decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}, bf, nil, finalize); err != nil {
 			t.Fatalf("Decode() error:\n%+v", err)
 		}
 	}
