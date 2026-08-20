@@ -10,8 +10,10 @@ import (
 	"net"
 	"time"
 
+	"github.com/gaissmai/bart"
 	"github.com/netsampler/goflow2/v3/decoders/sflow"
 
+	"akvorado/common/pb"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 	"akvorado/outlet/flow/decoder"
@@ -72,7 +74,7 @@ func New(r *reporter.Reporter, dependencies decoder.Dependencies) decoder.Decode
 }
 
 // Decode decodes an sFlow payload.
-func (nd *Decoder) Decode(in decoder.RawFlow, options decoder.Options, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) (int, error) {
+func (nd *Decoder) Decode(in decoder.RawFlow, options decoder.Options, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc, decapProtocols *bart.Fast[pb.RawFlow_DecapsulationProtocol]) (int, error) {
 	buf := bytes.NewBuffer(in.Payload)
 	key := in.Source.String()
 	ts := uint64(in.TimeReceived.UTC().Unix())
@@ -109,7 +111,7 @@ func (nd *Decoder) Decode(in decoder.RawFlow, options decoder.Options, bf *schem
 		}
 	}
 
-	return len(samples), nd.decode(key, packet, options, bf, func() {
+	return len(samples), nd.decode(key, packet, options, bf, decapProtocols, func() {
 		bf.TimeReceived = uint32(ts)
 		finalize()
 	})

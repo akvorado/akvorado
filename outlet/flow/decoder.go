@@ -68,7 +68,7 @@ func (c *Component) decodeWithMetrics(dec decoder.Decoder, input decoder.RawFlow
 		}
 	}()
 
-	n, err := dec.Decode(input, options, bf, finalize)
+	n, err := dec.Decode(input, options, bf, finalize, c.decapProtocols)
 	if err != nil {
 		c.metrics.decoderErrors.WithLabelValues(dec.Name()).Inc()
 		return err

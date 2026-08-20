@@ -222,6 +222,9 @@ const (
 	ColumnMPLS4thLabel
 	ColumnIngressVRFID
 	ColumnEgressVRFID
+	ColumnSrcOuterAddr
+	ColumnDstOuterAddr
+	ColumnDecapsulationProto
 
 	// ColumnLast points to after the last static column, custom dictionaries
 	// (dynamic columns) come after ColumnLast
@@ -534,6 +537,8 @@ END`,
 			},
 			{Key: ColumnIngressVRFID, Disabled: true, ParserType: "uint", ClickHouseType: "UInt32"},
 			{Key: ColumnEgressVRFID, Disabled: true, ParserType: "uint", ClickHouseType: "UInt32"},
+			{Key: ColumnSrcOuterAddr, Disabled: true, ParserType: "ip", ClickHouseType: "IPv6"},
+			{Key: ColumnDecapsulationProto, Disabled: true, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
 		},
 	}.finalize()
 }
