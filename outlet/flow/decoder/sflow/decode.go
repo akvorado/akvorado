@@ -164,9 +164,7 @@ func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.
 						if appliedDecapsulationProtocol != pb.RawFlow_DECAP_NONE && decapProtocols != nil {
 							bf.AppendIPv6(schema.ColumnDstOuterAddr, dstOuterAddr)
 							bf.AppendIPv6(schema.ColumnSrcOuterAddr, srcOuterAddr)
-							if name, err := appliedDecapsulationProtocol.MarshalText(); err == nil {
-								bf.AppendString(schema.ColumnDecapsulationProto, string(name))
-							}
+							bf.AppendUint(schema.ColumnDecapsulationProto, uint64(appliedDecapsulationProtocol))
 						}
 					}
 				}
