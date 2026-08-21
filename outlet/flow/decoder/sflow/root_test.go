@@ -665,7 +665,7 @@ func TestDecode(t *testing.T) {
 					schema.ColumnIPv6FlowLabel:      uint32(0x0a461c),
 					schema.ColumnSrcOuterAddr:       netip.MustParseAddr("::ffff:192.168.108.40"),
 					schema.ColumnDstOuterAddr:       netip.MustParseAddr("::ffff:192.168.15.14"),
-					schema.ColumnDecapsulationProto: "vxlan",
+					schema.ColumnDecapsulationProto: uint8(pb.RawFlow_DECAP_VXLAN),
 				},
 			},
 		}
