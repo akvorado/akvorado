@@ -14,11 +14,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ClickHouse/clickhouse-go/v2"
-
-	"akvorado/common/helpers"
 	"akvorado/common/schema"
 	sb "akvorado/common/sqlbuilder"
+
+	"github.com/ClickHouse/clickhouse-go/v2"
 )
 
 var errSkipStep = errors.New("migration: skip this step")
@@ -124,6 +123,9 @@ type statement interface {
 // definition. They are checked on their own, see createOrUpdateFlowsTable.
 var settingsRegexp = regexp.MustCompile(` SETTINGS .*$`)
 
+// replicatedMergeTreeRegexp has a regex subgroup used to match the zookeeper path
+var replicatedMergeTreeRegexp = regexp.MustCompile(`Replicated\w*MergeTree\('([^']*)'`)
+
 // tableColumn fetches one column of system.tables for the provided table. The
 // column can be any expression. An empty string is returned when the table does
 // not exist.
@@ -163,15 +165,25 @@ func (c *Component) tableAlreadyExists(ctx context.Context, table, column string
 	return false, nil
 }
 
-// mergeTreeEngine returns a MergeTree engine definition, either plain or using
-// Replicated if we are on a cluster.
-func (c *Component) mergeTreeEngine(table, variant string, args ...sb.Expr) sb.Engine {
-	if c.d.ClickHouse.ClusterName() != "" {
-		zkPath := fmt.Sprintf("/clickhouse/tables/shard-{shard}/%s", table)
-		if helpers.Testing() {
-			zkPath = fmt.Sprintf("/clickhouse/tables/shard-{shard}/%s/%s",
-				c.d.ClickHouse.DatabaseName(), table)
+func (c *Component) queryExistingZkPath(ctx context.Context, table string) string {
+	var createQuery string
+	row := c.d.ClickHouse.QueryRow(ctx, `SELECT create_table_query FROM system.tables
+                          WHERE database = $1 AND table = $2 LIMIT 1`, c.d.ClickHouse.DatabaseName(), table)
+	if err := row.Scan(&createQuery); err == nil {
+		subMatches := replicatedMergeTreeRegexp.FindStringSubmatch(createQuery)
+		if len(subMatches) == 2 {
+			return subMatches[1]
 		}
+	}
+	return fmt.Sprintf("/clickhouse/tables/shard-{shard}/%s/%s", c.d.ClickHouse.DatabaseName(), table)
+}
+
+// mergeTreeEngine returns a MergeTree engine definition, either plain or using
+// Replicated if we are on a cluster. Zookeeper path from an existing table is kept unchanged.
+func (c *Component) mergeTreeEngine(ctx context.Context, table, variant string, args ...sb.Expr) sb.Engine {
+	if c.d.ClickHouse.ClusterName() != "" {
+		zkPath := c.queryExistingZkPath(ctx, table)
+
 		return sb.NewEngine(fmt.Sprintf("Replicated%sMergeTree", variant),
 			slices.Concat([]sb.Expr{
 				sb.String(zkPath),
@@ -248,7 +260,7 @@ func (c *Component) createExportersTable(ctx context.Context) error {
 	name := "exporters"
 	createQuery := sb.CreateTable(c.table(name)).
 		Columns(columns...).
-		Engine(c.mergeTreeEngine(name, "Replacing", sb.Column("TimeReceived"))).
+		Engine(c.mergeTreeEngine(ctx, name, "Replacing", sb.Column("TimeReceived"))).
 		OrderBy(sb.Columns("ExporterAddress", "IfName")...).
 		TTL(sb.Op(sb.Column("TimeReceived"), "+",
 			sb.Function("toIntervalDay", sb.Uint(1))))
@@ -443,13 +455,13 @@ func (c *Component) createOrUpdateFlowsTable(ctx context.Context, resolution Res
 		if resolution.Interval == 0 {
 			fiveMinutes := sb.Function("toStartOfFiveMinutes", sb.Column("TimeReceived"))
 			createQuery.
-				Engine(c.mergeTreeEngine(tableName, "")).
+				Engine(c.mergeTreeEngine(ctx, tableName, "")).
 				PrimaryKey(fiveMinutes).
 				OrderBy(slices.Concat([]sb.Expr{fiveMinutes},
 					sb.Columns("ExporterAddress", "InIfName", "OutIfName"))...)
 		} else {
 			createQuery.
-				Engine(c.mergeTreeEngine(tableName, "Summing",
+				Engine(c.mergeTreeEngine(ctx, tableName, "Summing",
 					sb.Tuple(sb.Columns("Bytes", "Packets")...))).
 				PrimaryKey(sb.Columns(c.d.Schema.ClickHousePrimaryKeys()...)...).
 				OrderBy(sb.Columns(c.d.Schema.ClickHouseSortingKeys()...)...)
