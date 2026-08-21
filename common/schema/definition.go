@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"akvorado/common/helpers/bimap"
+	"akvorado/common/pb"
 
 	"github.com/bits-and-blooms/bitset"
 	"google.golang.org/protobuf/encoding/protowire"
@@ -538,7 +539,12 @@ END`,
 			{Key: ColumnIngressVRFID, Disabled: true, ParserType: "uint", ClickHouseType: "UInt32"},
 			{Key: ColumnEgressVRFID, Disabled: true, ParserType: "uint", ClickHouseType: "UInt32"},
 			{Key: ColumnSrcOuterAddr, Disabled: true, ParserType: "ip", ClickHouseType: "IPv6"},
-			{Key: ColumnDecapsulationProto, Disabled: true, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
+			{
+				Key:            ColumnDecapsulationProto,
+				Disabled:       true,
+				ParserType:     "string",
+				ClickHouseType: fmt.Sprintf("Enum8('none' = %d, 'ipip' = %d, 'gre' = %d, 'vxlan' = %d, 'srv6' = %d)", pb.RawFlow_DECAP_NONE, pb.RawFlow_DECAP_IPIP, pb.RawFlow_DECAP_GRE, pb.RawFlow_DECAP_VXLAN, pb.RawFlow_DECAP_SRV6),
+			},
 		},
 	}.finalize()
 }

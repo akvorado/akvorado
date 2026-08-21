@@ -502,4 +502,4 @@
 - key: DecapsulationProto
   name: DecapsulationProto
   parsertype: string
-  clickhousetype: LowCardinality(String)
+  clickhousetype: Enum8('none' = 0, 'ipip' = 1, 'gre' = 2, 'vxlan' = 3, 'srv6' = 4)
