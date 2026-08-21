@@ -165,7 +165,7 @@ func (c *Component) tableAlreadyExists(ctx context.Context, table, column string
 	return false, nil
 }
 
-func (c *Component) queryTableEngine(ctx context.Context, table string) string {
+func (c *Component) queryExistingZkPath(ctx context.Context, table string) string {
 	var createQuery string
 	row := c.d.ClickHouse.QueryRow(ctx, `SELECT create_table_query FROM system.tables
                           WHERE database = $1 AND table = $2 LIMIT 1`, c.d.ClickHouse.DatabaseName(), table)
@@ -179,10 +179,10 @@ func (c *Component) queryTableEngine(ctx context.Context, table string) string {
 }
 
 // mergeTreeEngine returns a MergeTree engine definition, either plain or using
-// Replicated if we are on a cluster.
+// Replicated if we are on a cluster. Zookeeper path from an existing table is kept unchanged.
 func (c *Component) mergeTreeEngine(ctx context.Context, table, variant string, args ...sb.Expr) sb.Engine {
 	if c.d.ClickHouse.ClusterName() != "" {
-		zkPath := c.queryTableEngine(ctx, table)
+		zkPath := c.queryExistingZkPath(ctx, table)
 
 		return sb.NewEngine(fmt.Sprintf("Replicated%sMergeTree", variant),
 			slices.Concat([]sb.Expr{
