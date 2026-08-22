@@ -189,6 +189,7 @@
       ],
       "groupName": "golang-org-x",
       "automerge": true,
+      "dependencyDashboardApproval": false,
       "matchPackageNames": [
         "/^golang\\.org/x//"
       ]
