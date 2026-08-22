@@ -7,6 +7,7 @@ package sflow
 import (
 	"cmp"
 	"net"
+	"net/netip"
 
 	"akvorado/common/constants"
 	"akvorado/common/helpers"
@@ -14,6 +15,7 @@ import (
 	"akvorado/common/schema"
 	"akvorado/outlet/flow/decoder"
 
+	"github.com/gaissmai/bart"
 	"github.com/netsampler/goflow2/v3/decoders/sflow"
 )
 
@@ -57,7 +59,7 @@ var sflowDiscardReasonToForwardingStatus = map[uint32]int{
 	302: 140, // uc_reverse_path_forwarding → RPF
 }
 
-func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.Options, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) error {
+func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.Options, bf *schema.FlowMessage, decapProtocols *bart.Fast[pb.RawFlow_DecapsulationProtocol], finalize decoder.FinalizeFlowFunc) error {
 	for _, flowSample := range packet.Samples {
 		var records []sflow.FlowRecord
 		forwardingStatus := 0
@@ -105,7 +107,6 @@ func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.
 		hasSampledIPv6 := false
 		hasSampledEthernet := false
 		hasExtendedSwitch := false
-		needDecap := options.DecapsulationProtocol != pb.RawFlow_DECAP_NONE
 		for _, record := range records {
 			switch record.Data.(type) {
 			case sflow.SampledIPv4:
@@ -119,7 +120,33 @@ func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.
 			}
 		}
 
+		// Selectively apply decapsulation based on source address
+		appliedDecapsulationProtocol := options.DecapsulationProtocol
+		bfTmp := nd.d.Schema.NewFlowMessage()
+		var dstOuterAddr, srcOuterAddr netip.Addr
+		if appliedDecapsulationProtocol == pb.RawFlow_DECAP_NONE && decapProtocols != nil {
+			// get source ip
+			for _, record := range records {
+				switch recordData := record.Data.(type) {
+				case sflow.SampledHeader:
+					nd.parseSampledHeader(bfTmp, pb.RawFlow_DECAP_NONE, &recordData)
+					dstOuterAddr = bfTmp.DstAddr
+					srcOuterAddr = bfTmp.SrcAddr
+					bfTmp.Undo()
+				case sflow.SampledIPv4:
+					srcOuterAddr = decoder.DecodeIP(recordData.SrcIP)
+				case sflow.SampledIPv6:
+					srcOuterAddr = decoder.DecodeIP(recordData.SrcIP)
+				}
+			}
+			// look up decapsulation protocol to apply
+			if proto, found := decapProtocols.Lookup(srcOuterAddr); found {
+				appliedDecapsulationProtocol = proto
+			}
+		}
+
 		var l3length uint64
+		needDecap := appliedDecapsulationProtocol != pb.RawFlow_DECAP_NONE
 		for _, record := range records {
 			switch recordData := record.Data.(type) {
 			case sflow.SampledHeader:
@@ -132,8 +159,13 @@ func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.
 				needsL2Data := !(nd.d.Schema.IsDisabled(schema.ColumnGroupL2) || (hasSampledEthernet && hasExtendedSwitch))
 				needsL3L4Data := !nd.d.Schema.IsDisabled(schema.ColumnGroupL3L4)
 				if needsIPData || needsL2Data || needsL3L4Data || needDecap {
-					if l := nd.parseSampledHeader(bf, options.DecapsulationProtocol, &recordData); l > 0 {
+					if l := nd.parseSampledHeader(bf, appliedDecapsulationProtocol, &recordData); l > 0 {
 						l3length = l
+						if appliedDecapsulationProtocol != pb.RawFlow_DECAP_NONE && decapProtocols != nil {
+							bf.AppendIPv6(schema.ColumnDstOuterAddr, dstOuterAddr)
+							bf.AppendIPv6(schema.ColumnSrcOuterAddr, srcOuterAddr)
+							bf.AppendUint(schema.ColumnDecapsulationProto, uint64(appliedDecapsulationProtocol))
+						}
 					}
 				}
 			case sflow.SampledIPv4:

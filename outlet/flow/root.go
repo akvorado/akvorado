@@ -5,19 +5,23 @@
 package flow
 
 import (
+	"net/netip"
 	"time"
 
 	"akvorado/common/pb"
 	"akvorado/common/reporter"
 	"akvorado/outlet/flow/decoder"
+
+	"github.com/gaissmai/bart"
 )
 
 // Component represents the flow decoder component.
 type Component struct {
-	r         *reporter.Reporter
-	d         *Dependencies
-	config    Configuration
-	errLogger reporter.Logger
+	r              *reporter.Reporter
+	d              *Dependencies
+	config         Configuration
+	decapProtocols *bart.Fast[pb.RawFlow_DecapsulationProtocol]
+	errLogger      reporter.Logger
 
 	metrics struct {
 		decoderStats  *reporter.CounterVec
@@ -61,6 +65,19 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 		},
 		[]string{"name"},
 	)
+
+	// Create lookup table decapsulation protocols
+	if len(config.Decapsulation) > 0 {
+		c.decapProtocols = &bart.Fast[pb.RawFlow_DecapsulationProtocol]{}
+		for _, decapConfig := range config.Decapsulation {
+			srcPrefix := decapConfig.SrcPrefix
+			srcAddr := srcPrefix.Addr()
+			if srcAddr.Is4() {
+				srcPrefix = netip.PrefixFrom(netip.AddrFrom16(srcAddr.As16()), srcPrefix.Bits()+96)
+			}
+			c.decapProtocols.Insert(srcPrefix, decapConfig.Protocol)
+		}
+	}
 
 	return &c, nil
 }
