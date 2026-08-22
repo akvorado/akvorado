@@ -1,4 +1,5 @@
-FROM --platform=$BUILDPLATFORM node:24-alpine AS build-js
+ARG NODE_VERSION
+FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine AS build-js
 RUN apk add --no-cache make
 WORKDIR /build
 RUN --mount=source=console/frontend,target=console/frontend,rw \

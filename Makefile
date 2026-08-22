@@ -359,7 +359,9 @@ DOCKER_BUILD_ARGS =
 docker: ; @ ## Build Docker image
 	$(call log,build Docker image…)
 	$Q git ls-files | tar -T- -cf- | docker build --pull -f docker/Dockerfile $(DOCKER_BUILD_ARGS) \
-		--build-arg VERSION=$(VERSION) -t quay.io/akvorado/akvorado:main -
+		--build-arg VERSION=$(VERSION) \
+		--build-arg NODE_VERSION=$$(cat console/frontend/.nvmrc) \
+		-t quay.io/akvorado/akvorado:main -
 docker-dev: TARGETOS=linux
 docker-dev: all ; @ ## Build development Docker image
 	$(call log,build development Docker image…)

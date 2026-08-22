@@ -387,6 +387,7 @@ jobs:
         id: version
         run: |
           echo version=$(make version) >> "$GITHUB_OUTPUT"
+          echo node_version=$(cat console/frontend/.nvmrc) >> "$GITHUB_OUTPUT"
       - uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4
       - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
       - uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
@@ -424,6 +425,7 @@ jobs:
           push: true
           build-args: |
             VERSION=${{ steps.version.outputs.version }}
+            NODE_VERSION=${{ steps.version.outputs.node_version }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
