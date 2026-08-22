@@ -195,6 +195,19 @@
     },
     {
       "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "go-test-tooling",
+      "automerge": true,
+      "matchPackageNames": [
+        "gotest.tools/gotestsum",
+        "honnef.co/go/tools/cmd/staticcheck",
+        "github.com/mgechev/revive",
+        "github.com/go-delve/delve/cmd/dlv"
+      ]
+    },
+    {
+      "matchManagers": [
         "docker-compose"
       ],
       "addLabels": [
