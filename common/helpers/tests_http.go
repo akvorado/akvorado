@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"testing"
@@ -82,7 +83,12 @@ func TestHTTPEndpoints(t *testing.T, serverAddr net.Addr, cases HTTPEndpointCase
 				}
 			}
 
-			defer resp.Body.Close()
+			// Drain the body before closing it. Otherwise, it breaks with Go
+			// 1.27.
+			defer func() {
+				io.Copy(io.Discard, resp.Body)
+				resp.Body.Close()
+			}()
 			if tc.StatusCode == 0 {
 				tc.StatusCode = 200
 			}
