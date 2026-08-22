@@ -18,7 +18,7 @@
           inherit system;
         };
         l = builtins // pkgs.lib;
-        nodejs = pkgs.nodejs_24;
+        nodejs = pkgs."nodejs_${l.versions.major (l.fileContents ./console/frontend/.nvmrc)}";
         pnpmVersion = l.removePrefix "pnpm@"
           (l.importJSON ./console/frontend/package.json).packageManager;
         pnpm = pkgs."pnpm_${l.versions.major pnpmVersion}";

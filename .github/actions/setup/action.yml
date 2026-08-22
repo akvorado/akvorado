@@ -11,9 +11,9 @@ inputs:
     required: false
     default: "true"
   node-version:
-    description: Node version to install
+    description: Node version to install, defaults to the one in .nvmrc
     required: false
-    default: "24"
+    default: ""
 outputs:
   iana-cache-hit:
     description: Was cache hit for IANA files?
@@ -56,6 +56,7 @@ runs:
       if: ${{ inputs.setup-node == 'true' }}
       with:
         node-version: ${{ inputs.node-version }}
+        node-version-file: ${{ inputs.node-version == '' && 'console/frontend/.nvmrc' || '' }}
         cache: pnpm
         cache-dependency-path: |
           console/frontend/pnpm-lock.yaml

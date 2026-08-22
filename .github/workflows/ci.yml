@@ -333,19 +333,11 @@ jobs:
   build-js:
     name: 🔬 Test only JS
     runs-on: ubuntu-latest
-    needs:
-      - renovatebot
     permissions:
       contents: read
     strategy:
       matrix:
         node-version: [22, 24, 26]
-        renovatebot:
-          - ${{ needs.renovatebot.outputs.package-ecosystem }}
-        exclude:
-          - renovatebot: gomod
-        include:
-          - node-version: 24    # When updating Go deps, only test against this version
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
