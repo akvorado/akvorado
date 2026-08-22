@@ -70,7 +70,7 @@
       "matchManagers": [
         "npm"
       ],
-      "groupName": "dev-dependencies",
+      "groupName": "js-dev-dependencies",
       "automerge": true,
       "dependencyDashboardApproval": false,
       "matchPackageNames": [
@@ -197,8 +197,9 @@
       "matchManagers": [
         "gomod"
       ],
-      "groupName": "go-test-tooling",
+      "groupName": "go-dev-tools",
       "automerge": true,
+      "dependencyDashboardApproval": false,
       "matchPackageNames": [
         "gotest.tools/gotestsum",
         "honnef.co/go/tools/cmd/staticcheck",
