@@ -406,16 +406,21 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 			}
 			input.Prefix = ""
 		case "srcnetname", "dstnetname", "srcnetrole", "dstnetrole", "srcnetsite", "dstnetsite", "srcnetregion", "dstnetregion", "srcnettenant", "dstnettenant":
-			attributeName := inputColumn[6:]
 			results := []struct {
-				Attribute string `ch:"attribute"`
+				Label string `ch:"label"`
 			}{}
-			attribute := sb.Column(attributeName)
-			sqlQuery := sb.Select(sb.Alias(attribute, "attribute")).
-				Distinct().
-				From(sb.Table("networks")).
-				Where(matchPrefix(attribute, input.Prefix)).
-				OrderBy(sb.Order(attribute)).
+			column := sb.Column(c.fixQueryColumnName(input.Column))
+			// The attributes seen in the recent flows, the most used first.
+			sqlQuery := sb.Select(sb.Alias(column, "label")).
+				From(sb.Table("flows")).
+				Where(sb.And(
+					recentFlows(10),
+					sb.Op(sb.Column("label"), "!=", sb.String("")),
+					matchPrefix(sb.Column("label"), input.Prefix))).
+				GroupBy(column).
+				OrderBy(
+					sb.Order(prefixPosition(sb.Column("label"), input.Prefix)),
+					mostUsedFirst()).
 				Limit(input.Limit).
 				String()
 			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery); err != nil {
@@ -424,8 +429,8 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 			}
 			for _, result := range results {
 				completions = append(completions, filterCompletion{
-					Label:  result.Attribute,
-					Detail: "network name",
+					Label:  result.Label,
+					Detail: fmt.Sprintf("network %s", inputColumn[6:]),
 					Quoted: true,
 				})
 			}

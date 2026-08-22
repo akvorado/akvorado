@@ -35,24 +35,30 @@ LIMIT 20`)).
 		Return(nil)
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
-SELECT DISTINCT name AS attribute
-FROM networks
-WHERE positionCaseInsensitive(name, 'c') >= 1
-ORDER BY name
+SELECT SrcNetName AS label
+FROM flows
+WHERE TimeReceived > date_sub(minute, 10, now())
+AND label != ''
+AND positionCaseInsensitive(label, 'c') >= 1
+GROUP BY SrcNetName
+ORDER BY positionCaseInsensitive(label, 'c'), COUNT(*) DESC
 LIMIT 20`)).
 		SetArg(1, []struct {
-			Attribute string `ch:"attribute"`
+			Label string `ch:"label"`
 		}{{"customer-1"}, {"customer-2"}, {"customer-3"}}).
 		Return(nil)
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
-SELECT DISTINCT role AS attribute
-FROM networks
-WHERE positionCaseInsensitive(role, 'c') >= 1
-ORDER BY role
+SELECT DstNetRole AS label
+FROM flows
+WHERE TimeReceived > date_sub(minute, 10, now())
+AND label != ''
+AND positionCaseInsensitive(label, 'c') >= 1
+GROUP BY DstNetRole
+ORDER BY positionCaseInsensitive(label, 'c'), COUNT(*) DESC
 LIMIT 20`)).
 		SetArg(1, []struct {
-			Attribute string `ch:"attribute"`
+			Label string `ch:"label"`
 		}{{"customer"}}).
 		Return(nil)
 	mockConn.EXPECT().
@@ -358,7 +364,7 @@ UNION DISTINCT
 			StatusCode: 200,
 			JSONInput:  helpers.M{"what": "value", "column": "dstnetRole", "prefix": "c"},
 			JSONOutput: helpers.M{"completions": []helpers.M{
-				{"label": "customer", "detail": "network name", "quoted": true},
+				{"label": "customer", "detail": "network role", "quoted": true},
 			}},
 		},
 		{
