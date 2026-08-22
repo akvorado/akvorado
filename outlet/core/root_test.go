@@ -265,6 +265,24 @@ func TestCore(t *testing.T) {
 		}
 	})
 
+	// waitNoFlowClient waits for the streaming handler to notice the client is
+	// gone. Since Go 1.27, closing the response body does not close the
+	// connection right away: the transport first tries to drain the unread
+	// content.
+	waitNoFlowClient := func(t *testing.T) {
+		t.Helper()
+		expectedMetrics := map[string]string{`flows_http_clients`: "0"}
+		var diff string
+		for range 100 {
+			gotMetrics := r.GetMetrics("akvorado_outlet_core_", "flows_http_clients")
+			if diff = helpers.Diff(gotMetrics, expectedMetrics); diff == "" {
+				return
+			}
+			time.Sleep(5 * time.Millisecond)
+		}
+		t.Fatalf("Metrics (-got, +want):\n%s", diff)
+	}
+
 	// Test HTTP flow clients (JSON)
 	t.Run("http flows", func(t *testing.T) {
 		c.httpFlowFlushDelay = 20 * time.Millisecond
@@ -273,6 +291,7 @@ func TestCore(t *testing.T) {
 		if err != nil {
 			t.Fatalf("GET /api/v0/outlet/flows:\n%+v", err)
 		}
+		defer waitNoFlowClient(t)
 		defer resp.Body.Close()
 		if resp.StatusCode != 200 {
 			t.Fatalf("GET /api/v0/outlet/flows status code %d", resp.StatusCode)
@@ -352,12 +371,12 @@ func TestCore(t *testing.T) {
 	})
 
 	// Test HTTP flow clients with a limit
-	time.Sleep(10 * time.Millisecond)
 	t.Run("http flows with limit", func(t *testing.T) {
 		resp, err := http.Get(fmt.Sprintf("http://%s/api/v0/outlet/flows?limit=4", c.d.HTTP.LocalAddr()))
 		if err != nil {
 			t.Fatalf("GET /api/v0/outlet/flows:\n%+v", err)
 		}
+		defer waitNoFlowClient(t)
 		defer resp.Body.Close()
 		if resp.StatusCode != 200 {
 			t.Fatalf("GET /api/v0/outlet/flows status code %d", resp.StatusCode)
