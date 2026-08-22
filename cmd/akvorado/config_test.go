@@ -254,7 +254,7 @@ module2:
 }
 
 func TestHTTPConfiguration(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	ts := httptest.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/yaml; charset=utf-8")
 		fmt.Fprint(w, `---
 module1:
@@ -269,7 +269,7 @@ module2:
    - {"name": "second"}
 `)
 	}))
-	defer ts.Close()
+	ts.Start()
 
 	c := cmd.ConfigRelatedOptions{
 		Path: ts.URL,

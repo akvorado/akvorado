@@ -15,6 +15,7 @@ import (
 	"math/big"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -115,22 +116,13 @@ func TestSource(t *testing.T) {
 	}))
 
 	// Setup an HTTP server to serve the JSON
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("Listen() error:\n%+v", err)
-	}
-	server := &http.Server{
-		Addr:    listener.Addr().String(),
-		Handler: mux,
-	}
-	address := listener.Addr()
-	go server.Serve(listener)
-	defer server.Shutdown(t.Context())
+	server := httptest.NewTestServer(t, mux)
+	server.Start()
 
 	r := reporter.NewMock(t)
 	config := map[string]Source{
 		"local": {
-			URL:    fmt.Sprintf("http://%s/data.json", address),
+			URL:    fmt.Sprintf("%s/data.json", server.URL),
 			Method: "GET",
 			Headers: map[string]string{
 				"X-Foo": "hello",
@@ -273,17 +265,8 @@ func TestSourceCSV(t *testing.T) {
 		w.Write([]byte("foo:bar\nbaz:qux\n"))
 	}))
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("Listen() error:\n%+v", err)
-	}
-	server := &http.Server{
-		Addr:    listener.Addr().String(),
-		Handler: mux,
-	}
-	address := listener.Addr()
-	go server.Serve(listener)
-	defer server.Shutdown(t.Context())
+	server := httptest.NewTestServer(t, mux)
+	server.Start()
 
 	type csvData struct {
 		F1 string
@@ -305,7 +288,7 @@ func TestSourceCSV(t *testing.T) {
 			r := reporter.NewMock(t)
 			config := map[string]Source{
 				"local": {
-					URL:       fmt.Sprintf("http://%s%s", address, tc.path),
+					URL:       fmt.Sprintf("%s%s", server.URL, tc.path),
 					Method:    "GET",
 					Parser:    tc.parser,
 					Timeout:   time.Second,
@@ -351,17 +334,8 @@ func TestSourcePlain(t *testing.T) {
 		w.Write([]byte("hello\nworld\n"))
 	}))
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("Listen() error:\n%+v", err)
-	}
-	server := &http.Server{
-		Addr:    listener.Addr().String(),
-		Handler: mux,
-	}
-	address := listener.Addr()
-	go server.Serve(listener)
-	defer server.Shutdown(t.Context())
+	server := httptest.NewTestServer(t, mux)
+	server.Start()
 
 	type plainData struct {
 		Name string `validate:"required"`
@@ -370,7 +344,7 @@ func TestSourcePlain(t *testing.T) {
 	r := reporter.NewMock(t)
 	config := map[string]Source{
 		"local": {
-			URL:       fmt.Sprintf("http://%s/data.txt", address),
+			URL:       fmt.Sprintf("%s/data.txt", server.URL),
 			Method:    "GET",
 			Parser:    ParserPlain,
 			Timeout:   time.Second,
@@ -399,14 +373,14 @@ func TestSourcePlain(t *testing.T) {
 
 func TestPaginationLinkNext(t *testing.T) {
 	mux := http.NewServeMux()
-	var address net.Addr
+	var server *httptest.Server
 	mux.Handle("/page1.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
 		w.WriteHeader(200)
 		w.Write(fmt.Appendf(nil, `{
   "results": [{"name": "item1", "description": "page1"}],
-  "next": "http://%s/page2.json"
-}`, address))
+  "next": "%s/page2.json"
+}`, server.URL))
 	}))
 	mux.Handle("/page2.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
@@ -417,19 +391,13 @@ func TestPaginationLinkNext(t *testing.T) {
 }`))
 	}))
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("Listen() error:\n%+v", err)
-	}
-	address = listener.Addr()
-	server := &http.Server{Handler: mux}
-	go server.Serve(listener)
-	defer server.Shutdown(t.Context())
+	server = httptest.NewTestServer(t, mux)
+	server.Start()
 
 	r := reporter.NewMock(t)
 	config := map[string]Source{
 		"local": {
-			URL:        fmt.Sprintf("http://%s/page1.json", address),
+			URL:        fmt.Sprintf("%s/page1.json", server.URL),
 			Method:     "GET",
 			Timeout:    time.Second,
 			Interval:   time.Minute,
@@ -458,10 +426,10 @@ func TestPaginationLinkNext(t *testing.T) {
 
 func TestPaginationRelNext(t *testing.T) {
 	mux := http.NewServeMux()
-	var address net.Addr
+	var server *httptest.Server
 	mux.Handle("/page1.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
-		w.Header().Add("Link", fmt.Sprintf(`<http://%s/page2.json>; rel="next"`, address))
+		w.Header().Add("Link", fmt.Sprintf(`<%s/page2.json>; rel="next"`, server.URL))
 		w.WriteHeader(200)
 		w.Write([]byte(`[{"name": "item1", "description": "page1"}]`))
 	}))
@@ -471,19 +439,13 @@ func TestPaginationRelNext(t *testing.T) {
 		w.Write([]byte(`[{"name": "item2", "description": "page2"}]`))
 	}))
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("Listen() error:\n%+v", err)
-	}
-	address = listener.Addr()
-	server := &http.Server{Handler: mux}
-	go server.Serve(listener)
-	defer server.Shutdown(t.Context())
+	server = httptest.NewTestServer(t, mux)
+	server.Start()
 
 	r := reporter.NewMock(t)
 	config := map[string]Source{
 		"local": {
-			URL:        fmt.Sprintf("http://%s/page1.json", address),
+			URL:        fmt.Sprintf("%s/page1.json", server.URL),
 			Method:     "GET",
 			Timeout:    time.Second,
 			Interval:   time.Minute,
@@ -524,18 +486,13 @@ func TestPaginationRelNextRelativeURL(t *testing.T) {
 		w.Write([]byte(`[{"name": "item2", "description": "page2"}]`))
 	}))
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("Listen() error:\n%+v", err)
-	}
-	server := &http.Server{Handler: mux}
-	go server.Serve(listener)
-	defer server.Shutdown(t.Context())
+	server := httptest.NewTestServer(t, mux)
+	server.Start()
 
 	r := reporter.NewMock(t)
 	config := map[string]Source{
 		"local": {
-			URL:        fmt.Sprintf("http://%s/api/page1.json", listener.Addr()),
+			URL:        fmt.Sprintf("%s/api/page1.json", server.URL),
 			Method:     "GET",
 			Timeout:    time.Second,
 			Interval:   time.Minute,
@@ -565,10 +522,10 @@ func TestPaginationRelNextRelativeURL(t *testing.T) {
 func TestPaginationAuto(t *testing.T) {
 	t.Run("detects rel-next", func(t *testing.T) {
 		mux := http.NewServeMux()
-		var address net.Addr
+		var server *httptest.Server
 		mux.Handle("/page1.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Add("Content-Type", "application/json")
-			w.Header().Add("Link", fmt.Sprintf(`<http://%s/page2.json>; rel="next"`, address))
+			w.Header().Add("Link", fmt.Sprintf(`<%s/page2.json>; rel="next"`, server.URL))
 			w.WriteHeader(200)
 			w.Write([]byte(`[{"name": "item1", "description": "page1"}]`))
 		}))
@@ -578,19 +535,13 @@ func TestPaginationAuto(t *testing.T) {
 			w.Write([]byte(`[{"name": "item2", "description": "page2"}]`))
 		}))
 
-		listener, err := net.Listen("tcp", "127.0.0.1:0")
-		if err != nil {
-			t.Fatalf("Listen() error:\n%+v", err)
-		}
-		address = listener.Addr()
-		server := &http.Server{Handler: mux}
-		go server.Serve(listener)
-		defer server.Shutdown(t.Context())
+		server = httptest.NewTestServer(t, mux)
+		server.Start()
 
 		r := reporter.NewMock(t)
 		config := map[string]Source{
 			"local": {
-				URL:        fmt.Sprintf("http://%s/page1.json", address),
+				URL:        fmt.Sprintf("%s/page1.json", server.URL),
 				Method:     "GET",
 				Timeout:    time.Second,
 				Interval:   time.Minute,
@@ -619,14 +570,14 @@ func TestPaginationAuto(t *testing.T) {
 
 	t.Run("detects link-next", func(t *testing.T) {
 		mux := http.NewServeMux()
-		var address net.Addr
+		var server *httptest.Server
 		mux.Handle("/page1.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Add("Content-Type", "application/json")
 			w.WriteHeader(200)
 			w.Write(fmt.Appendf(nil, `{
   "results": [{"name": "item1", "description": "page1"}],
-  "next": "http://%s/page2.json"
-}`, address))
+  "next": "%s/page2.json"
+}`, server.URL))
 		}))
 		mux.Handle("/page2.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Add("Content-Type", "application/json")
@@ -636,19 +587,13 @@ func TestPaginationAuto(t *testing.T) {
 }`))
 		}))
 
-		listener, err := net.Listen("tcp", "127.0.0.1:0")
-		if err != nil {
-			t.Fatalf("Listen() error:\n%+v", err)
-		}
-		address = listener.Addr()
-		server := &http.Server{Handler: mux}
-		go server.Serve(listener)
-		defer server.Shutdown(t.Context())
+		server = httptest.NewTestServer(t, mux)
+		server.Start()
 
 		r := reporter.NewMock(t)
 		config := map[string]Source{
 			"local": {
-				URL:        fmt.Sprintf("http://%s/page1.json", address),
+				URL:        fmt.Sprintf("%s/page1.json", server.URL),
 				Method:     "GET",
 				Timeout:    time.Second,
 				Interval:   time.Minute,
@@ -683,18 +628,13 @@ func TestPaginationAuto(t *testing.T) {
 			w.Write([]byte(`[{"name": "item1", "description": "single"}]`))
 		}))
 
-		listener, err := net.Listen("tcp", "127.0.0.1:0")
-		if err != nil {
-			t.Fatalf("Listen() error:\n%+v", err)
-		}
-		server := &http.Server{Handler: mux}
-		go server.Serve(listener)
-		defer server.Shutdown(t.Context())
+		server := httptest.NewTestServer(t, mux)
+		server.Start()
 
 		r := reporter.NewMock(t)
 		config := map[string]Source{
 			"local": {
-				URL:        fmt.Sprintf("http://%s/data.json", listener.Addr()),
+				URL:        fmt.Sprintf("%s/data.json", server.URL),
 				Method:     "GET",
 				Timeout:    time.Second,
 				Interval:   time.Minute,
@@ -732,26 +672,15 @@ func TestSourceWithTLS(t *testing.T) {
 		w.Write([]byte(`{"results": [{"name": "secure", "description": "tls test"}]}`))
 	}))
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("Listen() error:\n%+v", err)
-	}
-
-	server := &http.Server{
-		Handler: mux,
-		TLSConfig: &tls.Config{
-			Certificates: []tls.Certificate{cert},
-		},
-	}
-	address := listener.Addr().String()
-	go server.ServeTLS(listener, "", "")
-	defer server.Shutdown(t.Context())
+	server := httptest.NewTestServer(t, mux)
+	server.TLS = &tls.Config{Certificates: []tls.Certificate{cert}}
+	server.StartTLS()
 
 	t.Run("WithoutTLSConfig", func(t *testing.T) {
 		r := reporter.NewMock(t)
 		config := map[string]Source{
 			"secure": {
-				URL:       fmt.Sprintf("https://%s/data.json", address),
+				URL:       fmt.Sprintf("%s/data.json", server.URL),
 				Method:    "GET",
 				Timeout:   1 * time.Second,
 				Interval:  1 * time.Minute,
@@ -775,7 +704,7 @@ func TestSourceWithTLS(t *testing.T) {
 		r := reporter.NewMock(t)
 		config := map[string]Source{
 			"secure": {
-				URL:      fmt.Sprintf("https://%s/data.json", address),
+				URL:      fmt.Sprintf("%s/data.json", server.URL),
 				Method:   "GET",
 				Timeout:  1 * time.Second,
 				Interval: 1 * time.Minute,

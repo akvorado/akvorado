@@ -7,8 +7,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"net/http"
+	"net/http/httptest"
 	"net/netip"
 	"testing"
 	"time"
@@ -140,17 +140,8 @@ func TestRemoteExporterSources(t *testing.T) {
 	}))
 
 	// Setup an HTTP server to serve the JSON
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("Listen() error:\n%+v", err)
-	}
-	server := &http.Server{
-		Addr:    listener.Addr().String(),
-		Handler: mux,
-	}
-	address := listener.Addr()
-	go server.Serve(listener)
-	defer server.Shutdown(t.Context())
+	server := httptest.NewTestServer(t, mux)
+	server.Start()
 
 	r := reporter.NewMock(t)
 	config := Configuration{
@@ -171,7 +162,7 @@ func TestRemoteExporterSources(t *testing.T) {
 		ExporterSourcesTimeout: 10 * time.Millisecond,
 		ExporterSources: map[string]remotedatasource.Source{
 			"local": {
-				URL:    fmt.Sprintf("http://%s/exporters.json", address),
+				URL:    fmt.Sprintf("%s/exporters.json", server.URL),
 				Method: "GET",
 				Headers: map[string]string{
 					"X-Foo": "hello",
@@ -260,24 +251,15 @@ func TestRemoteExporterSourcesSkipMissingInterfaces(t *testing.T) {
 `))
 	}))
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("Listen() error:\n%+v", err)
-	}
-	server := &http.Server{
-		Addr:    listener.Addr().String(),
-		Handler: mux,
-	}
-	address := listener.Addr()
-	go server.Serve(listener)
-	defer server.Shutdown(t.Context())
+	server := httptest.NewTestServer(t, mux)
+	server.Start()
 
 	r := reporter.NewMock(t)
 	config := Configuration{
 		Exporters: helpers.MustNewSubnetMap(map[string]ExporterConfiguration{}),
 		ExporterSources: map[string]remotedatasource.Source{
 			"local": {
-				URL:      fmt.Sprintf("http://%s/exporters.json", address),
+				URL:      fmt.Sprintf("%s/exporters.json", server.URL),
 				Method:   "GET",
 				Timeout:  20 * time.Millisecond,
 				Interval: 100 * time.Millisecond,

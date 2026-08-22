@@ -453,11 +453,11 @@ func TestConcurrentRebuilds(t *testing.T) {
 
 func TestLookupNetworkSources(t *testing.T) {
 	r := reporter.NewMock(t)
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	server := httptest.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
 		w.Write([]byte(amazonJSON))
 	}))
-	defer server.Close()
+	server.Start()
 
 	config := DefaultConfiguration()
 	config.NetworkSources = amazonSource(server.URL)
@@ -545,10 +545,10 @@ func TestMergeNetworkAttrsCompleteness(t *testing.T) {
 
 func TestLookupNetworkSourcesNotReady(t *testing.T) {
 	r := reporter.NewMock(t)
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	server := httptest.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
-	defer server.Close()
+	server.Start()
 
 	config := DefaultConfiguration()
 	config.NetworkSources = amazonSource(server.URL)
