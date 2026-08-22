@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -21,9 +20,6 @@ import (
 )
 
 var errSkipStep = errors.New("migration: skip this step")
-
-// defaultTableSettingsKeys lists the default table setting keys in their fixed output order.
-var defaultTableSettingsKeys = []string{"index_granularity", "ttl_only_drop_parts"}
 
 // defaultTableSettings are the default ClickHouse table settings applied to flow tables.
 var defaultTableSettings = TableSettings{
@@ -48,47 +44,37 @@ func (s tableSetting) expr() sb.Expr {
 	return sb.Expr{}
 }
 
-// String renders the setting the way ClickHouse writes it back in engine_full.
-func (s tableSetting) String() string {
-	return fmt.Sprintf("%s = %s", s.name, s.expr())
-}
-
 // tableSettings merges extra settings with the default table settings and
-// returns them in a stable order. Default settings come first
-// (index_granularity, ttl_only_drop_parts), followed by extra settings sorted
-// alphabetically.
+// returns them sorted by name. The order does not matter to ClickHouse, it only
+// keeps the generated statements stable.
 func tableSettings(extra TableSettings) []tableSetting {
 	merged := TableSettings{}
 	maps.Copy(merged, defaultTableSettings)
 	maps.Copy(merged, extra)
 
-	extraKeys := make([]string, 0, len(merged))
-	for k := range merged {
-		if !slices.Contains(defaultTableSettingsKeys, k) {
-			extraKeys = append(extraKeys, k)
-		}
-	}
-	slices.Sort(extraKeys)
-
 	settings := []tableSetting{}
-	for _, k := range slices.Concat(defaultTableSettingsKeys, extraKeys) {
-		switch merged[k].(type) {
+	for _, name := range slices.Sorted(maps.Keys(merged)) {
+		switch merged[name].(type) {
 		case int, string:
-			settings = append(settings, tableSetting{name: k, value: merged[k]})
+			settings = append(settings, tableSetting{name: name, value: merged[name]})
 		}
 	}
 	return settings
 }
 
-// renderTableSettings renders the settings the way ClickHouse writes them back,
-// so they can be looked for in engine_full.
-func renderTableSettings(extra TableSettings) string {
-	settings := tableSettings(extra)
-	parts := make([]string, len(settings))
-	for i, setting := range settings {
-		parts[i] = setting.String()
+// matchTableSettings tells if the settings of an existing table are the ones we
+// want.
+func matchTableSettings(existing map[string]sb.Expr, wanted []tableSetting) bool {
+	if len(existing) != len(wanted) {
+		return false
 	}
-	return strings.Join(parts, ", ")
+	for _, setting := range wanted {
+		value, ok := existing[setting.name]
+		if !ok || !value.Matches(setting.expr()) {
+			return false
+		}
+	}
+	return true
 }
 
 // wrapMigrations can be used to wrap migration functions. It will keep the
@@ -119,13 +105,6 @@ type statement interface {
 	Matches(sql string) bool
 }
 
-// settingsRegexp matches the settings ClickHouse appends to a table
-// definition. They are checked on their own, see createOrUpdateFlowsTable.
-var settingsRegexp = regexp.MustCompile(` SETTINGS .*$`)
-
-// replicatedMergeTreeRegexp has a regex subgroup used to match the zookeeper path
-var replicatedMergeTreeRegexp = regexp.MustCompile(`Replicated\w*MergeTree\('([^']*)'`)
-
 // tableColumn fetches one column of system.tables for the provided table. The
 // column can be any expression. An empty string is returned when the table does
 // not exist.
@@ -154,7 +133,7 @@ func (c *Component) tableAlreadyExists(ctx context.Context, table, column string
 			fmt.Sprintf("%s('%s.", function, c.d.ClickHouse.DatabaseName()),
 			fmt.Sprintf("%s('", function))
 	}
-	existing = settingsRegexp.ReplaceAllString(existing, "")
+	existing = sb.StripTableSettings(existing)
 
 	if target.Matches(existing) {
 		return true, nil
@@ -165,17 +144,19 @@ func (c *Component) tableAlreadyExists(ctx context.Context, table, column string
 	return false, nil
 }
 
+// queryExistingZkPath returns the path in ZooKeeper an existing replicated
+// table uses. A non-existing table gets the default path.
 func (c *Component) queryExistingZkPath(ctx context.Context, table string) string {
-	var createQuery string
-	row := c.d.ClickHouse.QueryRow(ctx, `SELECT create_table_query FROM system.tables
-                          WHERE database = $1 AND table = $2 LIMIT 1`, c.d.ClickHouse.DatabaseName(), table)
-	if err := row.Scan(&createQuery); err == nil {
-		subMatches := replicatedMergeTreeRegexp.FindStringSubmatch(createQuery)
-		if len(subMatches) == 2 {
-			return subMatches[1]
-		}
+	engine, err := c.tableEngine(ctx, table)
+	if err != nil {
+		// The default path would send the new replica to another ZooKeeper
+		// tree than the ones already in place.
+		c.r.Warn().Err(err).Msgf("cannot get the engine of table %s", table)
+	} else if path, ok := engine.ReplicatedPath(); ok {
+		return path
 	}
-	return fmt.Sprintf("/clickhouse/tables/shard-{shard}/%s/%s", c.d.ClickHouse.DatabaseName(), table)
+	return fmt.Sprintf("/clickhouse/tables/shard-{shard}/%s/%s",
+		c.d.ClickHouse.DatabaseName(), table)
 }
 
 // mergeTreeEngine returns a MergeTree engine definition, either plain or using
@@ -591,12 +572,14 @@ outer:
 		modified = true
 	}
 
-	// Check if we need to update the settings. They are the last part of the
-	// engine, so the pattern is not open on the right.
-	if ok, err := c.engineFullMatches(ctx, tableName,
-		fmt.Sprintf("%% SETTINGS %s", renderTableSettings(resolution.TableSettings))); err != nil {
+	// Get ENGINE
+	engine, err := c.tableEngine(ctx, tableName)
+	if err != nil {
 		return err
-	} else if !ok {
+	}
+
+	// Check if we need to update the settings
+	if !matchTableSettings(engine.Settings(), settings) {
 		c.r.Info().Msgf("updating settings of %s to %s", tableName, resolution.Interval)
 		alterSettings := sb.AlterTable(sb.Table(tableName))
 		for _, setting := range settings {
@@ -609,10 +592,7 @@ outer:
 	}
 
 	// Check if we need to update the TTL
-	if ok, err := c.engineFullMatches(ctx, tableName,
-		fmt.Sprintf("%% TTL %s %%", ttlExpr)); err != nil {
-		return err
-	} else if !ok {
+	if !engine.TTL().Matches(ttlExpr) {
 		c.r.Info().Msgf("updating TTL of %s with interval %s", tableName, resolution.Interval)
 		err := c.d.ClickHouse.ExecOnCluster(
 			clickhouse.Context(ctx, clickhouse.WithSettings(clickhouse.Settings{
@@ -639,16 +619,19 @@ outer:
 	return errSkipStep
 }
 
-// engineFullMatches tells if the engine of the table matches the provided LIKE
-// pattern. This is how the settings and the TTL of an existing table are
-// checked: they are not part of the create_table_query ClickHouse keeps.
-func (c *Component) engineFullMatches(ctx context.Context, tableName, pattern string) (bool, error) {
-	value, err := c.tableColumn(ctx, tableName,
-		fmt.Sprintf("CAST(engine_full LIKE %s, 'String')", sb.String(pattern)))
-	if err != nil {
-		return false, err
+// tableEngine returns the engine of a table, with the clauses ClickHouse writes
+// after it, like the TTL and the settings. A table that does not exist gets an
+// empty engine.
+func (c *Component) tableEngine(ctx context.Context, table string) (sb.Engine, error) {
+	engineFull, err := c.tableColumn(ctx, table, "engine_full")
+	if err != nil || engineFull == "" {
+		return sb.Engine{}, err
 	}
-	return value == "1", nil
+	engine, err := sb.ParseEngine(engineFull)
+	if err != nil {
+		return sb.Engine{}, fmt.Errorf("cannot parse the engine of table %s: %w", table, err)
+	}
+	return engine, nil
 }
 
 // applySkipIndexes reconciles the skip indexes on tableName with the configured

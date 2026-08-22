@@ -547,3 +547,41 @@ func TestSQLMatcher(t *testing.T) {
 func TestCheckStatement(t *testing.T) {
 	sb.CheckStatement(t, `SELECT a FROM flows WHERE a = 1`)
 }
+
+func TestExprMatches(t *testing.T) {
+	cases := []struct {
+		Pos      helpers.Pos
+		First    sb.Expr
+		Second   sb.Expr
+		Expected bool
+	}{
+		{helpers.Mark(), sb.Column("SrcAS"), sb.MustParseExpr("SrcAS"), true},
+		{helpers.Mark(), sb.Column("Src AS"), sb.MustParseExpr("`Src AS`"), true},
+		{helpers.Mark(), sb.Column("SrcAS"), sb.MustParseExpr("`SrcAS`"), true},
+		{helpers.Mark(), sb.Column("SrcAS"), sb.Column("DstAS"), false},
+		{helpers.Mark(), sb.Uint(8192), sb.MustParseExpr("8192"), true},
+		{helpers.Mark(), sb.Uint(8192), sb.Int(8192), true},
+		{helpers.Mark(), sb.Uint(8192), sb.MustParseExpr("4096"), false},
+		{helpers.Mark(), sb.String("ssd"), sb.MustParseExpr("'ssd'"), true},
+		{helpers.Mark(), sb.String("ssd"), sb.MustParseExpr("'hdd'"), false},
+		{
+			helpers.Mark(),
+			sb.Op(sb.Column("TimeReceived"), "+", sb.Function("toIntervalSecond", sb.Uint(3600))),
+			sb.MustParseExpr("TimeReceived + toIntervalSecond(3600)"),
+			true,
+		}, {
+			helpers.Mark(),
+			sb.Op(sb.Column("TimeReceived"), "+", sb.Function("toIntervalSecond", sb.Uint(3600))),
+			sb.MustParseExpr("TimeReceived + toIntervalDay(1)"),
+			false,
+		},
+		{helpers.Mark(), sb.Expr{}, sb.Expr{}, true},
+		{helpers.Mark(), sb.Expr{}, sb.Uint(1), false},
+		{helpers.Mark(), sb.Uint(1), sb.Expr{}, false},
+	}
+	for _, tc := range cases {
+		if diff := helpers.Diff(tc.First.Matches(tc.Second), tc.Expected); diff != "" {
+			t.Errorf("%s%q.Matches(%q) (-got, +want):\n%s", tc.Pos, tc.First, tc.Second, diff)
+		}
+	}
+}

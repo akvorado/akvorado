@@ -57,6 +57,20 @@ func (e Expr) pretty() string {
 	return formatter.String()
 }
 
+// Matches tells if the other expression means the same. This relies on
+// canonicalization.
+func (e Expr) Matches(other Expr) bool {
+	if e.IsZero() || other.IsZero() {
+		return e.IsZero() && other.IsZero()
+	}
+	mine, ok := canonical(fmt.Sprintf("SELECT %s", e))
+	if !ok {
+		return false
+	}
+	theirs, ok := canonical(fmt.Sprintf("SELECT %s", other))
+	return ok && mine == theirs
+}
+
 // Column returns a reference to a column.
 func Column(name string) Expr {
 	return wrap(ident(name))
@@ -72,6 +86,11 @@ func Columns(names ...string) []Expr {
 }
 
 var stringEscaper = strings.NewReplacer(`\`, `\\`, `'`, `\'`)
+
+// stringUnescaper turns the content of a string literal back into the value it
+// stands for. ClickHouse escapes a quote with a backslash, but a doubled quote
+// is also accepted.
+var stringUnescaper = strings.NewReplacer(`\\`, `\`, `\'`, `'`, `''`, `'`)
 
 // String returns a string literal. The value is escaped, so it is safe to use
 // with data coming from a user.

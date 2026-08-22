@@ -475,3 +475,195 @@ func TestNameQuoting(t *testing.T) {
 		}
 	}
 }
+
+// TestStripTableSettings checks the settings ClickHouse adds to the definition
+// of a table are removed, as they are checked on their own.
+func TestStripTableSettings(t *testing.T) {
+	cases := []struct {
+		Pos         helpers.Pos
+		Description string
+		SQL         string
+		Expected    string
+	}{
+		{
+			helpers.Mark(), "settings removed",
+			"CREATE TABLE akvorado.flows (`SrcAS` UInt32) ENGINE = MergeTree ORDER BY SrcAS SETTINGS index_granularity = 8192, ttl_only_drop_parts = 1",
+			"CREATE TABLE akvorado.flows (`SrcAS` UInt32) ENGINE = MergeTree ORDER BY SrcAS",
+		}, {
+			helpers.Mark(), "no settings to remove",
+			"CREATE TABLE akvorado.flows (`SrcAS` UInt32) ENGINE = MergeTree ORDER BY SrcAS",
+			"CREATE TABLE akvorado.flows (`SrcAS` UInt32) ENGINE = MergeTree ORDER BY SrcAS",
+		}, {
+			helpers.Mark(), "clauses before the settings kept",
+			"CREATE TABLE flows (`TimeReceived` DateTime) ENGINE = MergeTree PARTITION BY toYYYYMM(TimeReceived) ORDER BY TimeReceived TTL TimeReceived + toIntervalSecond(3600) SETTINGS index_granularity = 8192",
+			"CREATE TABLE flows (`TimeReceived` DateTime) ENGINE = MergeTree PARTITION BY toYYYYMM(TimeReceived) ORDER BY TimeReceived TTL TimeReceived + toIntervalSecond(3600)",
+		}, {
+			helpers.Mark(), "settings of a dictionary kept",
+			"CREATE DICTIONARY akvorado.asns (`asn` UInt32, `name` String) PRIMARY KEY asn SOURCE(HTTP(URL 'http://x' FORMAT 'CSVWithNames')) LIFETIME(MIN 0 MAX 3600) LAYOUT(HASHED()) SETTINGS(format_csv_allow_single_quotes = 0)",
+			"CREATE DICTIONARY akvorado.asns (`asn` UInt32, `name` String) PRIMARY KEY asn SOURCE(HTTP(URL 'http://x' FORMAT 'CSVWithNames')) LIFETIME(MIN 0 MAX 3600) LAYOUT(HASHED()) SETTINGS(format_csv_allow_single_quotes = 0)",
+		}, {
+			helpers.Mark(), "select left alone",
+			"SELECT SrcAS, DstAS FROM akvorado.flows",
+			"SELECT SrcAS, DstAS FROM akvorado.flows",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.Description, func(t *testing.T) {
+			got := sb.Normalize(t, sb.StripTableSettings(tc.SQL))
+			if diff := helpers.Diff(got, sb.Normalize(t, tc.Expected)); diff != "" {
+				t.Errorf("%sStripTableSettings() (-got, +want):\n%s", tc.Pos, diff)
+			}
+		})
+	}
+}
+
+// TestStripTableSettingsInvalid checks SQL we cannot read is given back as it
+// was, so it is compared as text.
+func TestStripTableSettingsInvalid(t *testing.T) {
+	sql := "CREATE TABLE flows (`SrcAS` UInt32) ENGINE"
+	if diff := helpers.Diff(sb.StripTableSettings(sql), sql); diff != "" {
+		t.Errorf("StripTableSettings() (-got, +want):\n%s", diff)
+	}
+}
+
+func TestParseEngine(t *testing.T) {
+	engine, err := sb.ParseEngine("MergeTree PARTITION BY toYYYYMM(TimeReceived) " +
+		"ORDER BY (TimeReceived, ExporterAddress) TTL TimeReceived + toIntervalSecond(3600) " +
+		"SETTINGS index_granularity = 8192, storage_policy = 'ssd'")
+	if err != nil {
+		t.Fatalf("ParseEngine() error:\n%+v", err)
+	}
+	if diff := helpers.Diff(engine.Name(), "MergeTree"); diff != "" {
+		t.Errorf("Name() (-got, +want):\n%s", diff)
+	}
+	settings := map[string]string{}
+	for name, value := range engine.Settings() {
+		settings[name] = value.String()
+	}
+	expected := map[string]string{
+		"index_granularity": "8192",
+		"storage_policy":    "'ssd'",
+	}
+	if diff := helpers.Diff(settings, expected); diff != "" {
+		t.Errorf("Settings() (-got, +want):\n%s", diff)
+	}
+	ttl := sb.Op(sb.Column("TimeReceived"), "+", sb.Function("toIntervalSecond", sb.Uint(3600)))
+	if !engine.TTL().Matches(ttl) {
+		t.Errorf("TTL() is %q, expected %q", engine.TTL(), ttl)
+	}
+	other := sb.Op(sb.Column("TimeReceived"), "+", sb.Function("toIntervalSecond", sb.Uint(7200)))
+	if engine.TTL().Matches(other) {
+		t.Errorf("TTL() matches %q", other)
+	}
+}
+
+// TestParseEngineBare checks an engine with nothing after it.
+func TestParseEngineBare(t *testing.T) {
+	engine, err := sb.ParseEngine("Null")
+	if err != nil {
+		t.Fatalf("ParseEngine() error:\n%+v", err)
+	}
+	if diff := helpers.Diff(engine.Name(), "Null"); diff != "" {
+		t.Errorf("Name() (-got, +want):\n%s", diff)
+	}
+	if diff := helpers.Diff(len(engine.Args()), 0); diff != "" {
+		t.Errorf("Args() (-got, +want):\n%s", diff)
+	}
+	if diff := helpers.Diff(len(engine.Settings()), 0); diff != "" {
+		t.Errorf("Settings() (-got, +want):\n%s", diff)
+	}
+	if !engine.TTL().IsZero() {
+		t.Errorf("TTL() is %q, expected none", engine.TTL())
+	}
+}
+
+func TestParseEngineArgs(t *testing.T) {
+	engine, err := sb.ParseEngine(
+		"Distributed('cluster', 'akvorado', 'flows_local', rand())")
+	if err != nil {
+		t.Fatalf("ParseEngine() error:\n%+v", err)
+	}
+	args := []string{}
+	for _, arg := range engine.Args() {
+		args = append(args, arg.String())
+	}
+	expected := []string{"'cluster'", "'akvorado'", "'flows_local'", "rand()"}
+	if diff := helpers.Diff(args, expected); diff != "" {
+		t.Errorf("Args() (-got, +want):\n%s", diff)
+	}
+}
+
+// TestReplicatedPath checks the path in ZooKeeper is read back from the engine
+// ClickHouse keeps for an existing table.
+func TestReplicatedPath(t *testing.T) {
+	cases := []struct {
+		Pos         helpers.Pos
+		Description string
+		SQL         string
+		Expected    string
+		ExpectedOK  bool
+	}{
+		{
+			helpers.Mark(), "replicated table",
+			"ReplicatedMergeTree('/clickhouse/tables/shard-{shard}/akvorado/flows', 'replica-{replica}') " +
+				"ORDER BY TimeReceived SETTINGS index_granularity = 8192",
+			"/clickhouse/tables/shard-{shard}/akvorado/flows", true,
+		}, {
+			helpers.Mark(), "replicated variant with more arguments",
+			"ReplicatedSummingMergeTree('/clickhouse/tables/shard-{shard}/akvorado/flows_1h0m0s', " +
+				"'replica-{replica}', (Bytes, Packets)) ORDER BY Bytes",
+			"/clickhouse/tables/shard-{shard}/akvorado/flows_1h0m0s", true,
+		}, {
+			helpers.Mark(), "quote escaped in the path",
+			`ReplicatedMergeTree('/clickhouse/it\'s/flows', 'replica-{replica}') ORDER BY TimeReceived`,
+			"/clickhouse/it's/flows", true,
+		}, {
+			helpers.Mark(), "not replicated",
+			"MergeTree ORDER BY TimeReceived",
+			"", false,
+		}, {
+			helpers.Mark(), "not a MergeTree",
+			"Distributed('cluster', 'akvorado', 'flows_local', rand())",
+			"", false,
+		}, {
+			helpers.Mark(), "path is not a literal",
+			"ReplicatedMergeTree(zkPath, 'replica-{replica}') ORDER BY TimeReceived",
+			"", false,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.Description, func(t *testing.T) {
+			engine, err := sb.ParseEngine(tc.SQL)
+			if err != nil {
+				t.Fatalf("%sParseEngine() error:\n%+v", tc.Pos, err)
+			}
+			got, ok := engine.ReplicatedPath()
+			if diff := helpers.Diff(ok, tc.ExpectedOK); diff != "" {
+				t.Fatalf("%sReplicatedPath() ok (-got, +want):\n%s", tc.Pos, diff)
+			}
+			if diff := helpers.Diff(got, tc.Expected); diff != "" {
+				t.Errorf("%sReplicatedPath() (-got, +want):\n%s", tc.Pos, diff)
+			}
+		})
+	}
+}
+
+func TestParseEngineErrors(t *testing.T) {
+	cases := []struct {
+		Description string
+		SQL         string
+	}{
+		{"nothing", ""},
+		{"not SQL at all", "hello world"},
+		{"truncated engine", "MergeTree ORDER BY"},
+		{"engine with unbalanced parentheses", "Distributed('cluster', 'akvorado'"},
+		{"two statements", "Null; DROP TABLE flows"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.Description, func(t *testing.T) {
+			if _, err := sb.ParseEngine(tc.SQL); err == nil {
+				t.Errorf("ParseEngine(%q) did not return an error", tc.SQL)
+			}
+		})
+	}
+}

@@ -91,7 +91,7 @@ func TableSettingsUnmarshallerHook() mapstructure.DecodeHookFunc {
 				return nil, fmt.Errorf("table setting key must be a string, got %s", k.Kind())
 			}
 			v := helpers.ElemOrIdentity(from.MapIndex(key))
-			// It's important to output the same types than in `renderTableSettings`.
+			// It's important to output the same types than in `tableSetting.expr`.
 			switch v.Kind() {
 			case reflect.String:
 				result[k.String()] = v.String()

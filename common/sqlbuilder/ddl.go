@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/AfterShip/clickhouse-sql-parser/parser"
 )
@@ -182,15 +183,102 @@ func ParseColumnDef(sql string) (ColumnDef, error) {
 	return defs[0], nil
 }
 
-// Engine is the engine of a table, with its parameters.
+// Engine is the engine of a table, with its parameters, TTL and settings.
 type Engine struct {
-	name string
-	args []Expr
+	node *parser.EngineExpr
 }
 
 // NewEngine builds a table engine.
 func NewEngine(name string, args ...Expr) Engine {
-	return Engine{name: name, args: args}
+	node := &parser.EngineExpr{Name: name}
+	if len(args) > 0 {
+		node.Params = &parser.ParamExprList{
+			Items: &parser.ColumnExprList{Items: nodes(args)},
+		}
+	}
+	return Engine{node: node}
+}
+
+// ParseEngine parses a table engine as given by ClickHouse in engine_full
+// column of system.tables.
+func ParseEngine(sql string) (Engine, error) {
+	statements, err := parse(fmt.Sprintf("CREATE TABLE t (x UInt8) ENGINE = %s", sql))
+	if err != nil {
+		return Engine{}, err
+	}
+	if len(statements) != 1 {
+		return Engine{}, fmt.Errorf("expected one statement, got %d", len(statements))
+	}
+	create, ok := statements[0].(*parser.CreateTable)
+	if !ok || create.Engine == nil {
+		return Engine{}, errors.New("not a table engine")
+	}
+	return Engine{node: create.Engine}, nil
+}
+
+// Name returns the name of the engine.
+func (e Engine) Name() string {
+	if e.node == nil {
+		return ""
+	}
+	return e.node.Name
+}
+
+// Args returns the arguments the engine was given.
+func (e Engine) Args() []Expr {
+	if e.node == nil || e.node.Params == nil || e.node.Params.Items == nil {
+		return nil
+	}
+	items := e.node.Params.Items.Items
+	args := make([]Expr, len(items))
+	for i, item := range items {
+		// Each argument comes wrapped in a column expression, as the parser
+		// reads them like a select list.
+		if column, ok := item.(*parser.ColumnExpr); ok && column.Alias == nil {
+			item = column.Expr
+		}
+		args[i] = wrap(item)
+	}
+	return args
+}
+
+// TTL returns the TTL of the table.
+func (e Engine) TTL() Expr {
+	if e.node == nil || e.node.TTL == nil || len(e.node.TTL.Items) != 1 {
+		return Expr{}
+	}
+	return wrap(e.node.TTL.Items[0].Expr)
+}
+
+// Settings returns the settings of the table, indexed by name.
+func (e Engine) Settings() map[string]Expr {
+	settings := map[string]Expr{}
+	if e.node == nil || e.node.Settings == nil {
+		return settings
+	}
+	for _, item := range e.node.Settings.Items {
+		settings[item.Name.Name] = wrap(item.Expr)
+	}
+	return settings
+}
+
+// ReplicatedPath returns the path of the table in ZooKeeper. This is the first
+// argument of a Replicated*MergeTree engine. False is returned for a table that
+// is not replicated or that gets its path from somewhere else than a literal.
+func (e Engine) ReplicatedPath() (string, bool) {
+	name := e.Name()
+	if !strings.HasPrefix(name, "Replicated") || !strings.HasSuffix(name, "MergeTree") {
+		return "", false
+	}
+	args := e.Args()
+	if len(args) == 0 {
+		return "", false
+	}
+	literal, ok := args[0].node.(*parser.StringLiteral)
+	if !ok {
+		return "", false
+	}
+	return stringUnescaper.Replace(literal.Literal), true
 }
 
 // keyExpr turns a list of keys into what follows ORDER BY or PRIMARY KEY. A
@@ -241,12 +329,9 @@ func (s *CreateTableStatement) engine() *parser.EngineExpr {
 // Engine sets the engine of the table.
 func (s *CreateTableStatement) Engine(engine Engine) *CreateTableStatement {
 	node := s.engine()
-	node.Name = engine.name
-	node.Params = nil
-	if len(engine.args) > 0 {
-		node.Params = &parser.ParamExprList{
-			Items: &parser.ColumnExprList{Items: nodes(engine.args)},
-		}
+	node.Name, node.Params = "", nil
+	if engine.node != nil {
+		node.Name, node.Params = engine.node.Name, engine.node.Params
 	}
 	return s
 }

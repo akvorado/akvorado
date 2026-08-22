@@ -518,8 +518,9 @@ func TestTableSettings(t *testing.T) {
 	// Start with default settings
 	startTestComponent(t, r, chComponent, nil)
 
-	// Check that the default settings are applied
-	checkSettings := func(t *testing.T, table, expectedSettings string) {
+	// Check the settings ClickHouse kept for the table. The order they are
+	// written in does not matter.
+	checkSettings := func(t *testing.T, table string, expected map[string]string) {
 		t.Helper()
 		row := chComponent.QueryRow(t.Context(),
 			"SELECT engine_full FROM system.tables WHERE name = $1 AND database = $2",
@@ -528,15 +529,24 @@ func TestTableSettings(t *testing.T) {
 		if err := row.Scan(&engineFull); err != nil {
 			t.Fatalf("Scan() error:\n%+v", err)
 		}
-		expected := fmt.Sprintf("SETTINGS %s", expectedSettings)
-		if !strings.Contains(engineFull, expected) {
-			t.Fatalf("engine_full for %s does not contain expected settings %q:\n%s", table, expectedSettings, engineFull)
+		engine, err := sb.ParseEngine(engineFull)
+		if err != nil {
+			t.Fatalf("ParseEngine(%q) error:\n%+v", engineFull, err)
+		}
+		got := map[string]string{}
+		for name, value := range engine.Settings() {
+			got[name] = value.String()
+		}
+		if diff := helpers.Diff(got, expected); diff != "" {
+			t.Fatalf("settings of %s (-got, +want):\n%s", table, diff)
 		}
 	}
 
 	t.Run("default settings", func(t *testing.T) {
-		checkSettings(t, "flows",
-			"index_granularity = 8192, ttl_only_drop_parts = 1")
+		checkSettings(t, "flows", map[string]string{
+			"index_granularity":   "8192",
+			"ttl_only_drop_parts": "1",
+		})
 	})
 
 	t.Run("custom settings", func(t *testing.T) {
@@ -547,8 +557,11 @@ func TestTableSettings(t *testing.T) {
 			}
 		})
 
-		checkSettings(t, "flows",
-			"index_granularity = 8192, ttl_only_drop_parts = 1, merge_with_ttl_timeout = 3600")
+		checkSettings(t, "flows", map[string]string{
+			"index_granularity":      "8192",
+			"ttl_only_drop_parts":    "1",
+			"merge_with_ttl_timeout": "3600",
+		})
 
 		// Metrics should show at least one migration applied
 		gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps_total")
@@ -841,58 +854,121 @@ AND name LIKE $3`, "flows", ch.d.ClickHouse.DatabaseName(), "%DimensionAttribute
 	})
 }
 
-func TestRenderTableSettings(t *testing.T) {
+func TestTableSettingsMerge(t *testing.T) {
 	cases := []struct {
 		description string
 		extra       TableSettings
-		expected    string
+		expected    []string
 	}{
 		{
 			description: "defaults only",
 			extra:       nil,
-			expected:    "index_granularity = 8192, ttl_only_drop_parts = 1",
+			expected:    []string{"index_granularity = 8192", "ttl_only_drop_parts = 1"},
 		},
 		{
 			description: "empty map",
 			extra:       TableSettings{},
-			expected:    "index_granularity = 8192, ttl_only_drop_parts = 1",
+			expected:    []string{"index_granularity = 8192", "ttl_only_drop_parts = 1"},
 		},
 		{
 			description: "add string setting",
 			extra:       TableSettings{"storage_policy": "ssd"},
-			expected:    "index_granularity = 8192, ttl_only_drop_parts = 1, storage_policy = 'ssd'",
+			expected: []string{
+				"index_granularity = 8192", "storage_policy = 'ssd'", "ttl_only_drop_parts = 1",
+			},
 		},
 		{
 			description: "add int setting",
 			extra:       TableSettings{"merge_with_ttl_timeout": 3600},
-			expected:    "index_granularity = 8192, ttl_only_drop_parts = 1, merge_with_ttl_timeout = 3600",
+			expected: []string{
+				"index_granularity = 8192", "merge_with_ttl_timeout = 3600", "ttl_only_drop_parts = 1",
+			},
 		},
 		{
 			description: "override defaults",
 			extra:       TableSettings{"index_granularity": 4096},
-			expected:    "index_granularity = 4096, ttl_only_drop_parts = 1",
+			expected:    []string{"index_granularity = 4096", "ttl_only_drop_parts = 1"},
 		},
 		{
-			description: "multiple extra settings sorted",
+			description: "several extra settings",
 			extra:       TableSettings{"storage_policy": "cold_hdd", "merge_with_ttl_timeout": 3600},
-			expected:    "index_granularity = 8192, ttl_only_drop_parts = 1, merge_with_ttl_timeout = 3600, storage_policy = 'cold_hdd'",
+			expected: []string{
+				"index_granularity = 8192", "merge_with_ttl_timeout = 3600",
+				"storage_policy = 'cold_hdd'", "ttl_only_drop_parts = 1",
+			},
 		},
 		{
-			description: "extra key alphabetically before defaults",
-			extra:       TableSettings{"allow_remote_fs_zero_copy_replication": 1},
-			expected:    "index_granularity = 8192, ttl_only_drop_parts = 1, allow_remote_fs_zero_copy_replication = 1",
-		},
-		{
-			description: "extra key alphabetically between defaults",
-			extra:       TableSettings{"min_bytes_for_wide_part": 0},
-			expected:    "index_granularity = 8192, ttl_only_drop_parts = 1, min_bytes_for_wide_part = 0",
+			description: "value of an unsupported type dropped",
+			extra:       TableSettings{"merge_with_ttl_timeout": true},
+			expected:    []string{"index_granularity = 8192", "ttl_only_drop_parts = 1"},
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.description, func(t *testing.T) {
-			got := renderTableSettings(tc.extra)
+			got := []string{}
+			for _, setting := range tableSettings(tc.extra) {
+				got = append(got, fmt.Sprintf("%s = %s", setting.name, setting.expr()))
+			}
 			if diff := helpers.Diff(got, tc.expected); diff != "" {
-				t.Fatalf("renderTableSettings() (-got, +want):\n%s", diff)
+				t.Fatalf("tableSettings() (-got, +want):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestMatchTableSettings(t *testing.T) {
+	wanted := tableSettings(TableSettings{"storage_policy": "ssd"})
+	cases := []struct {
+		description string
+		existing    map[string]sb.Expr
+		expected    bool
+	}{
+		{
+			description: "same settings",
+			existing: map[string]sb.Expr{
+				"index_granularity":   sb.Uint(8192),
+				"ttl_only_drop_parts": sb.Uint(1),
+				"storage_policy":      sb.String("ssd"),
+			},
+			expected: true,
+		},
+		{
+			description: "another value",
+			existing: map[string]sb.Expr{
+				"index_granularity":   sb.Uint(4096),
+				"ttl_only_drop_parts": sb.Uint(1),
+				"storage_policy":      sb.String("ssd"),
+			},
+			expected: false,
+		},
+		{
+			description: "missing setting",
+			existing: map[string]sb.Expr{
+				"index_granularity":   sb.Uint(8192),
+				"ttl_only_drop_parts": sb.Uint(1),
+			},
+			expected: false,
+		},
+		{
+			description: "one setting too many",
+			existing: map[string]sb.Expr{
+				"index_granularity":      sb.Uint(8192),
+				"ttl_only_drop_parts":    sb.Uint(1),
+				"storage_policy":         sb.String("ssd"),
+				"merge_with_ttl_timeout": sb.Uint(3600),
+			},
+			expected: false,
+		},
+		{
+			description: "no setting at all",
+			existing:    map[string]sb.Expr{},
+			expected:    false,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.description, func(t *testing.T) {
+			if diff := helpers.Diff(matchTableSettings(tc.existing, wanted), tc.expected); diff != "" {
+				t.Fatalf("matchTableSettings() (-got, +want):\n%s", diff)
 			}
 		})
 	}

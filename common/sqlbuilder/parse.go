@@ -47,6 +47,23 @@ func canonical(sql string) (string, bool) {
 	return formatter.String(), true
 }
 
+// StripTableSettings removes the SETTINGS clause from the CREATE TABLE
+// statements it is given.
+func StripTableSettings(sql string) string {
+	statements, err := parse(sql)
+	if err != nil {
+		return sql
+	}
+	formatter := parser.NewFormatter()
+	for _, statement := range statements {
+		if create, ok := statement.(*parser.CreateTable); ok && create.Engine != nil {
+			create.Engine.Settings = nil
+		}
+		formatter.WriteExpr(statement)
+	}
+	return formatter.String()
+}
+
 // ParseExpr parses a SQL expression. The parser only accepts complete
 // statements, so the expression is parsed as the select list of a SELECT. This
 // is used in widgets, so we need to keep this function accessible outside of
