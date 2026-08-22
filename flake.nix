@@ -19,8 +19,15 @@
         };
         l = builtins // pkgs.lib;
         nodejs = pkgs.nodejs_24;
-        pnpm = pkgs.pnpm_11;
-        go = pkgs.go_latest;
+        pnpmVersion = l.removePrefix "pnpm@"
+          (l.importJSON ./console/frontend/package.json).packageManager;
+        pnpm = pkgs."pnpm_${l.versions.major pnpmVersion}";
+        goVersion = l.pipe (l.readFile ./go.mod) [
+          (l.splitString "\n")
+          (l.findFirst (l.hasPrefix "go ") (throw "no go directive in go.mod"))
+          (l.removePrefix "go ")
+        ];
+        go = pkgs."go_${l.replaceStrings [ "." ] [ "_" ] (l.versions.majorMinor goVersion)}";
         frontend = pkgs.stdenvNoCC.mkDerivation rec {
           name = "akvorado-frontend";
           src = ./console/frontend;
@@ -153,6 +160,7 @@
           nativeBuildInputs = [
             go
             nodejs
+            pnpm
             pkgs.git
             pkgs.curl
             pkgs.zip
