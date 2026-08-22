@@ -45,10 +45,8 @@ type tombWithOrigin struct {
 // New will create a new daemon component.
 func New(r *reporter.Reporter) (Component, error) {
 	return &realComponent{
-		r: r,
-		lifecycleComponent: lifecycleComponent{
-			terminateChannel: make(chan struct{}),
-		},
+		r:                r,
+		terminateChannel: make(chan struct{}),
 	}, nil
 }
 

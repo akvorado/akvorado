@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"akvorado/common/helpers"
-	"akvorado/common/kafka"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 )
@@ -39,14 +38,10 @@ func TestKafkaOutputDecoupledFromManageTopic(t *testing.T) {
 	config := DefaultInputConfiguration()
 	config.ManageTopic = false
 	output := &OutputConfiguration{
-		Configuration: kafka.Configuration{
-			Topic:   "flows-enriched",
-			Brokers: []string{"localhost:9092"},
-		},
-		TopicConfiguration: TopicConfiguration{
-			NumPartitions:     1,
-			ReplicationFactor: 1,
-		},
+		Topic:             "flows-enriched",
+		Brokers:           []string{"localhost:9092"},
+		NumPartitions:     1,
+		ReplicationFactor: 1,
 	}
 	sch := schema.NewMock(t)
 	c, err := New(reporter.NewMock(t), config, output, Dependencies{Schema: sch})

@@ -217,10 +217,10 @@ func (input graphLineHandlerInput) toSQL(res resolution) []*sb.Query {
 
 func (c *Component) graphLineHandlerFunc(w http.ResponseWriter, req *http.Request) {
 	ctx := c.t.Context(req.Context())
-	input := graphLineHandlerInput{graphCommonHandlerInput: graphCommonHandlerInput{
+	input := graphLineHandlerInput{
 		schema:   c.d.Schema,
 		database: c.d.ClickHouseDB.DatabaseName(),
-	}}
+	}
 	if err := httpserver.BindJSON(req, &input); err != nil {
 		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return

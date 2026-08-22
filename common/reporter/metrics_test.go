@@ -179,9 +179,10 @@ func (m customMetrics) Collect(ch chan<- prometheus.Metric) {
 func TestMetricCollector(t *testing.T) {
 	r := reporter.NewMock(t)
 
-	m := customMetrics{}
-	m.metric1 = prometheus.NewDesc("metric1", "Custom metric 1", nil, nil)
-	m.metric2 = prometheus.NewDesc("metric2", "Custom metric 2", nil, nil)
+	m := customMetrics{
+		metric1: prometheus.NewDesc("metric1", "Custom metric 1", nil, nil),
+		metric2: prometheus.NewDesc("metric2", "Custom metric 2", nil, nil),
+	}
 	r.RegisterMetricCollector(m)
 
 	got := r.GetMetrics("akvorado_common_reporter_test_")

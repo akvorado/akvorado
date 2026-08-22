@@ -448,7 +448,7 @@ type AlterTableStatement struct {
 // AlterTable starts an ALTER TABLE statement with no change yet.
 func AlterTable(name TableName) *AlterTableStatement {
 	alter := &parser.AlterTable{TableIdentifier: name.node()}
-	return &AlterTableStatement{statement: statement{node: alter}, alter: alter}
+	return &AlterTableStatement{node: alter, alter: alter}
 }
 
 // Len returns how many changes the statement carries.

@@ -6,6 +6,7 @@ package httpserver
 import (
 	"fmt"
 	"net/http"
+	"slices"
 )
 
 // Middleware is an HTTP middleware wrapping an http.Handler.
@@ -56,8 +57,8 @@ func (r *Router) Handle(method, pattern string, handler http.Handler, mw ...Midd
 	all := make([]Middleware, 0, len(r.middlewares)+len(mw))
 	all = append(all, r.middlewares...)
 	all = append(all, mw...)
-	for i := len(all) - 1; i >= 0; i-- {
-		final = all[i](final)
+	for _, a := range slices.Backward(all) {
+		final = a(final)
 	}
 	r.mux.Handle(fmt.Sprintf("%s %s%s", method, r.prefix, pattern), final)
 }

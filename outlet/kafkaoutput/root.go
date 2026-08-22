@@ -163,8 +163,7 @@ func (c *Component) Send(exporter string, payload []byte) {
 			c.metrics.dropped.Inc()
 			return
 		}
-		var ke *kerr.Error
-		if errors.As(err, &ke) {
+		if ke, ok := errors.AsType[*kerr.Error](err); ok {
 			c.metrics.errors.WithLabelValues(ke.Message).Inc()
 		} else {
 			c.metrics.errors.WithLabelValues("unknown").Inc()

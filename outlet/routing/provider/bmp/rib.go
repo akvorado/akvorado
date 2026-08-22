@@ -6,6 +6,7 @@ package bmp
 import (
 	"iter"
 	"net/netip"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"unsafe"
@@ -441,8 +442,8 @@ func (r *rib) FlushPeer(peer uint32) (int, int) {
 	}
 
 	r.treeMu.Unlock()
-	for i := len(r.shards) - 1; i >= 0; i-- {
-		r.shards[i].mu.Unlock()
+	for _, v := range slices.Backward(r.shards) {
+		v.mu.Unlock()
 	}
 
 	return routesRemoved, prefixesRemoved

@@ -72,13 +72,13 @@ var (
 // New creates a new BioRIS provider.
 func (configuration Configuration) New(r *reporter.Reporter, dependencies Dependencies) (provider.Provider, error) {
 	p := Provider{
-		r:         r,
-		d:         &dependencies,
-		config:    configuration,
-		instances: make(map[string]*RISInstanceRuntime),
-		routers:   make(map[netip.Addr][]*RISInstanceRuntime),
+		r:             r,
+		d:             &dependencies,
+		config:        configuration,
+		instances:     make(map[string]*RISInstanceRuntime),
+		routers:       make(map[netip.Addr][]*RISInstanceRuntime),
+		clientMetrics: grpc_prometheus.NewClientMetrics(),
 	}
-	p.clientMetrics = grpc_prometheus.NewClientMetrics()
 	p.initMetrics()
 
 	return &p, nil

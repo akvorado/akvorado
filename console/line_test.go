@@ -20,30 +20,26 @@ import (
 
 func TestGraphLineInputReverseDirection(t *testing.T) {
 	input := graphLineHandlerInput{
-		graphCommonHandlerInput: graphCommonHandlerInput{
-			schema: schema.NewMock(t),
-			Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-			End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-			Dimensions: query.Columns{
-				query.NewColumn("ExporterName"),
-				query.NewColumn("InIfProvider"),
-			},
-			Filter: query.NewFilter("DstCountry = 'FR' AND SrcCountry = 'US'"),
-			Units:  "l3bps",
+		schema: schema.NewMock(t),
+		Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+		End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+		Dimensions: query.Columns{
+			query.NewColumn("ExporterName"),
+			query.NewColumn("InIfProvider"),
 		},
+		Filter: query.NewFilter("DstCountry = 'FR' AND SrcCountry = 'US'"),
+		Units:  "l3bps",
 		Points: 100,
 	}
 	expected := graphLineHandlerInput{
-		graphCommonHandlerInput: graphCommonHandlerInput{
-			Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-			End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-			Dimensions: query.Columns{
-				query.NewColumn("ExporterName"),
-				query.NewColumn("OutIfProvider"),
-			},
-			Filter: query.NewFilter("SrcCountry = 'FR' AND DstCountry = 'US'"),
-			Units:  "l3bps",
+		Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+		End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+		Dimensions: query.Columns{
+			query.NewColumn("ExporterName"),
+			query.NewColumn("OutIfProvider"),
 		},
+		Filter: query.NewFilter("SrcCountry = 'FR' AND DstCountry = 'US'"),
+		Units:  "l3bps",
 		Points: 100,
 	}
 	input.Filter.Validate(input.schema, input.database)
@@ -139,24 +135,20 @@ func TestGraphPreviousPeriod(t *testing.T) {
 				t.Fatalf("%stime.Parse(%q) error:\n%+v", tc.Pos, tc.ExpectedEnd, err)
 			}
 			input := graphLineHandlerInput{
-				graphCommonHandlerInput: graphCommonHandlerInput{
-					schema: schema.NewMock(t),
-					Start:  start,
-					End:    end,
-					Dimensions: query.Columns{
-						query.NewColumn("ExporterAddress"),
-						query.NewColumn("ExporterName"),
-					},
+				schema: schema.NewMock(t),
+				Start:  start,
+				End:    end,
+				Dimensions: query.Columns{
+					query.NewColumn("ExporterAddress"),
+					query.NewColumn("ExporterName"),
 				},
 			}
 			query.Columns(input.Dimensions).Validate(input.schema)
 			got, period := input.previousPeriod()
 			expected := graphLineHandlerInput{
-				graphCommonHandlerInput: graphCommonHandlerInput{
-					Start:      expectedStart,
-					End:        expectedEnd,
-					Dimensions: []query.Column{},
-				},
+				Start:      expectedStart,
+				End:        expectedEnd,
+				Dimensions: []query.Column{},
 			}
 			if diff := helpers.Diff(got, expected); diff != "" {
 				t.Fatalf("%spreviousPeriod() (-got, +want):\n%s", tc.Pos, diff)
@@ -205,14 +197,12 @@ func TestGraphLineResolveContext(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.Description, func(t *testing.T) {
 			input := graphLineHandlerInput{
-				graphCommonHandlerInput: graphCommonHandlerInput{
-					schema:     sch,
-					Start:      start,
-					End:        end,
-					Dimensions: tc.Dimensions,
-					Filter:     tc.Filter,
-				},
-				Points: 100,
+				schema:     sch,
+				Start:      start,
+				End:        end,
+				Dimensions: tc.Dimensions,
+				Filter:     tc.Filter,
+				Points:     100,
 			}
 			if err := query.Columns(input.Dimensions).Validate(sch); err != nil {
 				t.Fatalf("Validate() error:\n%+v", err)
@@ -231,13 +221,11 @@ func TestGraphLineResolveContext(t *testing.T) {
 // all step on the same time grid, but the previous period covers its own range.
 func TestGraphQueryAxesRanges(t *testing.T) {
 	input := graphLineHandlerInput{
-		graphCommonHandlerInput: graphCommonHandlerInput{
-			schema:     schema.NewMock(t),
-			Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-			End:        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-			Dimensions: []query.Column{},
-			Units:      "l3bps",
-		},
+		schema:         schema.NewMock(t),
+		Start:          time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+		End:            time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+		Dimensions:     []query.Column{},
+		Units:          "l3bps",
 		Points:         100,
 		PreviousPeriod: true,
 	}
@@ -300,13 +288,11 @@ func TestGraphQueryAxesLeapYear(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.Description, func(t *testing.T) {
 			input := graphLineHandlerInput{
-				graphCommonHandlerInput: graphCommonHandlerInput{
-					schema:     schema.NewMock(t),
-					Start:      tc.Start,
-					End:        tc.End,
-					Dimensions: []query.Column{},
-					Units:      "l3bps",
-				},
+				schema:         schema.NewMock(t),
+				Start:          tc.Start,
+				End:            tc.End,
+				Dimensions:     []query.Column{},
+				Units:          "l3bps",
 				Points:         100,
 				PreviousPeriod: true,
 			}

@@ -69,14 +69,14 @@ func TestStartStopError(t *testing.T) {
 
 	expected := []any{
 		&ComponentStartStop{
-			Startable: Startable{Started: true},
-			Stopable:  Stopable{Stopped: true},
+			Started: true,
+			Stopped: true,
 		},
 		&ComponentStop{
-			Stopable: Stopable{Stopped: true},
+			Stopped: true,
 		},
 		&ComponentStart{
-			Startable: Startable{Started: true},
+			Started: true,
 		},
 		&ComponentNone{},
 		&ComponentStartError{},
@@ -106,14 +106,14 @@ func TestStartStop(t *testing.T) {
 
 	expected := []any{
 		&ComponentStartStop{
-			Startable: Startable{Started: true},
-			Stopable:  Stopable{Stopped: true},
+			Started: true,
+			Stopped: true,
 		},
 		&ComponentStop{
-			Stopable: Stopable{Stopped: true},
+			Stopped: true,
 		},
 		&ComponentStart{
-			Startable: Startable{Started: true},
+			Started: true,
 		},
 		&ComponentNone{},
 	}

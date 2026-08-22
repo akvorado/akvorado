@@ -58,9 +58,7 @@ func (p *Provider) initStaticExporters() {
 		staticExporters = append(
 			staticExporters,
 			exporterInfo{
-				Exporter: provider.Exporter{
-					Name: config.Name,
-				},
+				Name:           config.Name,
 				ExporterSubnet: subnet.String(),
 				Default:        config.Default,
 				Interfaces:     interfaces,

@@ -383,8 +383,8 @@ func TestUpdateSourceWithoutChange(t *testing.T) {
 	}
 	source := func(name string) []externalNetworkAttributes {
 		return []externalNetworkAttributes{{
-			Prefix:            netip.MustParsePrefix("::ffff:192.0.2.0/120"),
-			NetworkAttributes: NetworkAttributes{Name: name},
+			Prefix: netip.MustParsePrefix("::ffff:192.0.2.0/120"),
+			Name:   name,
 		}}
 	}
 
@@ -434,8 +434,8 @@ func TestConcurrentRebuilds(t *testing.T) {
 	for i := range sources {
 		wg.Go(func() {
 			c.updateSource(fmt.Sprintf("source%d", i), []externalNetworkAttributes{{
-				Prefix:            netip.MustParsePrefix(fmt.Sprintf("::ffff:10.%d.0.0/112", i)),
-				NetworkAttributes: NetworkAttributes{Name: fmt.Sprintf("net%d", i)},
+				Prefix: netip.MustParsePrefix(fmt.Sprintf("::ffff:10.%d.0.0/112", i)),
+				Name:   fmt.Sprintf("net%d", i),
 			}})
 		})
 	}

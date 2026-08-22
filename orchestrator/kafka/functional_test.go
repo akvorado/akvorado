@@ -213,16 +213,12 @@ func TestKafkaOutputManagement(t *testing.T) {
 	// the input topic lives on a shared cluster the orchestrator must not touch.
 	configuration.ManageTopic = false
 	output := &OutputConfiguration{
-		Configuration: kafka.Configuration{
-			Topic:   outputBase,
-			Brokers: brokers,
-		},
-		TopicConfiguration: TopicConfiguration{
-			NumPartitions:           1,
-			ReplicationFactor:       1,
-			ConfigEntries:           map[string]*string{"retention.ms": &retentionMs},
-			ConfigEntriesStrictSync: true,
-		},
+		Topic:                   outputBase,
+		Brokers:                 brokers,
+		NumPartitions:           1,
+		ReplicationFactor:       1,
+		ConfigEntries:           map[string]*string{"retention.ms": &retentionMs},
+		ConfigEntriesStrictSync: true,
 	}
 
 	c, err := New(reporter.NewMock(t), configuration, output, Dependencies{Schema: sch})

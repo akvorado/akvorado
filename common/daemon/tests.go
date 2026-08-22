@@ -21,9 +21,7 @@ type MockComponent struct {
 func NewMock(t testing.TB) Component {
 	t.Helper()
 	return &MockComponent{
-		lifecycleComponent: lifecycleComponent{
-			terminateChannel: make(chan struct{}),
-		},
+		terminateChannel: make(chan struct{}),
 	}
 }
 

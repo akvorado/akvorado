@@ -12,7 +12,6 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/httpserver"
-	"akvorado/common/kafka"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 )
@@ -25,7 +24,7 @@ func TestTopicSchemaSuffix(t *testing.T) {
 	sch := schema.NewMock(t)
 	deps := Dependencies{Schema: sch}
 
-	c, err := New(r, Configuration{Configuration: kafka.Configuration{Topic: "flows-enriched"}}, deps)
+	c, err := New(r, Configuration{Topic: "flows-enriched"}, deps)
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
@@ -43,7 +42,7 @@ func TestDisabled(t *testing.T) {
 	sch := schema.NewMock(t)
 	deps := Dependencies{Schema: sch}
 
-	c, err := New(r, Configuration{Configuration: kafka.Configuration{Topic: "flows-enriched"}}, deps)
+	c, err := New(r, Configuration{Topic: "flows-enriched"}, deps)
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}

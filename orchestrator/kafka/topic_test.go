@@ -135,12 +135,10 @@ func TestManageOutputTopicFake(t *testing.T) {
 	configuration.Brokers = brokers
 	configuration.ManageTopic = false
 	output := &OutputConfiguration{
-		Configuration: kafka.Configuration{Topic: outputBase, Brokers: brokers},
-		TopicConfiguration: TopicConfiguration{
-			NumPartitions:     1,
-			ReplicationFactor: 1,
-			ConfigEntries:     map[string]*string{"retention.ms": &retentionMs},
-		},
+		Topic: outputBase, Brokers: brokers,
+		NumPartitions:     1,
+		ReplicationFactor: 1,
+		ConfigEntries:     map[string]*string{"retention.ms": &retentionMs},
 	}
 	c, err := New(reporter.NewMock(t), configuration, output, Dependencies{Schema: sch})
 	if err != nil {

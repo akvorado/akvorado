@@ -103,8 +103,7 @@ func (c *Component) startSNMPServer() error {
 			}
 			err := server.ServeNextRequest()
 			if err != nil {
-				var opError *net.OpError
-				if errors.As(err, &opError) {
+				if _, ok := errors.AsType[*net.OpError](err); ok {
 					return nil
 				}
 

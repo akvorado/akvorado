@@ -436,7 +436,7 @@ func TestConcurrentOperations(t *testing.T) {
 			}
 		})
 	}
-	var lookups int64
+	var lookups atomic.Int64
 	for range 20 {
 		wg.Go(func() {
 			for {
@@ -450,11 +450,11 @@ func TestConcurrentOperations(t *testing.T) {
 					IfIndex:    uint(iface),
 				})
 				for {
-					current := atomic.LoadInt64(&lookups)
+					current := lookups.Load()
 					if current == math.MaxInt64 {
 						return
 					}
-					if atomic.CompareAndSwapInt64(&lookups, current, current+1) {
+					if lookups.CompareAndSwap(current, current+1) {
 						break
 					}
 				}
@@ -485,7 +485,7 @@ func TestConcurrentOperations(t *testing.T) {
 			t.Fatalf("strconv.ParseFloat() error:\n%+v", err)
 		}
 		got := int64(hits + misses)
-		expected := atomic.LoadInt64(&lookups)
+		expected := lookups.Load()
 		if got == expected {
 			break
 		} else if remaining == 0 {

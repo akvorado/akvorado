@@ -91,15 +91,13 @@ func generateFlows(flowConfigs []FlowConfiguration, seed int64, now time.Time) [
 		count := rateToCount(flowConfig.PerSecond*multiplier*(0.9+r.Float64()/5), now)
 		for ; count > 0; count-- {
 			flow := generatedFlow{
-				IPFlow: IPFlow{
-					Packets:       1,
-					InputInt:      uint32(chooseRandom(r, flowConfig.InIfIndex)),
-					OutputInt:     uint32(chooseRandom(r, flowConfig.OutIfIndex)),
-					SrcAS:         chooseRandom(r, flowConfig.SrcAS),
-					DstAS:         chooseRandom(r, flowConfig.DstAS),
-					ForwardStatus: 64,
-					FlowDirection: 0,
-				},
+				Packets:       1,
+				InputInt:      uint32(chooseRandom(r, flowConfig.InIfIndex)),
+				OutputInt:     uint32(chooseRandom(r, flowConfig.OutIfIndex)),
+				SrcAS:         chooseRandom(r, flowConfig.SrcAS),
+				DstAS:         chooseRandom(r, flowConfig.DstAS),
+				ForwardStatus: 64,
+				FlowDirection: 0,
 			}
 			if flowConfig.Size == 0 {
 				flow.Octets = uint32(r.Int32N(1200) + 300)

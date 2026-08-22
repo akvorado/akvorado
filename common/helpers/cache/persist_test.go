@@ -80,11 +80,9 @@ func TestLoadMismatchVersion(t *testing.T) {
 				"test1",
 				Answer{
 					ExporterName: "exporter1",
-					Interface: Interface{
-						Name:        "ifname1",
-						Description: "first",
-						Speed:       1000,
-					},
+					Name:         "ifname1",
+					Description:  "first",
+					Speed:        1000,
 				})
 
 			if err := c1.Save(target); err != nil {

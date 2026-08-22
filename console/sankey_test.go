@@ -18,30 +18,26 @@ import (
 
 func TestGraphSankeyInputReverseDirection(t *testing.T) {
 	input := graphSankeyHandlerInput{
-		graphCommonHandlerInput: graphCommonHandlerInput{
-			schema: schema.NewMock(t),
-			Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-			End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-			Dimensions: query.Columns{
-				query.NewColumn("ExporterName"),
-				query.NewColumn("InIfProvider"),
-			},
-			Filter: query.NewFilter("DstCountry = 'FR' AND SrcCountry = 'US'"),
-			Units:  "l3bps",
+		schema: schema.NewMock(t),
+		Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+		End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+		Dimensions: query.Columns{
+			query.NewColumn("ExporterName"),
+			query.NewColumn("InIfProvider"),
 		},
+		Filter:        query.NewFilter("DstCountry = 'FR' AND SrcCountry = 'US'"),
+		Units:         "l3bps",
 		Bidirectional: true,
 	}
 	expected := graphSankeyHandlerInput{
-		graphCommonHandlerInput: graphCommonHandlerInput{
-			Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-			End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-			Dimensions: query.Columns{
-				query.NewColumn("ExporterName"),
-				query.NewColumn("OutIfProvider"),
-			},
-			Filter: query.NewFilter("SrcCountry = 'FR' AND DstCountry = 'US'"),
-			Units:  "l3bps",
+		Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+		End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+		Dimensions: query.Columns{
+			query.NewColumn("ExporterName"),
+			query.NewColumn("OutIfProvider"),
 		},
+		Filter:        query.NewFilter("SrcCountry = 'FR' AND DstCountry = 'US'"),
+		Units:         "l3bps",
 		Bidirectional: true,
 	}
 	input.Filter.Validate(input.schema, input.database)
