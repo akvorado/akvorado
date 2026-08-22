@@ -24,6 +24,9 @@ import (
 	"akvorado/common/reporter"
 )
 
+// shutdownTimeout is how long we wait for connections to close on shutdown.
+const shutdownTimeout = 10 * time.Second
+
 // Component represents the HTTP compomenent.
 type Component struct {
 	r      *reporter.Reporter
@@ -186,7 +189,7 @@ func (c *Component) Start() error {
 		// Gracefully stop when asked to
 		c.t.Go(func() error {
 			<-c.t.Dying()
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 			defer cancel()
 			if err := server.Shutdown(ctx); err != nil {
 				c.r.Err(err).Msg("unable to shutdown HTTP server")
