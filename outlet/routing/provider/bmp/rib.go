@@ -24,6 +24,10 @@ const shardBits = 8
 // localPrefixMask masks off the shard bits, leaving only the local prefix ID.
 const localPrefixMask = (1 << (32 - shardBits)) - 1
 
+// flushPeerLinearScanMax defines the threshold for using linear search when checking for
+// routes to remove in FlushPeer(...). If more peers are passed a map is used instead.
+const flushPeerLinearScanMax = 8
+
 // prefixIndex is a typed index for prefixes in the RIB. The high shardBits
 // encode the shard index, the remaining bits are the local ID.
 type prefixIndex uint32
@@ -404,7 +408,7 @@ func (r *rib) RemoveRoute(prefix netip.Prefix, rr rawRoute) (int, bool) {
 
 // FlushPeer removes one or more peers from the RIB, returning the number
 // of removed routes and the number of removed prefixes.
-func (r *rib) FlushPeer(peers map[uint32]struct{}) (int, int) {
+func (r *rib) FlushPeer(peers []uint32) (int, int) {
 	type prefixEntry struct {
 		prefix netip.Prefix
 		ref    prefixRef
@@ -414,6 +418,28 @@ func (r *rib) FlushPeer(peers map[uint32]struct{}) (int, int) {
 		prefixes        []prefixEntry
 		prefixesRemoved int
 		routesRemoved   int
+	}
+
+	// Check if route belongs to peer to remove: directly from the array for few peers and using a map for many.
+	var shouldRemove func(route route) bool
+	if len(peers) <= flushPeerLinearScanMax {
+		shouldRemove = func(route route) bool {
+			for _, p := range peers {
+				if p == route.peer {
+					return true
+				}
+			}
+			return false
+		}
+	} else {
+		peerSet := make(map[uint32]struct{}, len(peers))
+		for _, p := range peers {
+			peerSet[p] = struct{}{}
+		}
+		shouldRemove = func(route route) bool {
+			_, found := peerSet[route.peer]
+			return found
+		}
 	}
 
 	// Lock all shards in order, then the tree writer lock.
@@ -440,10 +466,7 @@ func (r *rib) FlushPeer(peers map[uint32]struct{}) (int, int) {
 		wg.Go(func() {
 			state := &states[rs.idx]
 			for i, entry := range state.prefixes {
-				removed, empty := rs.removeRoutes(entry.ref.idx, func(route route) bool {
-					_, found := peers[route.peer]
-					return found
-				}, false)
+				removed, empty := rs.removeRoutes(entry.ref.idx, shouldRemove, false)
 				state.routesRemoved += removed
 				if empty {
 					rs.freePrefixIndex(entry.ref.idx)

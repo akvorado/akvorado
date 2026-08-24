@@ -149,23 +149,24 @@ func (p *Provider) removePeers() {
 	defer p.metrics.locked.WithLabelValues("peer-removal").Observe(
 		float64(p.d.Clock.Now().Sub(start).Nanoseconds()) / 1000 / 1000 / 1000)
 
+	p.mu.Lock()
 	p.muPeersToRemove.Lock()
 	p.removePeersTimer.Stop()
 	queued := p.peersToRemove
 	p.peersToRemove = make(map[peerKey]peerToRemove, len(queued))
 	p.muPeersToRemove.Unlock()
 	if len(queued) == 0 {
+		p.mu.Unlock()
 		return
 	}
 
 	exporterCounts := make(map[string]float64)
-	peers := make(map[uint32]struct{}, len(queued))
+	peers := make([]uint32, 0, len(queued))
 
-	p.mu.Lock()
 	for pkey, queuedPeer := range queued {
 		delete(p.peers, pkey)
 		exporterCounts[queuedPeer.exporterStr]++
-		peers[queuedPeer.reference] = struct{}{}
+		peers = append(peers, queuedPeer.reference)
 	}
 	p.mu.Unlock()
 
@@ -181,9 +182,9 @@ func (p *Provider) removePeers() {
 	}
 	p.metrics.routes.WithLabelValues(exporterStr).Sub(float64(routesRemoved))
 	p.metrics.prefixesRemoved.WithLabelValues(exporterStr).Add(float64(prefixesRemoved))
-	for exporterStr, count := range exporterCounts {
-		p.metrics.peers.WithLabelValues(exporterStr).Sub(count)
-		p.metrics.peerRemovalDone.WithLabelValues(exporterStr).Add(count)
+	for exporter, count := range exporterCounts {
+		p.metrics.peers.WithLabelValues(exporter).Sub(count)
+		p.metrics.peerRemovalDone.WithLabelValues(exporter).Add(count)
 	}
 }
 
