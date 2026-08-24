@@ -577,10 +577,7 @@ func TestRIBHarness(t *testing.T) {
 			t.Error("did not remove more than 5 prefixes, suspicious...")
 		}
 
-		// Remove everything
-		for _, peer := range peers {
-			r.FlushPeer([]uint32{peer})
-		}
+		r.FlushPeer(peers)
 
 		// Check for leak of interned values across all shards
 		totalNlris := 0

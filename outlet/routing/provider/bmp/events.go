@@ -249,6 +249,8 @@ func (p *Provider) handlePeerUpNotification(pkey peerKey, body *bmp.BMPPeerUpNot
 		if !p.cancelRemovePeer(pkey) {
 			p.r.Info().Msgf("received extra peer up from exporter %s for peer %s",
 				exporterStr, peerStr)
+		} else {
+			pinfo.staleUntil = time.Time{}
 		}
 	} else {
 		// Peer does not exist at all
@@ -380,7 +382,9 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 
 	p.mu.Lock()
 	pinfo, ok := p.peers[pkey]
-	if !ok {
+	if ok {
+		p.cancelRemovePeer(pkey)
+	} else {
 		// We may have missed the peer down notification?
 		p.r.Info().Msgf("received route monitoring from exporter %s for peer %s, but no peer up",
 			exporterStr, peerStr)
