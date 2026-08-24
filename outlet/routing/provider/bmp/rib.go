@@ -463,7 +463,7 @@ func (r *rib) FlushPeer(peer uint32) (int, int) {
 		routesRemoved += state.routesRemoved
 	}
 
-	if prefixesRemoved >= (tree.Size() >> 2) {
+	if prefixesRemoved > 0 && prefixesRemoved >= tree.Size()>>2 {
 		// Rebuild the tree from remaining prefixes and publish it.
 		newTree := &bart.Fast[prefixRef]{}
 		for _, state := range states {
