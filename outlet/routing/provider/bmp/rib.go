@@ -404,16 +404,16 @@ func (r *rib) RemoveRoute(prefix netip.Prefix, rr rawRoute) (int, bool) {
 
 // FlushPeer removes a whole peer from the RIB, returning the number
 // of removed routes and the number of removed prefixes.
-func (r *rib) FlushPeer(peer uint32, peers int) (int, int) {
+func (r *rib) FlushPeer(peer uint32) (int, int) {
 	type prefixEntry struct {
 		prefix netip.Prefix
 		ref    prefixRef
 	}
 
 	type workerState struct {
-		prefixesRemoved []netip.Prefix
-		routesRemoved   int
 		prefixes        []prefixEntry
+		prefixesRemoved int
+		routesRemoved   int
 	}
 
 	// Lock all shards in order, then the tree writer lock.
@@ -425,28 +425,31 @@ func (r *rib) FlushPeer(peer uint32, peers int) (int, int) {
 
 	// Group prefixes by shard to avoid traversing the full tree in each goroutine.
 	states := make([]workerState, len(r.shards))
-	for i := 0; i < len(r.shards); i++ {
-		states[i].prefixesRemoved = make([]netip.Prefix, 0, tree.Size()/(peers*len(r.shards)))
+	for i := range states {
 		states[i].prefixes = make([]prefixEntry, 0, tree.Size()/len(r.shards))
 	}
 	for prefix, ref := range tree.All() {
 		state := &states[ref.idx.shardIdx()]
-		state.prefixes = append(state.prefixes, prefixEntry{prefix, ref})
+		state.prefixes = append(state.prefixes, prefixEntry{prefix: prefix, ref: ref})
 	}
 
 	// Iterate through all prefixes and remove peer routes.
+	// Move removed prefixes to the beginning of each shard's list.
 	var wg sync.WaitGroup
 	for _, rs := range r.shards {
 		wg.Go(func() {
 			state := &states[rs.idx]
-			for _, entry := range state.prefixes {
+			for i, entry := range state.prefixes {
 				removed, empty := rs.removeRoutes(entry.ref.idx, func(route route) bool {
 					return route.peer == peer
 				}, false)
 				state.routesRemoved += removed
 				if empty {
 					rs.freePrefixIndex(entry.ref.idx)
-					state.prefixesRemoved = append(state.prefixesRemoved, entry.prefix)
+					if i != state.prefixesRemoved {
+						state.prefixes[i], state.prefixes[state.prefixesRemoved] = state.prefixes[state.prefixesRemoved], state.prefixes[i]
+					}
+					state.prefixesRemoved++
 				}
 			}
 		})
@@ -456,18 +459,16 @@ func (r *rib) FlushPeer(peer uint32, peers int) (int, int) {
 	prefixesRemoved := 0
 	routesRemoved := 0
 	for _, state := range states {
-		prefixesRemoved += len(state.prefixesRemoved)
+		prefixesRemoved += state.prefixesRemoved
 		routesRemoved += state.routesRemoved
 	}
 
 	if prefixesRemoved >= (tree.Size() >> 2) {
-		// Rebuild the tree excluding empty prefixes and publish it.
+		// Rebuild the tree from remaining prefixes and publish it.
 		newTree := &bart.Fast[prefixRef]{}
 		for _, state := range states {
-			for _, entry := range state.prefixes {
-				if _, hasRoutes := r.shards[entry.ref.idx.shardIdx()].routes[makeRouteKey(entry.ref.idx, 0)]; hasRoutes {
-					newTree.Insert(entry.prefix, entry.ref)
-				}
+			for _, entry := range state.prefixes[state.prefixesRemoved:] {
+				newTree.Insert(entry.prefix, entry.ref)
 			}
 		}
 		r.tree.Store(newTree)
@@ -475,8 +476,8 @@ func (r *rib) FlushPeer(peer uint32, peers int) (int, int) {
 		// Remove empty prefixes from the tree and publish it.
 		newTree := tree.Clone()
 		for _, state := range states {
-			for _, prefix := range state.prefixesRemoved {
-				newTree.Delete(prefix)
+			for _, entry := range state.prefixes[:state.prefixesRemoved] {
+				newTree.Delete(entry.prefix)
 			}
 		}
 		r.tree.Store(newTree)
