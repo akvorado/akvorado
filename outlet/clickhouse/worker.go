@@ -38,6 +38,13 @@ const (
 	WorkerStatusSteady
 )
 
+// serverConn holds, for one worker, the state of a single ClickHouse server: its
+// address and a lazily-established connection.
+type serverConn struct {
+	address string
+	conn    *ch.Client
+}
+
 // realWorker is a working implementation of Worker.
 type realWorker struct {
 	c      *realComponent
@@ -45,8 +52,18 @@ type realWorker struct {
 	last   time.Time
 	logger reporter.Logger
 
-	conn          *ch.Client
-	servers       []string
+	// servers holds one entry per configured ClickHouse server.
+	servers []*serverConn
+	// current is the server this worker is pinned to. A new one is picked (at
+	// random) only when the current connection breaks.
+	current *serverConn
+	// connectFn establishes/validates the connection for a server. It defaults to
+	// ensureConnected and is a field so tests can inject a fake dialer.
+	connectFn func(context.Context, *serverConn) error
+	// shuffleFn returns a random permutation of [0,n) and is used to pick a
+	// server. It defaults to rand.Perm and is a field so tests can make the
+	// choice deterministic.
+	shuffleFn     func(int) []int
 	options       ch.Options
 	asyncSettings []ch.Setting
 }
@@ -54,13 +71,18 @@ type realWorker struct {
 // NewWorker creates a new worker to push data to ClickHouse.
 func (c *realComponent) NewWorker(i int, bf *schema.FlowMessage) Worker {
 	opts, servers := c.d.ClickHouse.ChGoOptions()
-	w := realWorker{
+	conns := make([]*serverConn, len(servers))
+	for j, s := range servers {
+		conns[j] = &serverConn{address: s}
+	}
+	w := &realWorker{
 		c:      c,
 		bf:     bf,
 		logger: c.r.With().Int("worker", i).Logger(),
 
-		servers: servers,
-		options: opts,
+		servers:   conns,
+		shuffleFn: rand.Perm,
+		options:   opts,
 		asyncSettings: []ch.Setting{
 			{
 				Key:       "async_insert",
@@ -78,7 +100,8 @@ func (c *realComponent) NewWorker(i int, bf *schema.FlowMessage) Worker {
 			},
 		},
 	}
-	return &w
+	w.connectFn = w.ensureConnected
+	return w
 }
 
 // FinalizeAndSend sends data to ClickHouse after finalizing if we have a full
@@ -133,8 +156,10 @@ func (w *realWorker) Flush(ctx context.Context) {
 	b.MaxInterval = 30 * time.Second
 	b.InitialInterval = 20 * time.Millisecond
 	backoff.Retry(ctx, func() (any, error) {
-		// Connect or reconnect if connection is broken.
-		if err := w.connect(ctx); err != nil {
+		// Pick the pinned server (or a new random one if the connection broke)
+		// and (re)connect if needed.
+		sc, err := w.pickServerSticky(ctx)
+		if err != nil {
 			w.logger.Err(err).Msg("cannot connect to ClickHouse")
 			return nil, err
 		}
@@ -168,12 +193,12 @@ func (w *realWorker) Flush(ctx context.Context) {
 
 		// Send to ClickHouse in flows_XXXXX_raw.
 		start := time.Now()
-		if err := w.conn.Do(chCtx, ch.Query{
+		if err := sc.conn.Do(chCtx, ch.Query{
 			Body:     w.bf.ClickHouseProtoInput().Into(fmt.Sprintf("flows_%s_raw", w.c.d.Schema.ClickHouseHash())),
 			Input:    w.bf.ClickHouseProtoInput(),
 			Settings: settings,
 		}); err != nil {
-			w.logger.Err(err).Int("flows", w.bf.FlowCount()).Bool("async", useAsync).Msg("cannot send batch to ClickHouse")
+			w.logger.Err(err).Str("server", sc.address).Int("flows", w.bf.FlowCount()).Bool("async", useAsync).Msg("cannot send batch to ClickHouse")
 			w.c.metrics.errors.WithLabelValues("send").Inc()
 			return nil, err
 		}
@@ -187,45 +212,63 @@ func (w *realWorker) Flush(ctx context.Context) {
 	}, backoff.WithBackOff(b), backoff.WithMaxElapsedTime(0))
 }
 
-// connect establishes or reestablish the connection to ClickHouse.
-func (w *realWorker) connect(ctx context.Context) error {
-	// If connection exists and is healthy, reuse it
-	if w.conn != nil {
-		if err := w.conn.Ping(ctx); err == nil {
+// pickServerSticky pins the worker to a single ClickHouse server and keeps using
+// it as long as the connection stays healthy. A new server is picked (at random,
+// via shuffleFn) only when there is no pinned server or the pinned connection
+// broke, reproducing the historical rand.Perm selection.
+func (w *realWorker) pickServerSticky(ctx context.Context) (*serverConn, error) {
+	// Reuse the pinned server while its connection is (or can be made) healthy.
+	if w.current != nil {
+		if err := w.connectFn(ctx, w.current); err == nil {
+			return w.current, nil
+		}
+		// The connection broke: drop the pin and re-pick a different one below.
+		w.current = nil
+	}
+
+	// Pick a new server at random.
+	var lastErr error
+	for _, idx := range w.shuffleFn(len(w.servers)) {
+		sc := w.servers[idx]
+		if err := w.connectFn(ctx, sc); err != nil {
+			lastErr = err
+			continue
+		}
+		w.current = sc
+		return sc, nil
+	}
+	return nil, lastErr
+}
+
+// ensureConnected makes sure sc has a healthy connection, dialing (or redialing)
+// as needed.
+func (w *realWorker) ensureConnected(ctx context.Context, sc *serverConn) error {
+	// If connection exists and is healthy, reuse it.
+	if sc.conn != nil {
+		if err := sc.conn.Ping(ctx); err == nil {
 			return nil
 		}
-		// Connection is unhealthy, close it
-		w.conn.Close()
-		w.conn = nil
+		sc.conn.Close()
+		sc.conn = nil
 	}
 
-	// Try each server until one connects successfully
-	var lastErr error
-	for _, idx := range rand.Perm(len(w.servers)) {
-		w.options.Address = w.servers[idx]
-		conn, err := ch.Dial(ctx, w.options)
-		if err != nil {
-			w.logger.Err(err).Str("server", w.options.Address).Msg("failed to connect to ClickHouse server")
-			w.c.metrics.errors.WithLabelValues("connect").Inc()
-			lastErr = err
-			continue
-		}
-
-		// Test the connection
-		if err := conn.Ping(ctx); err != nil {
-			w.logger.Err(err).Str("server", w.options.Address).Msg("ClickHouse server ping failed")
-			w.c.metrics.errors.WithLabelValues("ping").Inc()
-			conn.Close()
-			conn = nil
-			lastErr = err
-			continue
-		}
-
-		// Success
-		w.conn = conn
-		w.logger.Info().Str("server", w.options.Address).Msg("connected to ClickHouse server")
-		return nil
+	// Dial this specific server. Copy options so the per-server address does not
+	// clobber the shared template.
+	opts := w.options
+	opts.Address = sc.address
+	conn, err := ch.Dial(ctx, opts)
+	if err != nil {
+		w.logger.Err(err).Str("server", sc.address).Msg("failed to connect to ClickHouse server")
+		w.c.metrics.errors.WithLabelValues("connect").Inc()
+		return err
 	}
-
-	return lastErr
+	if err := conn.Ping(ctx); err != nil {
+		w.logger.Err(err).Str("server", sc.address).Msg("ClickHouse server ping failed")
+		w.c.metrics.errors.WithLabelValues("ping").Inc()
+		conn.Close()
+		return err
+	}
+	sc.conn = conn
+	w.logger.Info().Str("server", sc.address).Msg("connected to ClickHouse server")
+	return nil
 }
