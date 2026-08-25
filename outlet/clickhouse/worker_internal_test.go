@@ -37,6 +37,20 @@ func fixedShuffle(order ...int) func(int) []int {
 	return func(int) []int { return order }
 }
 
+// pickN calls pickServer n times and returns the sequence of selected addresses.
+func pickN(t *testing.T, w *realWorker, n int) []string {
+	t.Helper()
+	got := make([]string, 0, n)
+	for range n {
+		sc, err := w.pickServer(context.Background())
+		if err != nil {
+			t.Fatalf("pickServer() error: %v", err)
+		}
+		got = append(got, sc.address)
+	}
+	return got
+}
+
 // stickyPickN calls pickServerSticky n times and returns the selected addresses.
 func stickyPickN(t *testing.T, w *realWorker, n int) []string {
 	t.Helper()
@@ -49,6 +63,51 @@ func stickyPickN(t *testing.T, w *realWorker, n int) []string {
 		got = append(got, sc.address)
 	}
 	return got
+}
+
+func TestPickServerRoundRobin(t *testing.T) {
+	ok := func(context.Context, *serverConn) error { return nil }
+	w := newTestWorker([]string{"s0", "s1", "s2"}, ok)
+
+	got := pickN(t, w, 7)
+	want := []string{"s0", "s1", "s2", "s0", "s1", "s2", "s0"}
+	if !equalStrings(got, want) {
+		t.Errorf("round-robin order:\n got=%v\nwant=%v", got, want)
+	}
+}
+
+func TestPickServerStaggeredStart(t *testing.T) {
+	ok := func(context.Context, *serverConn) error { return nil }
+	// A worker whose cursor starts at index 1 (staggered by worker id) should
+	// begin on s1, not s0.
+	w := newTestWorker([]string{"s0", "s1", "s2"}, ok)
+	w.next = 1
+
+	got := pickN(t, w, 3)
+	want := []string{"s1", "s2", "s0"}
+	if !equalStrings(got, want) {
+		t.Errorf("staggered start:\n got=%v\nwant=%v", got, want)
+	}
+}
+
+func TestPickServerRoundRobinFailover(t *testing.T) {
+	errBoom := errors.New("boom")
+	// s0 always fails to connect; a pick must move on to the next server.
+	connectFn := func(_ context.Context, sc *serverConn) error {
+		if sc.address == "s0" {
+			return errBoom
+		}
+		return nil
+	}
+	w := newTestWorker([]string{"s0", "s1", "s2"}, connectFn)
+
+	sc, err := w.pickServer(context.Background())
+	if err != nil {
+		t.Fatalf("pickServer() error: %v", err)
+	}
+	if sc.address != "s1" {
+		t.Errorf("expected failover to s1, got %s", sc.address)
+	}
 }
 
 func TestPickServerStickyStaysPinned(t *testing.T) {

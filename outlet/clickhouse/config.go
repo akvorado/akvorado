@@ -7,6 +7,18 @@ import (
 	"time"
 )
 
+const (
+	// ServerSelectionStickyRandom pins each worker to a single, randomly-chosen
+	// ClickHouse server for the lifetime of its connection. A new server is
+	// picked (again at random) only when the connection breaks. This is the
+	// legacy behavior and the default.
+	ServerSelectionStickyRandom = "sticky-random"
+	// ServerSelectionRoundRobin spreads a worker's batches across all configured
+	// ClickHouse servers in round-robin order so insert load is balanced across
+	// nodes.
+	ServerSelectionRoundRobin = "round-robin"
+)
+
 // Configuration describes the configuration for the ClickHouse exporter.
 type Configuration struct {
 	// GracePeriod defines how long to wait for flushing a batch to ClickHouse on shutdown.
@@ -15,6 +27,9 @@ type Configuration struct {
 	MaximumBatchSize uint `validate:"min=1"`
 	// MaximumWaitTime is the maximum number of seconds to wait before sending the current batch.
 	MaximumWaitTime time.Duration `validate:"min=100ms"`
+	// ServerSelection controls how each worker chooses a ClickHouse server for a
+	// batch: "sticky-random" (default, legacy) or "round-robin".
+	ServerSelection string `validate:"oneof=sticky-random round-robin"`
 	// minimumBatchSize the mininum number of rows before declaring underloaded and using async insert
 	minimumBatchSize uint
 }
@@ -27,5 +42,6 @@ func DefaultConfiguration() Configuration {
 		GracePeriod:      time.Minute,
 		MaximumBatchSize: 50_000,
 		MaximumWaitTime:  5 * time.Second,
+		ServerSelection:  ServerSelectionStickyRandom,
 	}
 }

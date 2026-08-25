@@ -865,18 +865,29 @@ GeoIP database, like a city-level one, this uses a significant amount of memory.
 
 ### ClickHouse
 
-The ClickHouse component pushes data to ClickHouse. There are three settings that
-are configurable:
+The ClickHouse component pushes data to ClickHouse. The configurable settings
+are:
 
 - `maximum-batch-size` defines how many flows to send to ClickHouse in a single batch at most
-- `minimum-wait-time` defines how long to wait before sending an incomplete batch
+- `maximum-wait-time` defines how long to wait before sending an incomplete batch
 - `grace-period` defines how long to wait when flushing data to ClickHouse on shutdown
+- `server-selection` defines how a worker chooses a ClickHouse server for a batch
 
 These numbers are per-worker (as defined in the Kafka component). A worker will
 send a batch of size at most `maximum-batch-size` at least every
 `maximum-wait-time`. ClickHouse is more efficient when the batch size is large.
 The default value is 50,000 and allows ClickHouse to handle incoming flows
 efficiently.
+
+When several ClickHouse servers are configured, `server-selection` controls how
+each worker spreads its batches across them:
+
+- `sticky-random` (the default) pins each worker to a single, randomly-chosen
+  server and keeps using it as long as the connection stays healthy. A new
+  server is picked (again at random) only when the connection breaks. This is
+  the historical behavior.
+- `round-robin` rotates the target server for every batch, spreading insert and
+  materialized-view load evenly across all nodes.
 
 ### Flow
 

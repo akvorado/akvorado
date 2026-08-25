@@ -54,15 +54,20 @@ type realWorker struct {
 
 	// servers holds one entry per configured ClickHouse server.
 	servers []*serverConn
-	// current is the server this worker is pinned to. A new one is picked (at
-	// random) only when the current connection breaks.
+	next    int
+	// current is the server a worker is pinned to in sticky-random mode. It is
+	// unused by the round-robin strategy.
 	current *serverConn
+	// selectServer chooses the server for the next batch. It is set in NewWorker
+	// to either pickServer (round-robin) or pickServerSticky (sticky-random),
+	// depending on the configured server-selection strategy.
+	selectServer func(context.Context) (*serverConn, error)
 	// connectFn establishes/validates the connection for a server. It defaults to
 	// ensureConnected and is a field so tests can inject a fake dialer.
 	connectFn func(context.Context, *serverConn) error
-	// shuffleFn returns a random permutation of [0,n) and is used to pick a
-	// server. It defaults to rand.Perm and is a field so tests can make the
-	// choice deterministic.
+	// shuffleFn returns a random permutation of [0,n) and is used by the
+	// sticky-random strategy to pick a server. It defaults to rand.Perm and is a
+	// field so tests can make the choice deterministic.
 	shuffleFn     func(int) []int
 	options       ch.Options
 	asyncSettings []ch.Setting
@@ -80,7 +85,10 @@ func (c *realComponent) NewWorker(i int, bf *schema.FlowMessage) Worker {
 		bf:     bf,
 		logger: c.r.With().Int("worker", i).Logger(),
 
-		servers:   conns,
+		servers: conns,
+		// Stagger the starting server per worker so batches spread across all
+		// servers from the first flush instead of all piling onto servers[0].
+		next:      i,
 		shuffleFn: rand.Perm,
 		options:   opts,
 		asyncSettings: []ch.Setting{
@@ -101,6 +109,11 @@ func (c *realComponent) NewWorker(i int, bf *schema.FlowMessage) Worker {
 		},
 	}
 	w.connectFn = w.ensureConnected
+	if c.config.ServerSelection == ServerSelectionRoundRobin {
+		w.selectServer = w.pickServer
+	} else {
+		w.selectServer = w.pickServerSticky
+	}
 	return w
 }
 
@@ -156,11 +169,12 @@ func (w *realWorker) Flush(ctx context.Context) {
 	b.MaxInterval = 30 * time.Second
 	b.InitialInterval = 20 * time.Millisecond
 	backoff.Retry(ctx, func() (any, error) {
-		// Pick the pinned server (or a new random one if the connection broke)
-		// and (re)connect if needed.
-		sc, err := w.pickServerSticky(ctx)
+		// Pick a server (per the configured strategy) and (re)connect if needed.
+		// Depending on the strategy each batch may land on a different server
+		// (round-robin) or stay on the pinned one (sticky-random).
+		sc, err := w.selectServer(ctx)
 		if err != nil {
-			w.logger.Err(err).Msg("cannot connect to ClickHouse")
+			w.logger.Err(err).Msg("cannot connect to any ClickHouse server")
 			return nil, err
 		}
 
@@ -210,6 +224,25 @@ func (w *realWorker) Flush(ctx context.Context) {
 		w.bf.Clear()
 		return nil, nil
 	}, backoff.WithBackOff(b), backoff.WithMaxElapsedTime(0))
+}
+
+// pickServer selects the next ClickHouse server in round-robin order and makes
+// sure it is connected, so a worker's batches are spread across all servers
+// instead of pinning to one. If a server cannot be reached it moves on to the
+// next one within the same call.
+func (w *realWorker) pickServer(ctx context.Context) (*serverConn, error) {
+	n := len(w.servers)
+	var lastErr error
+	for tried := 0; tried < n; tried++ {
+		sc := w.servers[w.next%n]
+		w.next = (w.next + 1) % n
+		if err := w.connectFn(ctx, sc); err != nil {
+			lastErr = err
+			continue
+		}
+		return sc, nil
+	}
+	return nil, lastErr
 }
 
 // pickServerSticky pins the worker to a single ClickHouse server and keeps using
