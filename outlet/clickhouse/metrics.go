@@ -9,6 +9,7 @@ type metrics struct {
 	flows       reporter.Summary
 	waitTime    reporter.Histogram
 	insertTime  reporter.Histogram
+	batchesSent *reporter.CounterVec
 	overloaded  reporter.Counter
 	underloaded reporter.Counter
 	steady      reporter.Counter
@@ -45,6 +46,13 @@ func (c *realComponent) initMetrics() {
 			Help:    "Time spent inserting data to ClickHouse.",
 			Buckets: []float64{.01, .025, .05, .1, .5, 1, 5, 10, 20, 60},
 		},
+	)
+	c.metrics.batchesSent = c.r.CounterVec(
+		reporter.CounterOpts{
+			Name: "batches_sent_total",
+			Help: "Number of batches sent to each ClickHouse server.",
+		},
+		[]string{"server"},
 	)
 	c.metrics.overloaded = c.r.Counter(
 		reporter.CounterOpts{

@@ -111,7 +111,7 @@ func TestInsert(t *testing.T) {
 		}
 
 		// Check metrics
-		gotMetrics := r.GetMetrics("akvorado_outlet_clickhouse_", "-insert_time", "-wait_time")
+		gotMetrics := r.GetMetrics("akvorado_outlet_clickhouse_", "-insert_time", "-wait_time", "-batches_sent")
 		var expectedMetrics map[string]string
 		if i < 11 {
 			expectedMetrics = map[string]string{
