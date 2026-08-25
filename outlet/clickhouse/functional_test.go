@@ -21,6 +21,20 @@ import (
 )
 
 func TestInsert(t *testing.T) {
+	// Run the same scenario under both server-selection strategies. With a single
+	// server they behave identically (metrics exclude the per-server batch count),
+	// so the assertions hold for both while covering each selection branch.
+	for _, serverSelection := range []string{
+		clickhouse.ServerSelectionStickyRandom,
+		clickhouse.ServerSelectionRoundRobin,
+	} {
+		t.Run(serverSelection, func(t *testing.T) {
+			runInsertTest(t, serverSelection)
+		})
+	}
+}
+
+func runInsertTest(t *testing.T, serverSelection string) {
 	server, database := clickhousedb.SetupClickHouseDatabase(t)
 	r := reporter.NewMock(t)
 	sch := schema.NewMock(t)
@@ -46,6 +60,7 @@ func TestInsert(t *testing.T) {
 	conf := clickhouse.DefaultConfiguration()
 	conf.MaximumBatchSize = 10
 	conf.MaximumWaitTime = time.Second
+	conf.ServerSelection = serverSelection
 	ch, err := clickhouse.New(r, conf, clickhouse.Dependencies{
 		ClickHouse: chdb,
 		Schema:     sch,

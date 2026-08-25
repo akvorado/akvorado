@@ -7,6 +7,10 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
+
+	"akvorado/common/reporter"
+	"akvorado/common/schema"
 )
 
 // newTestWorker builds a realWorker wired only with what server selection needs
@@ -141,6 +145,61 @@ func TestPickServerStickyInitialFailover(t *testing.T) {
 	if !equalStrings(got, want) {
 		t.Errorf("sticky initial failover:\n got=%v\nwant=%v", got, want)
 	}
+}
+
+func TestPickServerRoundRobinAllFail(t *testing.T) {
+	errBoom := errors.New("boom")
+	// Every server refuses to connect: a round-robin pick must exhaust all of
+	// them and return the last error instead of a server.
+	connectFn := func(context.Context, *serverConn) error { return errBoom }
+	w := newTestWorker([]string{"s0", "s1", "s2"}, connectFn)
+
+	sc, err := w.pickServer(context.Background())
+	if sc != nil || err == nil {
+		t.Errorf("pickServer() = (%v, %v), want (nil, error)", sc, err)
+	}
+}
+
+func TestPickServerStickyAllFail(t *testing.T) {
+	errBoom := errors.New("boom")
+	// Every server refuses to connect: the sticky pick must exhaust the shuffle
+	// order and return the last error, leaving no server pinned.
+	connectFn := func(context.Context, *serverConn) error { return errBoom }
+	w := newTestWorker([]string{"s0", "s1", "s2"}, connectFn)
+	w.shuffleFn = fixedShuffle(0, 1, 2)
+
+	sc, err := w.pickServerSticky(context.Background())
+	if sc != nil || err == nil {
+		t.Errorf("pickServerSticky() = (%v, %v), want (nil, error)", sc, err)
+	}
+	if w.current != nil {
+		t.Errorf("pickServerSticky() pinned %v despite all servers failing", w.current)
+	}
+}
+
+func TestFlushSelectServerError(t *testing.T) {
+	r := reporter.NewMock(t)
+	sch := schema.NewMock(t)
+	bf := sch.NewFlowMessage()
+	bf.AppendUint(schema.ColumnDstAS, 65000)
+	bf.AppendUint(schema.ColumnBytes, 200)
+	bf.Finalize()
+
+	// A worker whose server selection always fails: Flush must keep retrying and
+	// logging until the context expires, exercising the "cannot connect to any
+	// ClickHouse server" path without ever reaching ClickHouse.
+	w := &realWorker{
+		c:      &realComponent{r: r, config: Configuration{}},
+		bf:     bf,
+		logger: r.With().Logger(),
+		selectServer: func(context.Context) (*serverConn, error) {
+			return nil, errors.New("no server available")
+		},
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+	w.Flush(ctx)
 }
 
 func TestPickServerStickyReconnectBreakRepicks(t *testing.T) {
