@@ -15,7 +15,6 @@ import (
 	"akvorado/common/schema"
 	"akvorado/outlet/flow/decoder"
 
-	"github.com/gaissmai/bart"
 	"github.com/netsampler/goflow2/v3/decoders/sflow"
 )
 
@@ -59,7 +58,7 @@ var sflowDiscardReasonToForwardingStatus = map[uint32]int{
 	302: 140, // uc_reverse_path_forwarding → RPF
 }
 
-func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.Options, bf *schema.FlowMessage, decapProtocols *bart.Fast[pb.RawFlow_DecapsulationProtocol], finalize decoder.FinalizeFlowFunc) error {
+func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.Options, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) error {
 	for _, flowSample := range packet.Samples {
 		var records []sflow.FlowRecord
 		forwardingStatus := 0
@@ -124,7 +123,7 @@ func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.
 		appliedDecapsulationProtocol := options.DecapsulationProtocol
 		bfTmp := nd.d.Schema.NewFlowMessage()
 		var dstOuterAddr, srcOuterAddr netip.Addr
-		if appliedDecapsulationProtocol == pb.RawFlow_DECAP_NONE && decapProtocols != nil {
+		if appliedDecapsulationProtocol == pb.RawFlow_DECAP_NONE && options.DecapProtocols != nil {
 			// get source ip
 			for _, record := range records {
 				switch recordData := record.Data.(type) {
@@ -140,7 +139,7 @@ func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.
 				}
 			}
 			// look up decapsulation protocol to apply
-			if proto, found := decapProtocols.Lookup(srcOuterAddr); found {
+			if proto, found := options.DecapProtocols.Lookup(srcOuterAddr); found {
 				appliedDecapsulationProtocol = proto
 			}
 		}
@@ -161,7 +160,7 @@ func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.
 				if needsIPData || needsL2Data || needsL3L4Data || needDecap {
 					if l := nd.parseSampledHeader(bf, appliedDecapsulationProtocol, &recordData); l > 0 {
 						l3length = l
-						if appliedDecapsulationProtocol != pb.RawFlow_DECAP_NONE && decapProtocols != nil {
+						if appliedDecapsulationProtocol != pb.RawFlow_DECAP_NONE && options.DecapProtocols != nil {
 							bf.AppendIPv6(schema.ColumnDstOuterAddr, dstOuterAddr)
 							bf.AppendIPv6(schema.ColumnSrcOuterAddr, srcOuterAddr)
 							bf.AppendUint(schema.ColumnDecapsulationProto, uint64(appliedDecapsulationProtocol))
