@@ -23,7 +23,7 @@ type Decoder interface {
 	// function. On error, the caller is not expected to do any cleanup.
 	// Therefore, the decoder should either not raise errors once flows are
 	// being built or it should do the cleanup itself (by calling `Undo()`).
-	Decode(in RawFlow, options Options, bf *schema.FlowMessage, decapProtocols *bart.Fast[pb.RawFlow_DecapsulationProtocol], finalize FinalizeFlowFunc) (int, error)
+	Decode(in RawFlow, options Options, bf *schema.FlowMessage, finalize FinalizeFlowFunc) (int, error)
 
 	// Name returns the decoder name
 	Name() string
@@ -35,6 +35,9 @@ type Options struct {
 	TimestampSource pb.RawFlow_TimestampSource
 	// DecapsulationProtocol is the protocol the decapsulate
 	DecapsulationProtocol pb.RawFlow_DecapsulationProtocol
+	// DecapProtocols is a lookup table to selectively decapsulate based on the
+	// outer source address.
+	DecapProtocols *bart.Fast[pb.RawFlow_DecapsulationProtocol]
 }
 
 // Dependencies are the dependencies for the decoder

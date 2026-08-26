@@ -70,7 +70,7 @@ func TestDecodeFlowStartCiscoIOSXE(t *testing.T) {
 				_, err := nfdecoder.Decode(decoder.RawFlow{
 					Payload: data,
 					Source:  netip.MustParseAddr("::ffff:127.0.0.1"),
-				}, decoder.Options{TimestampSource: pb.RawFlow_TS_NETFLOW_FIRST_SWITCHED}, bf, nil, finalize)
+				}, decoder.Options{TimestampSource: pb.RawFlow_TS_NETFLOW_FIRST_SWITCHED}, bf, finalize)
 				if err != nil {
 					t.Fatalf("Decode() error:\n%+v", err)
 				}

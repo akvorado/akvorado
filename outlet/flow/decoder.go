@@ -41,6 +41,7 @@ func (c *Component) Decode(rawFlow *pb.RawFlow, bf *schema.FlowMessage, finalize
 	options := decoder.Options{
 		TimestampSource:       rawFlow.TimestampSource,
 		DecapsulationProtocol: rawFlow.DecapsulationProtocol,
+		DecapProtocols:        c.decapProtocols,
 	}
 
 	if err := c.decodeWithMetrics(dec, decoderInput, options, bf, func() {
@@ -68,7 +69,7 @@ func (c *Component) decodeWithMetrics(dec decoder.Decoder, input decoder.RawFlow
 		}
 	}()
 
-	n, err := dec.Decode(input, options, bf, c.decapProtocols, finalize)
+	n, err := dec.Decode(input, options, bf, finalize)
 	if err != nil {
 		c.metrics.decoderErrors.WithLabelValues(dec.Name()).Inc()
 		return err
