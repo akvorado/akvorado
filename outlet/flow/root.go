@@ -5,9 +5,9 @@
 package flow
 
 import (
-	"net/netip"
 	"time"
 
+	"akvorado/common/helpers"
 	"akvorado/common/pb"
 	"akvorado/common/reporter"
 	"akvorado/outlet/flow/decoder"
@@ -70,12 +70,7 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 	if len(config.Decapsulation) > 0 {
 		c.decapProtocols = &bart.Fast[pb.RawFlow_DecapsulationProtocol]{}
 		for _, decapConfig := range config.Decapsulation {
-			srcPrefix := decapConfig.SrcPrefix
-			srcAddr := srcPrefix.Addr()
-			if srcAddr.Is4() {
-				srcPrefix = netip.PrefixFrom(netip.AddrFrom16(srcAddr.As16()), srcPrefix.Bits()+96)
-			}
-			c.decapProtocols.Insert(srcPrefix, decapConfig.Protocol)
+			c.decapProtocols.Insert(helpers.PrefixTo6(decapConfig.SrcPrefix), decapConfig.Protocol)
 		}
 	}
 
