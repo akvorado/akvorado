@@ -121,13 +121,13 @@ func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.
 
 		// Selectively apply decapsulation based on source address
 		appliedDecapsulationProtocol := options.DecapsulationProtocol
-		bfTmp := nd.d.Schema.NewFlowMessage()
 		var dstOuterAddr, srcOuterAddr netip.Addr
 		if appliedDecapsulationProtocol == pb.RawFlow_DECAP_NONE && options.DecapProtocols != nil {
 			// get source ip
 			for _, record := range records {
 				switch recordData := record.Data.(type) {
 				case sflow.SampledHeader:
+					bfTmp := nd.d.Schema.NewFlowMessage()
 					nd.parseSampledHeader(bfTmp, pb.RawFlow_DECAP_NONE, &recordData)
 					dstOuterAddr = bfTmp.DstAddr
 					srcOuterAddr = bfTmp.SrcAddr
