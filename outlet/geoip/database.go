@@ -90,10 +90,8 @@ func getGeoDatabase(db *maxminddb.Reader) (geoDatabase, error) {
 	if strings.HasPrefix(db.Metadata.DatabaseType, "ipinfo ") {
 		return &ipinfoDB{db: db}, nil
 	}
-	// DB-IP databases use the GeoIP2 schema but expose subdivision names instead
-	// of ISO codes. Their DatabaseType is e.g. "DBIP-City-Lite", "DBIP-Location".
-	if strings.HasPrefix(db.Metadata.DatabaseType, "DBIP") {
-		return &dbipDB{db: db}, nil
-	}
+	// DB-IP databases (DatabaseType "DBIP-*") use the GeoIP2 schema, so they are
+	// handled as MaxMind ones; the subdivision decoder falls back to names.en
+	// when there is no iso_code.
 	return &maxmindDB{db: db}, nil
 }
