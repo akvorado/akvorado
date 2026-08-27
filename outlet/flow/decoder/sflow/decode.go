@@ -123,7 +123,7 @@ func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.
 		// Selectively apply decapsulation based on source address
 		appliedDecapsulationProtocol := options.DecapsulationProtocol
 		var dstOuterAddr, srcOuterAddr netip.Addr
-		if appliedDecapsulationProtocol == pb.RawFlow_DECAP_NONE && options.DecapProtocols != nil {
+		if appliedDecapsulationProtocol == pb.RawFlow_DECAP_NONE && options.PrefixDecapsulationProtocols != nil {
 			// get source ip
 			for _, record := range records {
 				switch recordData := record.Data.(type) {
@@ -139,7 +139,7 @@ func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.
 				}
 			}
 			// look up decapsulation protocol to apply
-			if proto, found := options.DecapProtocols.Lookup(srcOuterAddr); found {
+			if proto, found := options.PrefixDecapsulationProtocols.Lookup(srcOuterAddr); found {
 				appliedDecapsulationProtocol = proto
 			}
 		}
@@ -160,10 +160,10 @@ func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.
 				if needsIPData || needsL2Data || needsL3L4Data || needDecap {
 					if l := nd.parseSampledHeader(bf, appliedDecapsulationProtocol, &recordData); l > 0 {
 						l3length = l
-						if appliedDecapsulationProtocol != pb.RawFlow_DECAP_NONE && options.DecapProtocols != nil {
+						if appliedDecapsulationProtocol != pb.RawFlow_DECAP_NONE && options.PrefixDecapsulationProtocols != nil {
 							bf.AppendIPv6(schema.ColumnDstOuterAddr, dstOuterAddr)
 							bf.AppendIPv6(schema.ColumnSrcOuterAddr, srcOuterAddr)
-							bf.AppendUint(schema.ColumnDecapsulationProto, uint64(appliedDecapsulationProtocol))
+							bf.AppendUint(schema.ColumnDecapProto, uint64(appliedDecapsulationProtocol))
 						}
 					}
 				}

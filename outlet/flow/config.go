@@ -4,26 +4,26 @@
 package flow
 
 import (
-	"net/netip"
-
+	"akvorado/common/helpers"
 	"akvorado/common/pb"
 )
 
 // Configuration describes the configuration for the flow component.
 type Configuration struct {
+	// Decapsulate maps encapsulating source prefixes to the decapsulation
+	// protocol to apply to matching flows.
+	Decapsulate *helpers.SubnetMap[pb.RawFlow_DecapsulationProtocol]
 	// StatePersistFile defines a file to store decoder state (templates, sampling
 	// rates) to survive restarts.
-	Decapsulation    []DecapsulationConfiguration `validate:"dive"`
-	StatePersistFile string                       `validate:"isdefault|filepath"`
-}
-
-// DecapsulationConfiguration selects source and destination prefixes to decapsulate
-type DecapsulationConfiguration struct {
-	Protocol  pb.RawFlow_DecapsulationProtocol `validate:"required"`
-	SrcPrefix netip.Prefix
+	StatePersistFile string `validate:"isdefault|filepath"`
 }
 
 // DefaultConfiguration returns the default configuration for the flow component.
 func DefaultConfiguration() Configuration {
 	return Configuration{}
+}
+
+func init() {
+	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[pb.RawFlow_DecapsulationProtocol]())
+	helpers.RegisterSubnetMapValidation[pb.RawFlow_DecapsulationProtocol]()
 }

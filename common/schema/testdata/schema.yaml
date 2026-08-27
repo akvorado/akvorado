@@ -510,7 +510,7 @@
   group: 4
   parsertype: uint
   clickhousetype: UInt8
-- key: DecapsulationProto
-  name: DecapsulationProto
+- key: DecapProto
+  name: DecapProto
   parsertype: string
   clickhousetype: Enum8('none' = 0, 'ipip' = 1, 'gre' = 2, 'vxlan' = 3, 'srv6' = 4)

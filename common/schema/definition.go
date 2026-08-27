@@ -226,7 +226,7 @@ const (
 	ColumnSrcOuterAddr
 	ColumnDstOuterAddr
 	ColumnIPOuterTos
-	ColumnDecapsulationProto
+	ColumnDecapProto
 
 	// ColumnLast points to after the last static column, custom dictionaries
 	// (dynamic columns) come after ColumnLast
@@ -560,7 +560,7 @@ END`,
 			},
 			{Key: ColumnIPOuterTos, Disabled: true, Group: ColumnGroupOuter, ParserType: "uint", ClickHouseType: "UInt8"},
 			{
-				Key:            ColumnDecapsulationProto,
+				Key:            ColumnDecapProto,
 				Disabled:       true,
 				ParserType:     "string",
 				ClickHouseType: fmt.Sprintf("Enum8('none' = %d, 'ipip' = %d, 'gre' = %d, 'vxlan' = %d, 'srv6' = %d)", pb.RawFlow_DECAP_NONE, pb.RawFlow_DECAP_IPIP, pb.RawFlow_DECAP_GRE, pb.RawFlow_DECAP_VXLAN, pb.RawFlow_DECAP_SRV6),
