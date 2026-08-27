@@ -139,7 +139,9 @@ func (g *maxmindGeoInfo) unmarshalSubdivisions(cursor mmdbdata.Cursor) (mmdbdata
 	return values.End()
 }
 
-// unmarshalSubdivision keeps the ISO code of one subdivision.
+// unmarshalSubdivision keeps the state of one subdivision. MaxMind exposes an
+// iso_code; DB-IP, which uses the same GeoIP2 format, only exposes names.en.
+// Prefer the ISO code and fall back to the English name.
 func (g *maxmindGeoInfo) unmarshalSubdivision(cursor mmdbdata.Cursor) (mmdbdata.Cursor, error) {
 	entries, err := cursor.MapReader()
 	if err != nil {
@@ -152,6 +154,35 @@ func (g *maxmindGeoInfo) unmarshalSubdivision(cursor mmdbdata.Cursor) (mmdbdata.
 			return mmdbdata.Cursor{}, keyErr
 		}
 		if string(key) == "iso_code" {
+			g.State, next, err = value.ReadString()
+		} else if string(key) == "names" && g.State == "" {
+			// DB-IP has no iso_code for subdivisions, only names.en: use it as a
+			// fallback (an iso_code, in any order, still takes precedence).
+			next, err = g.unmarshalSubdivisionNames(value)
+		} else {
+			next, err = value.Skip()
+		}
+		if err != nil {
+			return mmdbdata.Cursor{}, err
+		}
+	}
+	return entries.End(next)
+}
+
+// unmarshalSubdivisionNames keeps the English name of the subdivision as the
+// state. DB-IP has no iso_code for subdivisions, only names.en.
+func (g *maxmindGeoInfo) unmarshalSubdivisionNames(cursor mmdbdata.Cursor) (mmdbdata.Cursor, error) {
+	entries, err := cursor.MapReader()
+	if err != nil {
+		return mmdbdata.Cursor{}, err
+	}
+	next := entries.First()
+	for range entries.Len() {
+		key, value, keyErr := next.ReadMapKey()
+		if keyErr != nil {
+			return mmdbdata.Cursor{}, keyErr
+		}
+		if string(key) == "en" {
 			g.State, next, err = value.ReadString()
 		} else {
 			next, err = value.Skip()
