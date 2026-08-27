@@ -9,11 +9,10 @@ import (
 	"net/netip"
 	"time"
 
+	"akvorado/common/helpers"
 	"akvorado/common/pb"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
-
-	"github.com/gaissmai/bart"
 )
 
 // Decoder is the interface each decoder should implement.
@@ -35,9 +34,9 @@ type Options struct {
 	TimestampSource pb.RawFlow_TimestampSource
 	// DecapsulationProtocol is the protocol the decapsulate
 	DecapsulationProtocol pb.RawFlow_DecapsulationProtocol
-	// DecapProtocols is a lookup table to selectively decapsulate based on the
-	// outer source address.
-	DecapProtocols *bart.Fast[pb.RawFlow_DecapsulationProtocol]
+	// PrefixDecapsulationProtocols is a lookup table to selectively
+	// decapsulate based on the outer source address.
+	PrefixDecapsulationProtocols *helpers.SubnetMap[pb.RawFlow_DecapsulationProtocol]
 }
 
 // Dependencies are the dependencies for the decoder

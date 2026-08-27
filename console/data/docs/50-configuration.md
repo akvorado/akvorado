@@ -880,7 +880,22 @@ efficiently.
 
 ### Flow
 
-The flow component decodes flows received from Kafka. There is only one setting:
+The flow component decodes flows received from Kafka. The following settings
+are available:
+
+- `decapsulate` is a map from encapsulating source prefixes to the decapsulation
+  protocol to apply to matching packets, with the same options and meaning as
+  the inlet's [`decapsulation-protocol`](#flow). The most specific prefix has
+  precedence. For example:
+
+  ```yaml
+  flow:
+    decapsulate:
+      192.0.2.0/24: vxlan
+  ```
+
+  This option has no effect when the inlet's [`decapsulation-protocol`](#flow)
+  is not `none`.
 
 - `state-persist-file` defines the location of the file to save the state of the
   flow decoders and read it back on startup. It is used to store IPFIX/NetFlow
