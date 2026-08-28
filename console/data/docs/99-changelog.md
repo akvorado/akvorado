@@ -15,8 +15,11 @@ identified with a specific icon:
 - 🩹 *console*: fix completion for `DstNetName` and the other network attributes
 - 🩹 *console*: accept again an empty login for `auth.default-user` to require authentication
 - 🩹 *outlet*: rate-limit flows on their reception time instead of the processing time
+- 🌱 *outlet*: add [DB-IP][] support for GeoIP
 - 🌱 *outlet*: add `core.startup-delay` to delay flow processing at start
 - 🌱 *orchestrator*: allow several Akvorado databases on the same ClickHouse cluster
+
+[DB-IP]: https://db-ip.com/
 
 ## 2026.8.0 - 2026-08-12
 
