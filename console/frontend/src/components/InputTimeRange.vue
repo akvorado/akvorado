@@ -91,19 +91,35 @@ const hasErrors = computed(
 const shiftButtonClass =
   "cursor-pointer text-gray-400 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-gray-400 dark:hover:text-gray-200 dark:disabled:hover:text-gray-400";
 
+const formatDate = (date: Date) =>
+  SugarDate(date).format("{yyyy}-{MM}-{dd} {HH}:{mm}:{ss}").raw;
+
+// Replace the range with a new one, then ask for a refresh once the parent got
+// the update.
+const setTimeRange = (start: number, end: number) => {
+  startTime.value = formatDate(new Date(start));
+  endTime.value = formatDate(new Date(end));
+  nextTick(() => emit("submit"));
+};
+
 // Move both ends of the time range by its own duration. A negative direction
 // moves to the past, a positive one to the future.
 const shiftTimeRange = (direction: number) => {
   if (hasErrors.value) return;
   const { start, end } = parsedTimes.value;
   const offset = direction * (end.valueOf() - start.valueOf());
-  const format = (date: Date) =>
-    SugarDate(date).format("{yyyy}-{MM}-{dd} {HH}:{mm}:{ss}").raw;
-  startTime.value = format(new Date(start.valueOf() + offset));
-  endTime.value = format(new Date(end.valueOf() + offset));
-  // Wait for the new range to reach the parent before asking for a refresh.
-  nextTick(() => emit("submit"));
+  setTimeRange(start.valueOf() + offset, end.valueOf() + offset);
 };
+
+// Double the duration of the time range, keeping the same center.
+const zoomOutTimeRange = () => {
+  if (hasErrors.value) return;
+  const { start, end } = parsedTimes.value;
+  const half = (end.valueOf() - start.valueOf()) / 2;
+  setTimeRange(start.valueOf() - half, end.valueOf() + half);
+};
+
+defineExpose({ zoomOut: zoomOutTimeRange });
 
 const presets = [
   { name: "Custom" },

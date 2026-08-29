@@ -89,7 +89,20 @@
           </div>
         </div>
         <SectionLabel>
-          <template #default>Time range</template>
+          <template #default>
+            <span class="flex items-center gap-1">
+              Time range
+              <button
+                type="button"
+                title="Zoom out"
+                :disabled="timeRange?.errors"
+                class="cursor-pointer text-gray-400 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-gray-400 dark:hover:text-gray-200 dark:disabled:hover:text-gray-400"
+                @click="timeRangeInput?.zoomOut()"
+              >
+                <ZoomOutIcon class="h-4 w-4" aria-hidden="true" />
+              </button>
+            </span>
+          </template>
           <template #hint>
             <label
               class="flex items-center gap-1"
@@ -113,7 +126,11 @@
             </label>
           </template>
         </SectionLabel>
-        <InputTimeRange v-model="timeRange" @submit="submitOptions(true)" />
+        <InputTimeRange
+          ref="timeRangeInput"
+          v-model="timeRange"
+          @submit="submitOptions(true)"
+        />
         <SectionLabel>Dimensions</SectionLabel>
         <InputDimensions
           v-model="dimensions"
@@ -140,7 +157,11 @@
 import { ref, watch, computed, inject, toRaw } from "vue";
 import { useIntervalFn } from "@vueuse/core";
 import { Date as SugarDate } from "sugar-date";
-import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/vue/solid";
+import {
+  ChevronDownIcon,
+  ChevronRightIcon,
+  ZoomOutIcon,
+} from "@heroicons/vue/solid";
 import {
   default as InputTimeRange,
   type ModelType as InputTimeRangeModelType,
@@ -196,6 +217,7 @@ const previousPeriodGraphTypes: (keyof typeof graphTypes)[] = ["stacked"];
 const open = ref(false);
 const graphType = ref(graphTypeList[0]);
 const timeRange = ref<InputTimeRangeModelType>(null);
+const timeRangeInput = ref<InstanceType<typeof InputTimeRange>>();
 const dimensions = ref<InputDimensionsModelType>(null);
 const filter = ref<InputFilterModelType>(null);
 const units = ref<Units>("l3bps");

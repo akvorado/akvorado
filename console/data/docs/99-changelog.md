@@ -19,6 +19,7 @@ identified with a specific icon:
 - 🌱 *outlet*: add [DB-IP][] support for GeoIP
 - 🌱 *outlet*: add `core.startup-delay` to delay flow processing at start
 - 🌱 *console*: add `console.homepage-top-widgets-filter` for the top widgets of the home page
+- 🌱 *console*: add a zoom out button for the time range
 - 🌱 *orchestrator*: allow several Akvorado databases on the same ClickHouse cluster
 
 [DB-IP]: https://db-ip.com/
