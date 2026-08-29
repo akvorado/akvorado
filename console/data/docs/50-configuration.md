@@ -875,7 +875,7 @@ are configurable:
 These numbers are per-worker (as defined in the Kafka component). A worker will
 send a batch of size at most `maximum-batch-size` at least every
 `maximum-wait-time`. ClickHouse is more efficient when the batch size is large.
-The default value is 100 000 and allows ClickHouse to handle incoming flows
+The default value is 50,000 and allows ClickHouse to handle incoming flows
 efficiently.
 
 ### Flow
