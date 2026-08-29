@@ -257,7 +257,7 @@ func (c *Component) widgetGraphHandlerFunc(w http.ResponseWriter, req *http.Requ
 	r := c.resolve(inputContext{
 		Start:             start,
 		End:               end,
-		MainTableRequired: false,
+		MainTableRequired: c.config.HomepageGraphFilter.MainTableRequired(),
 		Points:            200,
 	}).forRange(start, end)
 	gbps := sb.Function("SUM",
@@ -270,7 +270,7 @@ func (c *Component) widgetGraphHandlerFunc(w http.ResponseWriter, req *http.Requ
 		sb.Alias(r.toStartOfInterval(), "Time"),
 		sb.Alias(gbps, "Gbps")).
 		From(sb.Table(r.Table)).
-		Where(sb.And(r.timefilter(), c.homepageGraphFilter)).
+		Where(sb.And(r.timefilter(), c.config.HomepageGraphFilter.Direct())).
 		GroupBy(sb.Column("Time")).
 		OrderBy(sb.Order(sb.Column("Time")).Fill(
 			r.timefilterStart(),

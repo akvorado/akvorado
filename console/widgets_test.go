@@ -354,7 +354,7 @@ ORDER BY Time WITH FILL
 		{
 			config: func() Configuration {
 				c := DefaultConfiguration()
-				c.HomepageGraphFilter = ""
+				c.HomepageGraphFilter = query.NewFilter("")
 				return c
 			}(),
 			query: `
@@ -373,7 +373,7 @@ ORDER BY Time WITH FILL
 		{
 			config: func() Configuration {
 				c := DefaultConfiguration()
-				c.HomepageGraphFilter = "OutIfBoundary = 'external'"
+				c.HomepageGraphFilter = query.NewFilter("OutIfBoundary = external")
 				return c
 			}(),
 			query: `
@@ -393,7 +393,7 @@ ORDER BY Time WITH FILL
 			// Braces in the operator-provided filter are passed through as-is.
 			config: func() Configuration {
 				c := DefaultConfiguration()
-				c.HomepageGraphFilter = "InIfDescription != '{{ hello }}'"
+				c.HomepageGraphFilter = query.NewFilter("InIfDescription != '{{ hello }}'")
 				return c
 			}(),
 			query: `

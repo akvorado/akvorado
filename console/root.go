@@ -24,7 +24,6 @@ import (
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
-	sb "akvorado/common/sqlbuilder"
 	"akvorado/console/authentication"
 	"akvorado/console/database"
 	"akvorado/console/query"
@@ -37,9 +36,8 @@ type Component struct {
 	t      tomb.Tomb
 	config Configuration
 
-	homepageGraphFilter sb.Expr
-	flowsTables         []flowsTable
-	flowsTablesLock     sync.RWMutex
+	flowsTables     []flowsTable
+	flowsTablesLock sync.RWMutex
 
 	metrics struct {
 		clickhouseQueries *reporter.CounterVec
@@ -69,20 +67,15 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 		dependencies.Schema, dependencies.ClickHouseDB.DatabaseName()); err != nil {
 		return nil, fmt.Errorf("cannot parse homepage top widgets filter: %w", err)
 	}
-	var homepageGraphFilter sb.Expr
-	if config.HomepageGraphFilter != "" {
-		var err error
-		homepageGraphFilter, err = sb.ParseExpr(config.HomepageGraphFilter)
-		if err != nil {
-			return nil, fmt.Errorf("cannot parse homepage graph filter: %w", err)
-		}
+	if err := config.HomepageGraphFilter.Validate(
+		dependencies.Schema, dependencies.ClickHouseDB.DatabaseName()); err != nil {
+		return nil, fmt.Errorf("cannot parse homepage graph filter: %w", err)
 	}
 	c := Component{
-		r:                   r,
-		d:                   &dependencies,
-		config:              config,
-		homepageGraphFilter: homepageGraphFilter,
-		flowsTables:         []flowsTable{{"flows", 0, time.Time{}}},
+		r:           r,
+		d:           &dependencies,
+		config:      config,
+		flowsTables: []flowsTable{{"flows", 0, time.Time{}}},
 	}
 
 	c.d.Daemon.Track(&c.t, "console")

@@ -22,29 +22,21 @@ import (
 // TestHomepageGraphFilter checks the filter is parsed when the console starts.
 // An invalid one has to be reported then, not on each request to the homepage.
 func TestHomepageGraphFilter(t *testing.T) {
+	r := reporter.NewMock(t)
+	ch, _ := clickhousedb.NewMock(t, r)
 	cases := []struct {
 		Description string
 		Filter      string
 		Invalid     bool
 	}{
 		{Description: "no filter"},
-		{Description: "a condition", Filter: "InIfBoundary = 'external'"},
-		{Description: "incomplete condition", Filter: "InIfBoundary =", Invalid: true},
-		{Description: "two conditions", Filter: "InIfBoundary = 'external', SrcAS = 65000", Invalid: true},
-		{
-			// Anything after the expression lands in a clause of the SELECT it
-			// is parsed in, where it would be dropped without notice.
-			Description: "condition followed by a clause",
-			Filter:      "InIfBoundary = 'external' LIMIT 1",
-			Invalid:     true,
-		},
+		{Description: "valid filter", Filter: "InIfBoundary = external"},
+		{Description: "invalid filter", Filter: "InIfBoundary =", Invalid: true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.Description, func(t *testing.T) {
-			r := reporter.NewMock(t)
-			ch, _ := clickhousedb.NewMock(t, r)
 			config := DefaultConfiguration()
-			config.HomepageGraphFilter = tc.Filter
+			config.HomepageGraphFilter = query.NewFilter(tc.Filter)
 			_, err := New(r, config, Dependencies{
 				Daemon:       daemon.NewMock(t),
 				HTTP:         httpserver.NewMock(t, r),

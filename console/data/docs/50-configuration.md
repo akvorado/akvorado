@@ -1304,14 +1304,13 @@ The console itself accepts the following keys:
    for the source direction: for the widgets about the destination, the
    direction is reversed, turning `InIfBoundary` into `OutIfBoundary`, `SrcPort`
    into `DstPort`, etc.
- - `dimensions-limit` to set the upper limit of the number of returned dimensions
- - `cache-ttl` sets the time costly requests are kept in cache
- - `homepage-graph-filter` sets the filter for the graph on the homepage
-    (default: `InIfBoundary = 'external'`). This is a SQL expression, passed
-    into the clickhouse query directly. It can also be empty, in which case the
-    sum of all flows captured will be displayed.
+ - `homepage-graph-filter` sets the filter for the graph on the home page
+   (default: `InIfBoundary = external`). It uses the same [filter
+   language](52-console.md#filter-language).
  - `homepage-graph-timerange` sets the time range to use for the graph on the
    homepage. It defaults to 24 hours.
+ - `dimensions-limit` to set the upper limit of the number of returned dimensions
+ - `cache-ttl` sets the time costly requests are kept in cache
 
 It also takes a `clickhouse` key, accepting the [same
 configuration](#clickhouse-database) as the orchestrator service. These keys are

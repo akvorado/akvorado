@@ -30,8 +30,8 @@ type Configuration struct {
 	// HomepageTopWidgetsFilter defines the filter to use for the top widgets on
 	// the home page. It is written for the source direction.
 	HomepageTopWidgetsFilter query.Filter
-	// HomepageGraphFilter defines the filtering string to use for the homepage graph
-	HomepageGraphFilter string
+	// HomepageGraphFilter defines the filter to use for the homepage graph
+	HomepageGraphFilter query.Filter
 	// HomepageGraphTimeRange defines the time range to use for the homepage graph
 	HomepageGraphTimeRange time.Duration `validate:"min=1m"`
 	// DimensionsLimit put an upper limit to the number of dimensions to return.
@@ -111,7 +111,7 @@ func DefaultConfiguration() Configuration {
 		HomepageTopWidgetsFilter: query.NewFilter("InIfBoundary = external"),
 		DimensionsLimit:          50,
 		CacheTTL:                 3 * time.Hour,
-		HomepageGraphFilter:      "InIfBoundary = 'external'",
+		HomepageGraphFilter:      query.NewFilter("InIfBoundary = external"),
 		HomepageGraphTimeRange:   24 * time.Hour,
 	}
 }
