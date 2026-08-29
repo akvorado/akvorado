@@ -58,7 +58,8 @@ appearance.
   parsing and provides examples of what is possible. Alternatively, you can
   look at the presets. You can also enter dates in ISO format, for example:
   `2022-05-22 12:33`. The arrows on the right of the *start* and *end* fields
-  move the whole time range one period backward or forward.
+  move the whole time range one period backward or forward. The button next to
+  the *time range* label zooms out.
 
 - The *auto refresh* selector runs the query again at a regular interval, from
   every 5 seconds to every 5 minutes. It is only available when the end of the
