@@ -16,6 +16,7 @@ import (
 	"akvorado/common/schema"
 	"akvorado/console/authentication"
 	"akvorado/console/database"
+	"akvorado/console/query"
 )
 
 // TestHomepageGraphFilter checks the filter is parsed when the console starts.
@@ -44,6 +45,42 @@ func TestHomepageGraphFilter(t *testing.T) {
 			ch, _ := clickhousedb.NewMock(t, r)
 			config := DefaultConfiguration()
 			config.HomepageGraphFilter = tc.Filter
+			_, err := New(r, config, Dependencies{
+				Daemon:       daemon.NewMock(t),
+				HTTP:         httpserver.NewMock(t, r),
+				ClickHouseDB: ch,
+				Clock:        clock.NewMock(),
+				Auth:         authentication.NewMock(t, r),
+				Database:     database.NewMock(t, r, database.DefaultConfiguration()),
+				Schema:       schema.NewMock(t),
+			})
+			if tc.Invalid && err == nil {
+				t.Errorf("New() with filter %q did not return an error", tc.Filter)
+			}
+			if !tc.Invalid && err != nil {
+				t.Errorf("New() error:\n%+v", err)
+			}
+		})
+	}
+}
+
+// TestHomepageTopWidgetsFilter checks the filter is parsed when the console starts.
+func TestHomepageTopWidgetsFilter(t *testing.T) {
+	r := reporter.NewMock(t)
+	ch, _ := clickhousedb.NewMock(t, r)
+	cases := []struct {
+		Description string
+		Filter      string
+		Invalid     bool
+	}{
+		{Description: "no filter"},
+		{Description: "valid filter", Filter: "InIfBoundary = external"},
+		{Description: "invalid filter", Filter: "InIfBoundary =", Invalid: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.Description, func(t *testing.T) {
+			config := DefaultConfiguration()
+			config.HomepageTopWidgetsFilter = query.NewFilter(tc.Filter)
 			_, err := New(r, config, Dependencies{
 				Daemon:       daemon.NewMock(t),
 				HTTP:         httpserver.NewMock(t, r),

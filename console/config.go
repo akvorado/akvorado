@@ -27,6 +27,9 @@ type Configuration struct {
 	DefaultVisualizeOptions VisualizeOptionsConfiguration
 	// HomepageTopWidgets defines the list of widgets to display on the home page.
 	HomepageTopWidgets []HomepageTopWidget
+	// HomepageTopWidgetsFilter defines the filter to use for the top widgets on
+	// the home page. It is written for the source direction.
+	HomepageTopWidgetsFilter query.Filter
 	// HomepageGraphFilter defines the filtering string to use for the homepage graph
 	HomepageGraphFilter string
 	// HomepageGraphTimeRange defines the time range to use for the homepage graph
@@ -105,10 +108,11 @@ func DefaultConfiguration() Configuration {
 			HomepageTopWidgetSrcCountry,
 			HomepageTopWidgetEtype,
 		},
-		DimensionsLimit:        50,
-		CacheTTL:               3 * time.Hour,
-		HomepageGraphFilter:    "InIfBoundary = 'external'",
-		HomepageGraphTimeRange: 24 * time.Hour,
+		HomepageTopWidgetsFilter: query.NewFilter("InIfBoundary = external"),
+		DimensionsLimit:          50,
+		CacheTTL:                 3 * time.Hour,
+		HomepageGraphFilter:      "InIfBoundary = 'external'",
+		HomepageGraphTimeRange:   24 * time.Hour,
 	}
 }
 

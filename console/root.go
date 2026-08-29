@@ -65,6 +65,10 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 	if err := query.Columns(config.DefaultVisualizeOptions.Dimensions).Validate(dependencies.Schema); err != nil {
 		return nil, err
 	}
+	if err := config.HomepageTopWidgetsFilter.Validate(
+		dependencies.Schema, dependencies.ClickHouseDB.DatabaseName()); err != nil {
+		return nil, fmt.Errorf("cannot parse homepage top widgets filter: %w", err)
+	}
 	var homepageGraphFilter sb.Expr
 	if config.HomepageGraphFilter != "" {
 		var err error

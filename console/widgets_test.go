@@ -15,6 +15,7 @@ import (
 	"akvorado/common/clickhousedb/mocks"
 	"akvorado/common/helpers"
 	sb "akvorado/common/sqlbuilder"
+	"akvorado/console/query"
 )
 
 func TestWidgetLastFlow(t *testing.T) {
@@ -252,6 +253,79 @@ LIMIT 5`)).Return(nil).
 			StatusCode: 400,
 			JSONOutput: helpers.M{
 				"message": "Notexist does not belong to HomepageTopWidget values",
+			},
+		},
+	})
+}
+
+// TestWidgetTopFilter checks the configured filter is used and that its
+// direction is reversed for the widgets about the destination.
+func TestWidgetTopFilter(t *testing.T) {
+	config := DefaultConfiguration()
+	config.HomepageTopWidgetsFilter = query.NewFilter("SrcPort != 655")
+	_, h, mockConn, _ := NewMock(t, config)
+
+	gomock.InOrder(
+		mockConn.EXPECT().
+			Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
+WITH
+ (SELECT SUM(Bytes*SamplingRate) FROM flows WHERE TimeReceived BETWEEN toDateTime('1969-12-31 23:55:00', 'UTC') AND toDateTime('1970-01-01 00:00:00', 'UTC') AND SrcPort != 655) AS Total
+SELECT
+ if(empty(concat(toString(SrcAS), ': ', dictGetOrDefault('default.asns', 'name', SrcAS, '???'))),'Unknown',concat(toString(SrcAS), ': ', dictGetOrDefault('default.asns', 'name', SrcAS, '???'))) AS Name,
+ SUM(Bytes*SamplingRate) / Total * 100 AS Percent
+FROM flows
+WHERE TimeReceived BETWEEN toDateTime('1969-12-31 23:55:00', 'UTC') AND toDateTime('1970-01-01 00:00:00', 'UTC')
+AND SrcPort != 655
+GROUP BY SrcAS
+ORDER BY Percent DESC
+LIMIT 5`)).Return(nil).
+			SetArg(1, []topResult{{"2906: Netflix", float64(12)}}),
+		mockConn.EXPECT().
+			Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
+WITH
+ (SELECT SUM(Bytes*SamplingRate) FROM flows WHERE TimeReceived BETWEEN toDateTime('1969-12-31 23:55:00', 'UTC') AND toDateTime('1970-01-01 00:00:00', 'UTC') AND DstPort != 655) AS Total
+SELECT
+ if(empty(concat(toString(DstAS), ': ', dictGetOrDefault('default.asns', 'name', DstAS, '???'))),'Unknown',concat(toString(DstAS), ': ', dictGetOrDefault('default.asns', 'name', DstAS, '???'))) AS Name,
+ SUM(Bytes*SamplingRate) / Total * 100 AS Percent
+FROM flows
+WHERE TimeReceived BETWEEN toDateTime('1969-12-31 23:55:00', 'UTC') AND toDateTime('1970-01-01 00:00:00', 'UTC')
+AND DstPort != 655
+GROUP BY DstAS
+ORDER BY Percent DESC
+LIMIT 5`)).Return(nil).
+			SetArg(1, []topResult{{"2906: Netflix", float64(15)}}),
+		// A widget without a direction keeps the filter as it is written.
+		mockConn.EXPECT().
+			Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
+WITH
+ (SELECT SUM(Bytes*SamplingRate) FROM flows WHERE TimeReceived BETWEEN toDateTime('1969-12-31 23:55:00', 'UTC') AND toDateTime('1970-01-01 00:00:00', 'UTC') AND SrcPort != 655) AS Total
+SELECT
+ if(empty(dictGetOrDefault('default.protocols', 'name', Proto, '???')),'Unknown',dictGetOrDefault('default.protocols', 'name', Proto, '???')) AS Name,
+ SUM(Bytes*SamplingRate) / Total * 100 AS Percent
+FROM flows
+WHERE TimeReceived BETWEEN toDateTime('1969-12-31 23:55:00', 'UTC') AND toDateTime('1970-01-01 00:00:00', 'UTC')
+AND SrcPort != 655
+GROUP BY Proto
+ORDER BY Percent DESC
+LIMIT 5`)).Return(nil).
+			SetArg(1, []topResult{{"TCP", float64(75)}}),
+	)
+
+	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
+		{
+			URL: "/api/v0/console/widget/top/src-as",
+			JSONOutput: helpers.M{
+				"top": []helpers.M{{"name": "2906: Netflix", "percent": 12}},
+			},
+		}, {
+			URL: "/api/v0/console/widget/top/dst-as",
+			JSONOutput: helpers.M{
+				"top": []helpers.M{{"name": "2906: Netflix", "percent": 15}},
+			},
+		}, {
+			URL: "/api/v0/console/widget/top/protocol",
+			JSONOutput: helpers.M{
+				"top": []helpers.M{{"name": "TCP", "percent": 75}},
 			},
 		},
 	})

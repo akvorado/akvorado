@@ -1298,6 +1298,12 @@ The console itself accepts the following keys:
  - `homepage-top-widgets` to define the widgets to display on the home page
    (among `src-as`, `dst-as`, `src-country`, `dst-country`, `exporter`,
    `protocol`, `etype`, `src-port`, and `dst-port`)
+ - `homepage-top-widgets-filter` sets the filter for the top widgets on the home
+   page (default: `InIfBoundary = external`). It uses the [filter
+   language](52-console.md#filter-language) of the "visualize" tab. It is written
+   for the source direction: for the widgets about the destination, the
+   direction is reversed, turning `InIfBoundary` into `OutIfBoundary`, `SrcPort`
+   into `DstPort`, etc.
  - `dimensions-limit` to set the upper limit of the number of returned dimensions
  - `cache-ttl` sets the time costly requests are kept in cache
  - `homepage-graph-filter` sets the filter for the graph on the homepage

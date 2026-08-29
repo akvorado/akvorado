@@ -201,11 +201,14 @@ func (c *Component) widgetTopHandlerFunc(w http.ResponseWriter, req *http.Reques
 		httpserver.WriteJSON(w, http.StatusNotFound, helpers.M{"message": "Unknown top request."})
 		return
 	}
-	if strings.HasPrefix(rawName, "src-") {
-		filter = sb.Op(sb.Column("InIfBoundary"), "=", sb.String("external"))
-	} else if strings.HasPrefix(rawName, "dst-") {
-		filter = sb.Op(sb.Column("OutIfBoundary"), "=", sb.String("external"))
+	// The configured filter is written for the source direction. Reverse it for
+	// the widgets about the destination.
+	if strings.HasPrefix(rawName, "dst-") {
+		filter = c.config.HomepageTopWidgetsFilter.Reverse()
+	} else {
+		filter = c.config.HomepageTopWidgetsFilter.Direct()
 	}
+	mainTableRequired = mainTableRequired || c.config.HomepageTopWidgetsFilter.MainTableRequired()
 	if len(groupby) == 0 {
 		groupby = []sb.Expr{selector}
 	}
