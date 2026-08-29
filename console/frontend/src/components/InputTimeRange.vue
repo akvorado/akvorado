@@ -94,29 +94,29 @@ const shiftButtonClass =
 const formatDate = (date: Date) =>
   SugarDate(date).format("{yyyy}-{MM}-{dd} {HH}:{mm}:{ss}").raw;
 
-// Replace the range with a new one, then ask for a refresh once the parent got
-// the update.
-const setTimeRange = (start: number, end: number) => {
-  startTime.value = formatDate(new Date(start));
-  endTime.value = formatDate(new Date(end));
-  nextTick(() => emit("submit"));
-};
-
 // Move both ends of the time range by its own duration. A negative direction
 // moves to the past, a positive one to the future.
 const shiftTimeRange = (direction: number) => {
   if (hasErrors.value) return;
   const { start, end } = parsedTimes.value;
   const offset = direction * (end.valueOf() - start.valueOf());
-  setTimeRange(start.valueOf() + offset, end.valueOf() + offset);
+  startTime.value = formatDate(new Date(start.valueOf() + offset));
+  endTime.value = formatDate(new Date(end.valueOf() + offset));
+  nextTick(() => emit("submit"));
 };
 
 // Double the duration of the time range, keeping the same center.
 const zoomOutTimeRange = () => {
   if (hasErrors.value) return;
   const { start, end } = parsedTimes.value;
-  const half = (end.valueOf() - start.valueOf()) / 2;
-  setTimeRange(start.valueOf() - half, end.valueOf() + half);
+  const duration = end.valueOf() - start.valueOf();
+  if (endTime.value.trim().toLowerCase() === "now") {
+    startTime.value = formatDate(new Date(start.valueOf() - duration));
+  } else {
+    startTime.value = formatDate(new Date(start.valueOf() - duration / 2));
+    endTime.value = formatDate(new Date(end.valueOf() + duration / 2));
+  }
+  nextTick(() => emit("submit"));
 };
 
 defineExpose({ zoomOut: zoomOutTimeRange });
