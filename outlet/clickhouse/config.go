@@ -7,16 +7,20 @@ import (
 	"time"
 )
 
+// ServerSelectionAlgorithm defines how a worker chooses a ClickHouse server for
+// each batch.
+type ServerSelectionAlgorithm int
+
 const (
 	// ServerSelectionStickyRandom pins each worker to a single, randomly-chosen
 	// ClickHouse server for the lifetime of its connection. A new server is
 	// picked (again at random) only when the connection breaks. This is the
-	// legacy behavior and the default.
-	ServerSelectionStickyRandom = "sticky-random"
+	// default.
+	ServerSelectionStickyRandom ServerSelectionAlgorithm = iota
 	// ServerSelectionRoundRobin spreads a worker's batches across all configured
 	// ClickHouse servers in round-robin order so insert load is balanced across
 	// nodes.
-	ServerSelectionRoundRobin = "round-robin"
+	ServerSelectionRoundRobin
 )
 
 // Configuration describes the configuration for the ClickHouse exporter.
@@ -28,8 +32,8 @@ type Configuration struct {
 	// MaximumWaitTime is the maximum number of seconds to wait before sending the current batch.
 	MaximumWaitTime time.Duration `validate:"min=100ms"`
 	// ServerSelection controls how each worker chooses a ClickHouse server for a
-	// batch: "sticky-random" (default, legacy) or "round-robin".
-	ServerSelection string `validate:"oneof=sticky-random round-robin"`
+	// batch.
+	ServerSelection ServerSelectionAlgorithm
 	// minimumBatchSize the mininum number of rows before declaring underloaded and using async insert
 	minimumBatchSize uint
 }

@@ -28,6 +28,7 @@ __pycache__/
 /common/remotedatasource/paginationtype_enumer.go
 /common/remotedatasource/parsertype_enumer.go
 /console/homepagetopwidget_enumer.go
+/outlet/clickhouse/serverselectionalgorithm_enumer.go
 /outlet/core/asnprovider_enumer.go
 /outlet/core/netprovider_enumer.go
 /outlet/metadata/provider/gnmi/ifspeedpathunit_enumer.go
