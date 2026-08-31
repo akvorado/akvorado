@@ -10,6 +10,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🩹 *console*: complete custom dictionary values like the other string columns
+
 ## 2026.8.1 - 2026-08-29
 
 - 💥 *console*: `console.homepage-graph-filter` now uses the console filter language instead of SQL

@@ -586,8 +586,8 @@ func TestFilterHandlersCustomDict(t *testing.T) {
 		Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
 SELECT DISTINCT DstAddrRole AS attribute
 FROM flows
-WHERE TimeReceived > date_sub(minute, 10, now()) AND startsWith(attribute, '')
-ORDER BY DstAddrRole
+WHERE TimeReceived > date_sub(minute, 10, now()) AND positionCaseInsensitive(attribute, '') >= 1
+ORDER BY positionCaseInsensitive(attribute, ''), DstAddrRole
 LIMIT 20`)).
 		SetArg(1, []struct {
 			Attribute string `ch:"attribute"`
@@ -598,12 +598,24 @@ LIMIT 20`)).
 		Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
 SELECT DISTINCT DstAddrRole AS attribute
 FROM flows
-WHERE TimeReceived > date_sub(minute, 10, now()) AND startsWith(attribute, 'a')
-ORDER BY DstAddrRole
+WHERE TimeReceived > date_sub(minute, 10, now()) AND positionCaseInsensitive(attribute, 'a') >= 1
+ORDER BY positionCaseInsensitive(attribute, 'a'), DstAddrRole
 LIMIT 20`)).
 		SetArg(1, []struct {
 			Attribute string `ch:"attribute"`
 		}{{"a-role"}}).
+		Return(nil)
+
+	mockConn.EXPECT().
+		Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
+SELECT DISTINCT DstAddrRole AS attribute
+FROM flows
+WHERE TimeReceived > date_sub(minute, 10, now()) AND positionCaseInsensitive(attribute, 'ROLE') >= 1
+ORDER BY positionCaseInsensitive(attribute, 'ROLE'), DstAddrRole
+LIMIT 20`)).
+		SetArg(1, []struct {
+			Attribute string `ch:"attribute"`
+		}{{"a-role"}, {"b-role"}, {"c-role"}}).
 		Return(nil)
 
 	config := schema.DefaultConfiguration()
@@ -667,6 +679,17 @@ LIMIT 20`)).
 			JSONInput:  helpers.M{"what": "value", "column": "dstaddrrole", "prefix": "a"},
 			JSONOutput: helpers.M{"completions": []helpers.M{
 				{"label": "a-role", "quoted": true},
+			}},
+		},
+		{
+			Description: "complete custom dictionary value from the middle",
+			URL:         "/api/v0/console/filter/complete",
+			StatusCode:  200,
+			JSONInput:   helpers.M{"what": "value", "column": "dstaddrrole", "prefix": "ROLE"},
+			JSONOutput: helpers.M{"completions": []helpers.M{
+				{"label": "a-role", "quoted": true},
+				{"label": "b-role", "quoted": true},
+				{"label": "c-role", "quoted": true},
 			}},
 		},
 	})

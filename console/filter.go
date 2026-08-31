@@ -552,9 +552,10 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 					From(sb.Table("flows")).
 					Where(sb.And(
 						recentFlows(10),
-						sb.Function("startsWith",
-							sb.Column("attribute"), sb.String(input.Prefix)))).
-					OrderBy(sb.Order(name)).
+						matchPrefix(sb.Column("attribute"), input.Prefix))).
+					OrderBy(
+						sb.Order(prefixPosition(sb.Column("attribute"), input.Prefix)),
+						sb.Order(name)).
 					Limit(input.Limit).
 					String()
 				if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery); err != nil {
@@ -567,6 +568,7 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 						Quoted: true,
 					})
 				}
+				input.Prefix = "" // We have handled this internally
 			}
 		}
 
