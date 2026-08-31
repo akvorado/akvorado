@@ -45,8 +45,14 @@ type serverConn struct {
 	conn    *ch.Client
 }
 
-// realWorker is a working implementation of Worker.
-type realWorker struct {
+// selectServerFunc picks and connects the ClickHouse server for the next batch;
+// each strategy provides its own.
+type selectServerFunc func(context.Context) (*serverConn, error)
+
+// commonWorker holds everything shared by the server-selection strategies. It is
+// embedded by roundRobinWorker and stickyRandomWorker, which add only the state
+// their own selection needs.
+type commonWorker struct {
 	c      *realComponent
 	bf     *schema.FlowMessage
 	last   time.Time
@@ -54,21 +60,9 @@ type realWorker struct {
 
 	// servers holds one entry per configured ClickHouse server.
 	servers []*serverConn
-	next    int
-	// current is the server a worker is pinned to in sticky-random mode. It is
-	// unused by the round-robin strategy.
-	current *serverConn
-	// selectServer chooses the server for the next batch. It is set in NewWorker
-	// to either pickServer (round-robin) or pickServerSticky (sticky-random),
-	// depending on the configured server-selection strategy.
-	selectServer func(context.Context) (*serverConn, error)
 	// connectFn establishes/validates the connection for a server. It defaults to
 	// ensureConnected and is a field so tests can inject a fake dialer.
-	connectFn func(context.Context, *serverConn) error
-	// shuffleFn returns a random permutation of [0,n) and is used by the
-	// sticky-random strategy to pick a server. It defaults to rand.Perm and is a
-	// field so tests can make the choice deterministic.
-	shuffleFn     func(int) []int
+	connectFn     func(context.Context, *serverConn) error
 	options       ch.Options
 	asyncSettings []ch.Setting
 }
@@ -80,17 +74,13 @@ func (c *realComponent) NewWorker(i int, bf *schema.FlowMessage) Worker {
 	for j, s := range servers {
 		conns[j] = &serverConn{address: s}
 	}
-	w := &realWorker{
+	common := commonWorker{
 		c:      c,
 		bf:     bf,
 		logger: c.r.With().Int("worker", i).Logger(),
 
 		servers: conns,
-		// Stagger the starting server per worker so batches spread across all
-		// servers from the first flush instead of all piling onto servers[0].
-		next:      i,
-		shuffleFn: rand.Perm,
-		options:   opts,
+		options: opts,
 		asyncSettings: []ch.Setting{
 			{
 				Key:       "async_insert",
@@ -108,21 +98,24 @@ func (c *realComponent) NewWorker(i int, bf *schema.FlowMessage) Worker {
 			},
 		},
 	}
-	w.connectFn = w.ensureConnected
 	if c.config.ServerSelection == ServerSelectionRoundRobin {
-		w.selectServer = w.pickServer
-	} else {
-		w.selectServer = w.pickServerSticky
+		// Stagger the starting server per worker so batches spread across all
+		// servers from the first flush instead of all piling onto servers[0].
+		w := &roundRobinWorker{commonWorker: common, next: i}
+		w.connectFn = w.ensureConnected
+		return w
 	}
+	w := &stickyRandomWorker{commonWorker: common, shuffleFn: rand.Perm}
+	w.connectFn = w.ensureConnected
 	return w
 }
 
-// FinalizeAndSend sends data to ClickHouse after finalizing if we have a full
+// finalizeAndSend sends data to ClickHouse after finalizing if we have a full
 // batch or exceeded the maximum wait time. See
 // https://clickhouse.com/docs/best-practices/selecting-an-insert-strategy for
 // tips on the insert strategy. Notably, we switch to async insert when the
-// batch size is too small.
-func (w *realWorker) FinalizeAndSend(ctx context.Context) WorkerStatus {
+// batch size is too small. selectServer is the strategy's server picker.
+func (w *commonWorker) finalizeAndSend(ctx context.Context, selectServer selectServerFunc) WorkerStatus {
 	w.bf.Finalize()
 	now := time.Now()
 	batchSize := w.bf.FlowCount()
@@ -133,7 +126,7 @@ func (w *realWorker) FinalizeAndSend(ctx context.Context) WorkerStatus {
 			waitTime := now.Sub(w.last)
 			w.c.metrics.waitTime.Observe(waitTime.Seconds())
 		}
-		w.Flush(ctx)
+		w.flush(ctx, selectServer)
 		w.last = time.Now()
 		if uint(batchSize) >= w.c.config.MaximumBatchSize {
 			w.c.metrics.overloaded.Inc()
@@ -148,10 +141,10 @@ func (w *realWorker) FinalizeAndSend(ctx context.Context) WorkerStatus {
 	return WorkerStatusIdle
 }
 
-// Flush sends remaining data to ClickHouse without an additional condition. It
+// flush sends remaining data to ClickHouse without an additional condition. It
 // should be called before shutting down to flush remaining data. Otherwise,
-// FinalizeAndSend() should be used instead.
-func (w *realWorker) Flush(ctx context.Context) {
+// finalizeAndSend() should be used instead.
+func (w *commonWorker) flush(ctx context.Context, selectServer selectServerFunc) {
 	var useAsync bool
 	if w.bf.FlowCount() == 0 {
 		return
@@ -172,7 +165,7 @@ func (w *realWorker) Flush(ctx context.Context) {
 		// Pick a server (per the configured strategy) and (re)connect if needed.
 		// Depending on the strategy each batch may land on a different server
 		// (round-robin) or stay on the pinned one (sticky-random).
-		sc, err := w.selectServer(ctx)
+		sc, err := selectServer(ctx)
 		if err != nil {
 			w.logger.Err(err).Msg("cannot connect to any ClickHouse server")
 			return nil, err
@@ -227,11 +220,26 @@ func (w *realWorker) Flush(ctx context.Context) {
 	}, backoff.WithBackOff(b), backoff.WithMaxElapsedTime(0))
 }
 
+// roundRobinWorker spreads a worker's batches across all servers in round-robin
+// order.
+type roundRobinWorker struct {
+	commonWorker
+	next int
+}
+
+// FinalizeAndSend implements Worker.
+func (w *roundRobinWorker) FinalizeAndSend(ctx context.Context) WorkerStatus {
+	return w.finalizeAndSend(ctx, w.pickServer)
+}
+
+// Flush implements Worker.
+func (w *roundRobinWorker) Flush(ctx context.Context) { w.flush(ctx, w.pickServer) }
+
 // pickServer selects the next ClickHouse server in round-robin order and makes
 // sure it is connected, so a worker's batches are spread across all servers
 // instead of pinning to one. If a server cannot be reached it moves on to the
 // next one within the same call.
-func (w *realWorker) pickServer(ctx context.Context) (*serverConn, error) {
+func (w *roundRobinWorker) pickServer(ctx context.Context) (*serverConn, error) {
 	n := len(w.servers)
 	var lastErr error
 	for tried := 0; tried < n; tried++ {
@@ -246,11 +254,31 @@ func (w *realWorker) pickServer(ctx context.Context) (*serverConn, error) {
 	return nil, lastErr
 }
 
-// pickServerSticky pins the worker to a single ClickHouse server and keeps using
-// it as long as the connection stays healthy. A new server is picked (at random,
-// via shuffleFn) only when there is no pinned server or the pinned connection
-// broke, reproducing the historical rand.Perm selection.
-func (w *realWorker) pickServerSticky(ctx context.Context) (*serverConn, error) {
+// stickyRandomWorker pins the worker to a single, randomly-chosen ClickHouse
+// server for the lifetime of its connection.
+type stickyRandomWorker struct {
+	commonWorker
+	// current is the server the worker is pinned to.
+	current *serverConn
+	// shuffleFn returns a random permutation of [0,n) and is used to pick a
+	// server. It defaults to rand.Perm and is a field so tests can make the
+	// choice deterministic.
+	shuffleFn func(int) []int
+}
+
+// FinalizeAndSend implements Worker.
+func (w *stickyRandomWorker) FinalizeAndSend(ctx context.Context) WorkerStatus {
+	return w.finalizeAndSend(ctx, w.pickServer)
+}
+
+// Flush implements Worker.
+func (w *stickyRandomWorker) Flush(ctx context.Context) { w.flush(ctx, w.pickServer) }
+
+// pickServer keeps using the pinned server as long as its connection stays
+// healthy. A new server is picked (at random, via shuffleFn) only when there is
+// no pinned server or the pinned connection broke, reproducing the historical
+// rand.Perm selection.
+func (w *stickyRandomWorker) pickServer(ctx context.Context) (*serverConn, error) {
 	// Reuse the pinned server while its connection is (or can be made) healthy.
 	if w.current != nil {
 		if err := w.connectFn(ctx, w.current); err == nil {
@@ -276,7 +304,7 @@ func (w *realWorker) pickServerSticky(ctx context.Context) (*serverConn, error) 
 
 // ensureConnected makes sure sc has a healthy connection, dialing (or redialing)
 // as needed.
-func (w *realWorker) ensureConnected(ctx context.Context, sc *serverConn) error {
+func (w *commonWorker) ensureConnected(ctx context.Context, sc *serverConn) error {
 	// If connection exists and is healthy, reuse it.
 	if sc.conn != nil {
 		if err := sc.conn.Ping(ctx); err == nil {
