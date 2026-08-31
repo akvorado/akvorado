@@ -126,7 +126,7 @@ func runInsertTest(t *testing.T, serverSelection clickhouse.ServerSelectionAlgor
 		}
 
 		// Check metrics
-		gotMetrics := r.GetMetrics("akvorado_outlet_clickhouse_", "-insert_time", "-wait_time", "-batches_sent")
+		gotMetrics := r.GetMetrics("akvorado_outlet_clickhouse_", "-insert_time", "-wait_time")
 		var expectedMetrics map[string]string
 		if i < 11 {
 			expectedMetrics = map[string]string{
@@ -173,6 +173,9 @@ func runInsertTest(t *testing.T, serverSelection clickhouse.ServerSelectionAlgor
 				`worker_underloaded_total`:        "1",
 			}
 		}
+		// With a single server, batches_sent{server} equals the number of batches
+		// flushed so far, i.e. flow_per_batch_count.
+		expectedMetrics[fmt.Sprintf(`batches_sent_total{server=%q}`, server)] = expectedMetrics[`flow_per_batch_count`]
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics, iteration %d, (-got, +want):\n%s", i, diff)
 		}

@@ -884,8 +884,7 @@ each worker spreads its batches across them:
 
 - `sticky-random` (the default) pins each worker to a single, randomly-chosen
   server and keeps using it as long as the connection stays healthy. A new
-  server is picked (again at random) only when the connection breaks. This is
-  the historical behavior.
+  server is picked (again at random) only when the connection breaks.
 - `round-robin` rotates the target server for every batch, spreading insert and
   materialized-view load evenly across all nodes.
 
