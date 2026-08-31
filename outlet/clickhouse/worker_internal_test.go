@@ -10,6 +10,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ClickHouse/ch-go"
+
+	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 )
@@ -28,18 +31,6 @@ func newRoundRobin(addrs []string, connectFn func(context.Context, *serverConn) 
 
 func newSticky(addrs []string, connectFn func(context.Context, *serverConn) error) *stickyRandomWorker {
 	return &stickyRandomWorker{commonWorker: newCommon(addrs, connectFn), shuffleFn: rand.Perm}
-}
-
-func equalStrings(a, b []string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
 }
 
 // fixedShuffle returns a shuffleFn that always yields the given permutation,
@@ -68,8 +59,8 @@ func TestPickServerRoundRobin(t *testing.T) {
 
 	got := pickN(t, w.pickServer, 7)
 	want := []string{"s0", "s1", "s2", "s0", "s1", "s2", "s0"}
-	if !equalStrings(got, want) {
-		t.Errorf("round-robin order:\n got=%v\nwant=%v", got, want)
+	if diff := helpers.Diff(got, want); diff != "" {
+		t.Errorf("round-robin order (-got, +want):\n%s", diff)
 	}
 }
 
@@ -82,8 +73,8 @@ func TestPickServerStaggeredStart(t *testing.T) {
 
 	got := pickN(t, w.pickServer, 3)
 	want := []string{"s1", "s2", "s0"}
-	if !equalStrings(got, want) {
-		t.Errorf("staggered start:\n got=%v\nwant=%v", got, want)
+	if diff := helpers.Diff(got, want); diff != "" {
+		t.Errorf("staggered start (-got, +want):\n%s", diff)
 	}
 }
 
@@ -102,8 +93,8 @@ func TestPickServerRoundRobinFailover(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pickServer() error: %v", err)
 	}
-	if sc.address != "s1" {
-		t.Errorf("expected failover to s1, got %s", sc.address)
+	if diff := helpers.Diff(sc.address, "s1"); diff != "" {
+		t.Errorf("pickServer() (-got, +want):\n%s", diff)
 	}
 }
 
@@ -115,8 +106,8 @@ func TestPickServerStickyStaysPinned(t *testing.T) {
 
 	got := pickN(t, w.pickServer, 5)
 	want := []string{"s2", "s2", "s2", "s2", "s2"}
-	if !equalStrings(got, want) {
-		t.Errorf("sticky pin:\n got=%v\nwant=%v", got, want)
+	if diff := helpers.Diff(got, want); diff != "" {
+		t.Errorf("sticky pin (-got, +want):\n%s", diff)
 	}
 }
 
@@ -135,8 +126,8 @@ func TestPickServerStickyInitialFailover(t *testing.T) {
 
 	got := pickN(t, w.pickServer, 3)
 	want := []string{"s1", "s1", "s1"}
-	if !equalStrings(got, want) {
-		t.Errorf("sticky initial failover:\n got=%v\nwant=%v", got, want)
+	if diff := helpers.Diff(got, want); diff != "" {
+		t.Errorf("sticky initial failover (-got, +want):\n%s", diff)
 	}
 }
 
@@ -196,6 +187,30 @@ func TestFlushSelectServerError(t *testing.T) {
 	}
 }
 
+func TestConnectErrorMetric(t *testing.T) {
+	r := reporter.NewMock(t)
+	c := &realComponent{r: r, config: DefaultConfiguration()}
+	c.initMetrics()
+	// A single unreachable server (invalid port 0): a pick fails and must count
+	// exactly one connect error.
+	w := &roundRobinWorker{commonWorker: commonWorker{
+		c:       c,
+		logger:  r.With().Logger(),
+		servers: []*serverConn{{address: "127.0.0.1:0"}},
+		options: ch.Options{DialTimeout: 100 * time.Millisecond},
+	}}
+	w.connectFn = w.ensureConnected
+
+	if sc, err := w.pickServer(context.Background()); sc != nil || err == nil {
+		t.Fatalf("pickServer() = (%v, %v), want (nil, error)", sc, err)
+	}
+	gotMetrics := r.GetMetrics("akvorado_outlet_clickhouse_", "errors_total")
+	expected := map[string]string{`errors_total{error="connect"}`: "1"}
+	if diff := helpers.Diff(gotMetrics, expected); diff != "" {
+		t.Errorf("connect error metric (-got, +want):\n%s", diff)
+	}
+}
+
 func TestPickServerStickyReconnectBreakRepicks(t *testing.T) {
 	down := map[string]bool{}
 	connectFn := func(_ context.Context, sc *serverConn) error {
@@ -219,7 +234,7 @@ func TestPickServerStickyReconnectBreakRepicks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pickServer() error: %v", err)
 	}
-	if sc.address != "s1" {
-		t.Errorf("expected re-pick to s1 after s0 connection broke, got %s", sc.address)
+	if diff := helpers.Diff(sc.address, "s1"); diff != "" {
+		t.Errorf("re-pick after broken connection (-got, +want):\n%s", diff)
 	}
 }
