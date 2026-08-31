@@ -22,6 +22,8 @@ import (
 type Worker interface {
 	FinalizeAndSend(context.Context) WorkerStatus
 	Flush(context.Context)
+	// Close releases the connections held by the worker.
+	Close()
 }
 
 // WorkerStatus tells if a worker is overloaded or not.
@@ -333,4 +335,14 @@ func (w *commonWorker) ensureConnected(ctx context.Context, sc *serverConn) erro
 	sc.conn = conn
 	w.logger.Info().Str("server", sc.address).Msg("connected to ClickHouse server")
 	return nil
+}
+
+// Close releases every connection this worker opened.
+func (w *commonWorker) Close() {
+	for _, sc := range w.servers {
+		if sc.conn != nil {
+			sc.conn.Close()
+			sc.conn = nil
+		}
+	}
 }

@@ -48,12 +48,14 @@ func (c *Component) newWorker(i int, scaleRequestChan chan<- kafkainput.ScaleReq
 	return w.processIncomingFlow, w.shutdown
 }
 
-// shutdown shutdowns the worker, flushing any remaining data.
+// shutdown shutdowns the worker, flushing any remaining data and releasing its
+// ClickHouse connections.
 func (w *worker) shutdown() {
 	w.l.Info().Msg("flush final batch to ClickHouse")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	w.cw.Flush(ctx)
+	w.cw.Close()
 	w.l.Info().Msg("worker stopped")
 }
 
