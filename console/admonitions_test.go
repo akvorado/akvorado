@@ -8,13 +8,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/v2/parser"
+	"github.com/yuin/goldmark/v2/renderer/html"
 )
 
 func TestAdmonition(t *testing.T) {
-	md := goldmark.New(
-		goldmark.WithExtensions(&admonitionExtension{}),
-	)
+	p := parser.New(parser.WithExtensions(admonitionParser))
+	r := html.New(html.WithExtensions(admonitionHTMLRenderer))
 
 	tests := []struct {
 		name        string
@@ -29,7 +29,7 @@ func TestAdmonition(t *testing.T) {
 > It spans multiple lines.`,
 			contains: []string{
 				`class="admonition admonition-important"`,
-				`Important</p>`,
+				"\nImportant\n  </p>",
 				`<p>This is important information.`,
 				`It spans multiple lines.</p>`,
 			},
@@ -40,7 +40,7 @@ func TestAdmonition(t *testing.T) {
 > This is a note.`,
 			contains: []string{
 				`class="admonition admonition-note"`,
-				`Note</p>`,
+				"\nNote\n  </p>",
 				`<p>This is a note.</p>`,
 			},
 		},
@@ -50,7 +50,7 @@ func TestAdmonition(t *testing.T) {
 > This is a tip.`,
 			contains: []string{
 				`class="admonition admonition-tip"`,
-				`Tip</p>`,
+				"\nTip\n  </p>",
 				`<p>This is a tip.</p>`,
 			},
 		},
@@ -60,7 +60,7 @@ func TestAdmonition(t *testing.T) {
 > This is a warning.`,
 			contains: []string{
 				`class="admonition admonition-warning"`,
-				`Warning</p>`,
+				"\nWarning\n  </p>",
 				`<p>This is a warning.</p>`,
 			},
 		},
@@ -70,7 +70,7 @@ func TestAdmonition(t *testing.T) {
 > This is a caution.`,
 			contains: []string{
 				`class="admonition admonition-caution"`,
-				`Caution</p>`,
+				"\nCaution\n  </p>",
 				`<p>This is a caution.</p>`,
 			},
 		},
@@ -87,11 +87,22 @@ This is just a text.
 `,
 			contains: []string{
 				`class="admonition admonition-caution"`,
-				`Caution</p>`,
+				"\nCaution\n  </p>",
 				`<p>This is a caution.</p>`,
 				`class="admonition admonition-tip"`,
-				`Tip</p>`,
+				"\nTip\n  </p>",
 				`<p>This is a tip.</p>`,
+			},
+		},
+		{
+			name:  "Admonition without content",
+			input: `> [!NOTE]`,
+			contains: []string{
+				`class="admonition admonition-note"`,
+				`</p></div>`,
+			},
+			notContains: []string{
+				`<p></p>`,
 			},
 		},
 		{
@@ -109,7 +120,7 @@ This is just a text.
 > Check the [configuration guide](config.md) for more details.`,
 			contains: []string{
 				`class="admonition admonition-note"`,
-				`Note</p>`,
+				"\nNote\n  </p>",
 				`<p>Check the <a href="config.md">configuration guide</a> for more details.</p>`,
 			},
 			notContains: []string{
@@ -123,7 +134,7 @@ This is just a text.
 > This is *very* important and **must** be done.`,
 			contains: []string{
 				`class="admonition admonition-warning"`,
-				`Warning</p>`,
+				"\nWarning\n  </p>",
 				`<p>This is <em>very</em> important and <strong>must</strong> be done.</p>`,
 			},
 			notContains: []string{
@@ -137,7 +148,7 @@ This is just a text.
 > Use the` + " `docker compose up` " + `command to start the services.`,
 			contains: []string{
 				`class="admonition admonition-tip"`,
-				`Tip</p>`,
+				"\nTip\n  </p>",
 				`<p>Use the <code>docker compose up</code> command to start the services.</p>`,
 			},
 			notContains: []string{
@@ -152,7 +163,7 @@ This is just a text.
 > The` + " `config.yaml` " + `file is *essential*.`,
 			contains: []string{
 				`class="admonition admonition-important"`,
-				`Important</p>`,
+				"\nImportant\n  </p>",
 				`<p>Read the <strong><a href="docs.md">documentation</a></strong> carefully.`,
 				`The <code>config.yaml</code> file is <em>essential</em>.</p>`,
 			},
@@ -169,7 +180,7 @@ This is just a text.
 > 2. Second step with **bold** text`,
 			contains: []string{
 				`class="admonition admonition-note"`,
-				`Note</p>`,
+				"\nNote\n  </p>",
 				`<p>Follow these steps:</p>`,
 				`<ol>`,
 				`<li>First step</li>`,
@@ -186,22 +197,23 @@ This is just a text.
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var buf bytes.Buffer
-			if err := md.Convert([]byte(tt.input), &buf); err != nil {
-				t.Errorf("Convert() error:\n%+v", err)
+			source := []byte(tt.input)
+			if err := r.Render(&buf, source, p.Parse(source)); err != nil {
+				t.Errorf("Render() error:\n%+v", err)
 				return
 			}
 
-			html := buf.String()
+			rendered := buf.String()
 
 			for _, expected := range tt.contains {
-				if !strings.Contains(html, expected) {
-					t.Errorf("Convert() should have %q:\n%s", expected, html)
+				if !strings.Contains(rendered, expected) {
+					t.Errorf("Render() should have %q:\n%s", expected, rendered)
 				}
 			}
 
 			for _, notExpected := range tt.notContains {
-				if strings.Contains(html, notExpected) {
-					t.Errorf("Convert() should not have %q:\n%s", notExpected, html)
+				if strings.Contains(rendered, notExpected) {
+					t.Errorf("Render() should not have %q:\n%s", notExpected, rendered)
 				}
 			}
 		})

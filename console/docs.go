@@ -16,13 +16,13 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/httpserver"
 
-	"github.com/yuin/goldmark"
-	highlighting "github.com/yuin/goldmark-highlighting/v2"
-	"github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/extension"
-	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/text"
-	"github.com/yuin/goldmark/util"
+	highlighting "github.com/yuin/goldmark-highlighting/v3"
+	"github.com/yuin/goldmark/v2/ast"
+	"github.com/yuin/goldmark/v2/extension"
+	"github.com/yuin/goldmark/v2/parser"
+	"github.com/yuin/goldmark/v2/renderer/html"
+	"github.com/yuin/goldmark/v2/text"
+	"github.com/yuin/goldmark/v2/util"
 )
 
 // Media types the documentation can be served as.
@@ -64,6 +64,51 @@ var (
 	}
 )
 
+var (
+	// tocParser only looks for the headers of a document.
+	tocParser = parser.New(parser.WithAutoHeadingID())
+
+	// docParser and docRenderer turn a document into the HTML served to the
+	// web interface.
+	docParser = parser.New(
+		parser.WithExtensions(
+			extension.TableParser,
+			extension.FootnoteParser,
+			extension.TypographerParser,
+			highlighting.Parser,
+			admonitionParser,
+		),
+		parser.WithAutoHeadingID(),
+		parser.WithASTTransformers(
+			util.Prioritized[parser.ASTTransformer](&linkTransformer{}, 500),
+		),
+	)
+	docRenderer = html.New(
+		html.WithExtensions(
+			extension.TableHTMLRenderer,
+			extension.FootnoteHTMLRenderer,
+			highlighting.NewHTMLRenderer(
+				highlighting.WithCustomStyle(draculaStyle),
+			),
+			admonitionHTMLRenderer,
+		),
+	)
+)
+
+// Header describes a document header.
+type Header struct {
+	Level int    `json:"level"`
+	ID    string `json:"id"`
+	Title string `json:"title"`
+}
+
+// DocumentTOC describes the TOC of a document
+type DocumentTOC struct {
+	Name    string   `json:"name"`
+	Section string   `json:"section"`
+	Headers []Header `json:"headers"`
+}
+
 // documentSection returns the section a document belongs to.
 func documentSection(number string) string {
 	n, err := strconv.Atoi(number)
@@ -78,18 +123,27 @@ func documentSection(number string) string {
 	return ""
 }
 
-// Header describes a document header.
-type Header struct {
-	Level int    `json:"level"`
-	ID    string `json:"id"`
-	Title string `json:"title"`
-}
-
-// DocumentTOC describes the TOC of a document
-type DocumentTOC struct {
-	Name    string   `json:"name"`
-	Section string   `json:"section"`
-	Headers []Header `json:"headers"`
+// documentHeaders returns the headers of a document, to build its ToC.
+func documentHeaders(markdown []byte) []Header {
+	headers := []Header{}
+	ast.Walk(tocParser.Parse(markdown), func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		heading, ok := n.(*ast.Heading)
+		if !entering || !ok {
+			return ast.WalkContinue, nil
+		}
+		id, ok := heading.Attribute("id")
+		lines := heading.Source()
+		if !ok || len(lines) == 0 {
+			return ast.WalkContinue, nil
+		}
+		headers = append(headers, Header{
+			ID:    id.Value(markdown),
+			Level: heading.Level,
+			Title: lines[len(lines)-1].Str(markdown),
+		})
+		return ast.WalkContinue, nil
+	})
+	return headers
 }
 
 func (c *Component) docsHandlerFunc(w http.ResponseWriter, req *http.Request) {
@@ -145,25 +199,10 @@ func (c *Component) docsHandlerFunc(w http.ResponseWriter, req *http.Request) {
 			markdown = content
 		}
 
-		// Markdown rendering to build ToC
-		tocLogger := &tocLogger{}
-		md := goldmark.New(
-			goldmark.WithParserOptions(
-				parser.WithAutoHeadingID(),
-				parser.WithASTTransformers(
-					util.Prioritized(tocLogger, 500),
-				),
-			),
-		)
-		var buf strings.Builder
-		if err = md.Convert(content, &buf); err != nil {
-			c.r.Err(err).Str("path", entry.Name()).Msg("unable to render markdown document")
-			continue
-		}
 		toc = append(toc, DocumentTOC{
 			Name:    matches[3],
 			Section: documentSection(matches[2]),
-			Headers: tocLogger.headers,
+			Headers: documentHeaders(content),
 		})
 	}
 
@@ -172,26 +211,8 @@ func (c *Component) docsHandlerFunc(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	w.Header().Set("Cache-Control", "max-age=300, public")
-	md := goldmark.New(
-		goldmark.WithExtensions(
-			extension.Table,
-			extension.Footnote,
-			extension.Typographer,
-			highlighting.NewHighlighting(
-				highlighting.WithCustomStyle(draculaStyle),
-			),
-			&admonitionExtension{},
-		),
-		goldmark.WithParserOptions(
-			parser.WithAutoHeadingID(),
-			parser.WithASTTransformers(
-				util.Prioritized(&internalLinkTransformer{}, 500),
-				util.Prioritized(&imageLinkTransformer{}, 500),
-			),
-		),
-	)
 	var buf strings.Builder
-	if err = md.Convert(markdown, &buf); err != nil {
+	if err = docRenderer.Render(&buf, markdown, docParser.Parse(markdown)); err != nil {
 		c.r.Err(err).Str("path", requestedDocument).Msg("unable to render markdown document")
 		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "Unable to render document."})
 		return
@@ -372,79 +393,30 @@ func prefersOverMarkdown(accept, mediaType string) bool {
 	return quality > 0 && quality > mediaTypeQuality(accept, docsTypeMarkdown)
 }
 
-// internalLinkTransformer rewrites the links to the other documents to URLs
-// relative to the <base> tag of the web interface, which is where the browser
-// resolves them from.
-type internalLinkTransformer struct{}
+// linkTransformer rewrites the links to the other documents and the images to
+// URLs relative to the <base> tag of the web interface.
+type linkTransformer struct{}
 
-func (r *internalLinkTransformer) Transform(node *ast.Document, _ text.Reader, _ parser.Context) {
-	replaceLinks := func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+// Transform implements parser.ASTTransformer
+func (r *linkTransformer) Transform(node *ast.Document, reader text.Reader, _ parser.Context) {
+	source := reader.Source()
+	ast.Walk(node, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
 			return ast.WalkContinue, nil
 		}
 		switch node := n.(type) {
 		case *ast.Link:
-			matches := internalLinkRegexp.FindStringSubmatch(string(node.Destination))
+			matches := internalLinkRegexp.FindStringSubmatch(node.Destination.Value(source))
 			if matches != nil {
-				node.Destination = fmt.Appendf(nil, "docs/%s%s", matches[3], matches[4])
+				node.Destination = text.NewSingleLineValueFromString(
+					fmt.Sprintf("docs/%s%s", matches[3], matches[4]), text.IdentityDecoder)
 			}
-		}
-		return ast.WalkContinue, nil
-	}
-	ast.Walk(node, replaceLinks)
-}
-
-// imageLinkTransformer rewrites the images of the documentation to URLs
-// relative to the <base> tag of the web interface.
-type imageLinkTransformer struct{}
-
-func (r *imageLinkTransformer) Transform(node *ast.Document, _ text.Reader, _ parser.Context) {
-	replaceLinks := func(n ast.Node, entering bool) (ast.WalkStatus, error) {
-		if !entering {
-			return ast.WalkContinue, nil
-		}
-		switch node := n.(type) {
 		case *ast.Image:
-			path := string(node.Destination)
-			if !strings.Contains(path, "/") {
-				node.Destination = fmt.Appendf(nil, "assets/docs/%s", path)
+			if path := node.Destination.Value(source); !strings.Contains(path, "/") {
+				node.Destination = text.NewSingleLineValueFromString(
+					fmt.Sprintf("assets/docs/%s", path), text.IdentityDecoder)
 			}
 		}
 		return ast.WalkContinue, nil
-	}
-	ast.Walk(node, replaceLinks)
-}
-
-type tocLogger struct {
-	headers []Header
-}
-
-func (r *tocLogger) Transform(node *ast.Document, reader text.Reader, _ parser.Context) {
-	r.headers = []Header{}
-	logHeaders := func(n ast.Node, entering bool) (ast.WalkStatus, error) {
-		if !entering {
-			return ast.WalkContinue, nil
-		}
-		switch node := n.(type) {
-		case *ast.Heading:
-			id, ok := n.AttributeString("id")
-			if ok {
-				var title []byte
-				lastIndex := node.Lines().Len() - 1
-				if lastIndex > -1 {
-					lastLine := node.Lines().At(lastIndex)
-					title = lastLine.Value(reader.Source())
-				}
-				if title != nil {
-					r.headers = append(r.headers, Header{
-						ID:    string(id.([]uint8)),
-						Level: node.Level,
-						Title: string(title),
-					})
-				}
-			}
-		}
-		return ast.WalkContinue, nil
-	}
-	ast.Walk(node, logHeaders)
+	})
 }

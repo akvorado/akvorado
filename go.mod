@@ -8,7 +8,7 @@ require (
 	github.com/AfterShip/clickhouse-sql-parser v0.5.6
 	github.com/ClickHouse/ch-go v0.74.0
 	github.com/ClickHouse/clickhouse-go/v2 v2.48.0
-	github.com/alecthomas/chroma/v2 v2.23.1
+	github.com/alecthomas/chroma/v3 v3.0.0-alpha.5
 	github.com/aperturerobotics/protobuf-go-lite v0.16.0
 	github.com/benbjohnson/clock v1.3.5
 	github.com/bio-routing/bio-rd v0.1.10
@@ -52,8 +52,8 @@ require (
 	github.com/uptrace/bun/dialect/mysqldialect v1.2.18
 	github.com/uptrace/bun/dialect/pgdialect v1.2.18
 	github.com/uptrace/bun/dialect/sqlitedialect v1.2.18
-	github.com/yuin/goldmark v1.8.5
-	github.com/yuin/goldmark-highlighting/v2 v2.0.0-20230729083705-37449abec8cc
+	github.com/yuin/goldmark-highlighting/v3 v3.1.0
+	github.com/yuin/goldmark/v2 v2.0.0
 	go.uber.org/mock v0.6.0
 	go.yaml.in/yaml/v3 v3.0.4
 	golang.org/x/oauth2 v0.36.0
@@ -85,7 +85,7 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.6 // indirect
 	github.com/creack/pty v1.1.24 // indirect
 	github.com/derekparker/trie/v3 v3.2.0 // indirect
-	github.com/dlclark/regexp2 v1.11.5 // indirect
+	github.com/dlclark/regexp2/v2 v2.2.2 // indirect
 	github.com/dmarkham/enumer v1.6.3 // indirect
 	github.com/dnephin/pflag v1.0.7 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
