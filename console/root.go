@@ -39,6 +39,10 @@ type Component struct {
 	flowsTables     []flowsTable
 	flowsTablesLock sync.RWMutex
 
+	// Cache for the ToC (only for embedded FS)
+	documentTOCCache []DocumentTOC
+	documentTOCOnce  sync.Once
+
 	metrics struct {
 		clickhouseQueries *reporter.CounterVec
 	}

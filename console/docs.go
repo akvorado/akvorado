@@ -147,72 +147,28 @@ func documentHeaders(markdown []byte) []Header {
 }
 
 func (c *Component) docsHandlerFunc(w http.ResponseWriter, req *http.Request) {
-	docs := c.embedOrLiveFS("data/docs")
 	requestedDocument := req.PathValue("name")
 	if replacement, ok := renamedDocuments[requestedDocument]; ok {
 		requestedDocument = replacement
 	}
 	w.Header().Set("Vary", "Accept")
 
-	// Unless JSON is preferred, answer with the source: this is the most useful
-	// answer for a crawler or an LLM.
-	if !prefersOverMarkdown(req.Header.Get("Accept"), docsTypeJSON) {
-		markdown := c.findDocument(requestedDocument)
-		if markdown == nil {
-			httpserver.WriteJSON(w, http.StatusNotFound, helpers.M{"message": "Document not found."})
-			return
-		}
-		w.Header().Set("Cache-Control", "max-age=300, public")
-		writeMarkdownDocument(w, markdown)
-		return
-	}
-
-	var markdown []byte
-	toc := []DocumentTOC{}
-
-	// Find right file and compute ToC
-	entries, err := fs.ReadDir(docs, ".")
-	if err != nil {
-		c.r.Err(err).Msg("unable to list documentation files")
-		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "Unable to get documentation files."})
-		return
-	}
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		matches := internalLinkRegexp.FindStringSubmatch(entry.Name())
-		if matches == nil {
-			continue
-		}
-
-		f, err := http.FS(docs).Open(entry.Name())
-		if err != nil {
-			c.r.Err(err).Str("path", entry.Name()).Msg("unable to open documentation file")
-			continue
-		}
-
-		content, _ := io.ReadAll(f)
-		f.Close()
-		if matches[3] == requestedDocument {
-			// That's the one we need to do final rendering on.
-			markdown = content
-		}
-
-		toc = append(toc, DocumentTOC{
-			Name:    matches[3],
-			Section: documentSection(matches[2]),
-			Headers: documentHeaders(content),
-		})
-	}
-
+	markdown := c.findDocument(requestedDocument)
 	if markdown == nil {
 		httpserver.WriteJSON(w, http.StatusNotFound, helpers.M{"message": "Document not found."})
 		return
 	}
 	w.Header().Set("Cache-Control", "max-age=300, public")
+
+	// Unless JSON is preferred, answer with the source: this is the most useful
+	// answer for a crawler or an LLM.
+	if !prefersOverMarkdown(req.Header.Get("Accept"), docsTypeJSON) {
+		writeMarkdownDocument(w, markdown)
+		return
+	}
+
 	var buf strings.Builder
-	if err = docRenderer.Render(&buf, markdown, docParser.Parse(markdown)); err != nil {
+	if err := docRenderer.Render(&buf, markdown, docParser.Parse(markdown)); err != nil {
 		c.r.Err(err).Str("path", requestedDocument).Msg("unable to render markdown document")
 		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "Unable to render document."})
 		return
@@ -227,8 +183,48 @@ func (c *Component) docsHandlerFunc(w http.ResponseWriter, req *http.Request) {
 
 	httpserver.WritePureJSON(w, http.StatusOK, helpers.M{
 		"markdown": rendered,
-		"toc":      toc,
+		"toc":      c.documentTOC(),
 	})
+}
+
+// documentTOC returns the ToC of each document. It does not depend on the
+// request, so it is only built once, unless the files are served from disk.
+func (c *Component) documentTOC() []DocumentTOC {
+	if c.config.ServeLiveFS {
+		return c.buildDocumentTOC()
+	}
+	c.documentTOCOnce.Do(func() {
+		c.documentTOCCache = c.buildDocumentTOC()
+	})
+	return c.documentTOCCache
+}
+
+// buildDocumentTOC returns the ToC of each document of the documentation.
+func (c *Component) buildDocumentTOC() []DocumentTOC {
+	toc := []DocumentTOC{}
+	docs := c.embedOrLiveFS("data/docs")
+	entries, err := fs.ReadDir(docs, ".")
+	if err != nil {
+		c.r.Err(err).Msg("unable to list documentation files")
+		return toc
+	}
+	for _, entry := range entries {
+		matches := internalLinkRegexp.FindStringSubmatch(entry.Name())
+		if matches == nil {
+			continue
+		}
+		content, err := fs.ReadFile(docs, entry.Name())
+		if err != nil {
+			c.r.Err(err).Str("path", entry.Name()).Msg("unable to open documentation file")
+			continue
+		}
+		toc = append(toc, DocumentTOC{
+			Name:    matches[3],
+			Section: documentSection(matches[2]),
+			Headers: documentHeaders(content),
+		})
+	}
+	return toc
 }
 
 // findDocument returns the source of a document, or nil when there is no such
