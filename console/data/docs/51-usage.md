@@ -131,7 +131,7 @@ gets the web interface.
 The demo exporter service simulates a NetFlow exporter, a simple SNMP agent, and
 a BMP exporter.
 
-> [!INFO]
+> [!NOTE]
 > The demo exporter is not enabled by default. You need to run `docker compose
 > --profile demo up -d`.
 
