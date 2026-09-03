@@ -50,7 +50,7 @@ func pickN(t *testing.T, pick func(context.Context) (*serverConn, error), n int)
 	for range n {
 		sc, err := pick(context.Background())
 		if err != nil {
-			t.Fatalf("pickServer() error: %v", err)
+			t.Fatalf("pickServer() error:\n%v", err)
 		}
 		got = append(got, sc.address)
 	}
@@ -95,7 +95,7 @@ func TestPickServerRoundRobinFailover(t *testing.T) {
 
 	sc, err := w.pickServer(context.Background())
 	if err != nil {
-		t.Fatalf("pickServer() error: %v", err)
+		t.Fatalf("pickServer() error:\n%v", err)
 	}
 	if diff := helpers.Diff(sc.address, "s1"); diff != "" {
 		t.Errorf("pickServer() (-got, +want):\n%s", diff)
@@ -236,7 +236,7 @@ func TestPickServerStickyReconnectBreakRepicks(t *testing.T) {
 	// healthy server.
 	sc, err := w.pickServer(context.Background())
 	if err != nil {
-		t.Fatalf("pickServer() error: %v", err)
+		t.Fatalf("pickServer() error:\n%v", err)
 	}
 	if diff := helpers.Diff(sc.address, "s1"); diff != "" {
 		t.Errorf("re-pick after broken connection (-got, +want):\n%s", diff)
