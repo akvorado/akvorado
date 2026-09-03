@@ -26,11 +26,15 @@ func newCommon(addrs []string, connectFn func(context.Context, *serverConn) erro
 }
 
 func newRoundRobin(addrs []string, connectFn func(context.Context, *serverConn) error) *roundRobinWorker {
-	return &roundRobinWorker{commonWorker: newCommon(addrs, connectFn)}
+	w := &roundRobinWorker{commonWorker: newCommon(addrs, connectFn)}
+	w.selectServer = w.pickServer
+	return w
 }
 
 func newSticky(addrs []string, connectFn func(context.Context, *serverConn) error) *stickyRandomWorker {
-	return &stickyRandomWorker{commonWorker: newCommon(addrs, connectFn), shuffleFn: rand.Perm}
+	w := &stickyRandomWorker{commonWorker: newCommon(addrs, connectFn), shuffleFn: rand.Perm}
+	w.selectServer = w.pickServer
+	return w
 }
 
 // fixedShuffle returns a shuffleFn that always yields the given permutation,

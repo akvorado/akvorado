@@ -22,7 +22,6 @@ import (
 type Worker interface {
 	FinalizeAndSend(context.Context) WorkerStatus
 	Flush(context.Context)
-	// Close releases the connections held by the worker.
 	Close()
 }
 
@@ -62,6 +61,9 @@ type commonWorker struct {
 
 	// servers holds one entry per configured ClickHouse server.
 	servers []*serverConn
+	// selectServer picks (and connects) the server for the next batch. It is set
+	// in NewWorker to the strategy's pickServer method.
+	selectServer selectServerFunc
 	// connectFn establishes/validates the connection for a server. It defaults to
 	// ensureConnected and is a field so tests can inject a fake dialer.
 	connectFn     func(context.Context, *serverConn) error
@@ -104,20 +106,28 @@ func (c *realComponent) NewWorker(i int, bf *schema.FlowMessage) Worker {
 		// Stagger the starting server per worker so batches spread across all
 		// servers from the first flush instead of all piling onto servers[0].
 		w := &roundRobinWorker{commonWorker: common, next: i}
-		w.connectFn = w.ensureConnected
+		w.setup(w.pickServer)
 		return w
 	}
 	w := &stickyRandomWorker{commonWorker: common, shuffleFn: rand.Perm}
-	w.connectFn = w.ensureConnected
+	w.setup(w.pickServer)
 	return w
 }
 
-// finalizeAndSend sends data to ClickHouse after finalizing if we have a full
+// setup wires the strategy-independent bits: connections go through
+// ensureConnected (a field so tests can inject a fake dialer) and batches
+// through the strategy's pickServer.
+func (w *commonWorker) setup(pickServer selectServerFunc) {
+	w.connectFn = w.ensureConnected
+	w.selectServer = pickServer
+}
+
+// FinalizeAndSend sends data to ClickHouse after finalizing if we have a full
 // batch or exceeded the maximum wait time. See
 // https://clickhouse.com/docs/best-practices/selecting-an-insert-strategy for
 // tips on the insert strategy. Notably, we switch to async insert when the
-// batch size is too small. selectServer is the strategy's server picker.
-func (w *commonWorker) finalizeAndSend(ctx context.Context, selectServer selectServerFunc) WorkerStatus {
+// batch size is too small.
+func (w *commonWorker) FinalizeAndSend(ctx context.Context) WorkerStatus {
 	w.bf.Finalize()
 	now := time.Now()
 	batchSize := w.bf.FlowCount()
@@ -128,7 +138,7 @@ func (w *commonWorker) finalizeAndSend(ctx context.Context, selectServer selectS
 			waitTime := now.Sub(w.last)
 			w.c.metrics.waitTime.Observe(waitTime.Seconds())
 		}
-		w.flush(ctx, selectServer)
+		w.Flush(ctx)
 		w.last = time.Now()
 		if uint(batchSize) >= w.c.config.MaximumBatchSize {
 			w.c.metrics.overloaded.Inc()
@@ -143,10 +153,10 @@ func (w *commonWorker) finalizeAndSend(ctx context.Context, selectServer selectS
 	return WorkerStatusIdle
 }
 
-// flush sends remaining data to ClickHouse without an additional condition. It
+// Flush sends remaining data to ClickHouse without an additional condition. It
 // should be called before shutting down to flush remaining data. Otherwise,
-// finalizeAndSend() should be used instead.
-func (w *commonWorker) flush(ctx context.Context, selectServer selectServerFunc) {
+// FinalizeAndSend() should be used instead.
+func (w *commonWorker) Flush(ctx context.Context) {
 	var useAsync bool
 	if w.bf.FlowCount() == 0 {
 		return
@@ -167,7 +177,7 @@ func (w *commonWorker) flush(ctx context.Context, selectServer selectServerFunc)
 		// Pick a server (per the configured strategy) and (re)connect if needed.
 		// Depending on the strategy each batch may land on a different server
 		// (round-robin) or stay on the pinned one (sticky-random).
-		sc, err := selectServer(ctx)
+		sc, err := w.selectServer(ctx)
 		if err != nil {
 			w.logger.Err(err).Msg("cannot connect to any ClickHouse server")
 			return nil, err
@@ -229,14 +239,6 @@ type roundRobinWorker struct {
 	next int
 }
 
-// FinalizeAndSend implements Worker.
-func (w *roundRobinWorker) FinalizeAndSend(ctx context.Context) WorkerStatus {
-	return w.finalizeAndSend(ctx, w.pickServer)
-}
-
-// Flush implements Worker.
-func (w *roundRobinWorker) Flush(ctx context.Context) { w.flush(ctx, w.pickServer) }
-
 // pickServer selects the next ClickHouse server in round-robin order and makes
 // sure it is connected, so a worker's batches are spread across all servers
 // instead of pinning to one. If a server cannot be reached it moves on to the
@@ -267,14 +269,6 @@ type stickyRandomWorker struct {
 	// choice deterministic.
 	shuffleFn func(int) []int
 }
-
-// FinalizeAndSend implements Worker.
-func (w *stickyRandomWorker) FinalizeAndSend(ctx context.Context) WorkerStatus {
-	return w.finalizeAndSend(ctx, w.pickServer)
-}
-
-// Flush implements Worker.
-func (w *stickyRandomWorker) Flush(ctx context.Context) { w.flush(ctx, w.pickServer) }
 
 // pickServer keeps using the pinned server as long as its connection stays
 // healthy. A new server is picked (at random, via shuffleFn) only when there is
