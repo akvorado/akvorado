@@ -126,6 +126,22 @@ type stopper interface {
 	Stop() error
 }
 
+// ReserveUDPPort binds the given UDP port on the wildcard address until the end
+// of the test. On macOS, such a bind does not conflict with a socket already
+// using this port on an IPv4 address. A client using an unconnected UDP socket,
+// like gosnmp, may therefore get the port of the test server as source port and
+// never receive an answer. Holding the port keeps it out of the ephemeral range
+// available to the other sockets.
+func ReserveUDPPort(t testing.TB, port int) {
+	t.Helper()
+	conn, err := net.ListenUDP("udp", &net.UDPAddr{Port: port})
+	if err != nil {
+		// Other systems refuse the conflicting bind on their own.
+		return
+	}
+	t.Cleanup(func() { conn.Close() })
+}
+
 // Pos is a file:line recording a test data position.
 type Pos struct {
 	file string

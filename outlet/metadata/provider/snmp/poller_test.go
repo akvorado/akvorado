@@ -305,6 +305,7 @@ func TestPoller(t *testing.T) {
 				panic(err)
 			}
 			r.Debug().Int("port", port).Msg("SNMP server listening")
+			helpers.ReserveUDPPort(t, port)
 			go server.ServeForever()
 			defer server.Shutdown()
 
