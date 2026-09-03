@@ -40,11 +40,41 @@ func canonical(sql string) (string, bool) {
 			if identifier, ok := node.(*parser.Ident); ok {
 				identifier.QuoteType = quoteType(identifier.Name)
 			}
+			dropExtraParens(node)
 			return true
 		})
 		formatter.WriteExpr(statement)
 	}
 	return formatter.String(), true
+}
+
+// dropExtraParens removes the parentheses ClickHouse keeps or not depending on
+// its version: CAST((96 + Mask), 'UInt8') is CAST(96 + Mask, 'UInt8'). Only a
+// function argument and the value of a CAST are touched, they are already
+// delimited. Elsewhere, parentheses can set the order of the operators.
+func dropExtraParens(node parser.Expr) bool {
+	switch node := node.(type) {
+	case *parser.ColumnExpr:
+		node.Expr = withoutParens(node.Expr)
+	case *parser.CastExpr:
+		node.Expr = withoutParens(node.Expr)
+	}
+	return true
+}
+
+// withoutParens returns what a pair of parentheses wraps. A tuple is kept.
+func withoutParens(node parser.Expr) parser.Expr {
+	for {
+		group, ok := node.(*parser.ParamExprList)
+		if !ok || len(group.Items.Items) != 1 {
+			return node
+		}
+		item, ok := group.Items.Items[0].(*parser.ColumnExpr)
+		if !ok || item.Alias != nil {
+			return node
+		}
+		node = item.Expr
+	}
 }
 
 // StripTableSettings removes the SETTINGS clause from the CREATE TABLE

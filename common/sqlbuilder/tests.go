@@ -51,6 +51,7 @@ func normalize(sql string) string {
 	}
 	formatter := parser.NewFormatter().WithBeautify()
 	for _, statement := range statements {
+		parser.Walk(statement, dropExtraParens)
 		formatter.WriteExpr(statement)
 	}
 	return formatter.String()

@@ -428,6 +428,7 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 									"PRIMARY KEY toStartOfFiveMinutes(TimeReceived) ORDER BY ", 1)
 							}
 						}
+						table[idx].Schema = sb.Normalize(t, table[idx].Schema)
 					}
 				}
 				if diff := helpers.Diff(lastRun, currentRun); diff != "" {

@@ -31,6 +31,18 @@ func TestCanonical(t *testing.T) {
 			Description: "engine name unquoted",
 			SQL:         "CREATE TABLE flows (`SrcAS` UInt32) ENGINE = `Null`",
 			Expected:    "CREATE TABLE flows (SrcAS UInt32) ENGINE = Null",
+		}, {
+			Description: "parentheses around an argument dropped",
+			SQL:         "SELECT CAST((96 + SrcNetMask), 'UInt8'), toString((SrcAS + 1))",
+			Expected:    "SELECT CAST(96 + SrcNetMask, 'UInt8'), toString(SrcAS + 1)",
+		}, {
+			Description: "parentheses giving the order of the operators kept",
+			SQL:         "SELECT (SrcAS + 1) * 2",
+			Expected:    "SELECT (SrcAS + 1) * 2",
+		}, {
+			Description: "parentheses of a tuple kept",
+			SQL:         "SELECT toString((SrcAS, DstAS))",
+			Expected:    "SELECT toString((SrcAS, DstAS))",
 		},
 	}
 	for _, tc := range cases {
@@ -84,6 +96,16 @@ func TestCanonicalCompare(t *testing.T) {
 			Description: "a quoted name is not the same column as a bare one",
 			First:       "CREATE TABLE flows (`Src Addr` IPv6) ENGINE = Null",
 			Second:      "CREATE TABLE flows (Src Addr) ENGINE = Null",
+			Expected:    false,
+		}, {
+			Description: "same alias, parentheses of a newer ClickHouse",
+			First:       "CREATE TABLE flows (`SrcNetPrefix` String ALIAS CAST(IPv6CIDRToRange(SrcAddr, CAST((96 + SrcNetMask), 'UInt8')).1, 'String')) ENGINE = Null",
+			Second:      "CREATE TABLE flows (`SrcNetPrefix` String ALIAS CAST(IPv6CIDRToRange(SrcAddr, CAST(96 + SrcNetMask, 'UInt8')).1, 'String')) ENGINE = Null",
+			Expected:    true,
+		}, {
+			Description: "parentheses changing the order of the operators",
+			First:       "SELECT (SrcAS + 1) * 2 FROM flows",
+			Second:      "SELECT SrcAS + 1 * 2 FROM flows",
 			Expected:    false,
 		},
 	}
