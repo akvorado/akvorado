@@ -50,7 +50,7 @@ func pickN(t *testing.T, pick func(context.Context) (*serverConn, error), n int)
 	t.Helper()
 	got := make([]string, 0, n)
 	for range n {
-		sc, err := pick(context.Background())
+		sc, err := pick(t.Context())
 		if err != nil {
 			t.Fatalf("pickServer() error:\n%v", err)
 		}
@@ -95,7 +95,7 @@ func TestPickServerRoundRobinFailover(t *testing.T) {
 	}
 	w := newRoundRobin([]string{"s0", "s1", "s2"}, connectFn)
 
-	sc, err := w.pickServer(context.Background())
+	sc, err := w.pickServer(t.Context())
 	if err != nil {
 		t.Fatalf("pickServer() error:\n%v", err)
 	}
@@ -144,7 +144,7 @@ func TestPickServerRoundRobinAllFail(t *testing.T) {
 	connectFn := func(context.Context, *serverConn) error { return errBoom }
 	w := newRoundRobin([]string{"s0", "s1", "s2"}, connectFn)
 
-	sc, err := w.pickServer(context.Background())
+	sc, err := w.pickServer(t.Context())
 	if sc != nil || err == nil {
 		t.Errorf("pickServer() = (%v, %v), want (nil, error)", sc, err)
 	}
@@ -158,7 +158,7 @@ func TestPickServerStickyAllFail(t *testing.T) {
 	w := newSticky([]string{"s0", "s1", "s2"}, connectFn)
 	w.shuffleFn = fixedShuffle(0, 1, 2)
 
-	sc, err := w.pickServer(context.Background())
+	sc, err := w.pickServer(t.Context())
 	if sc != nil || err == nil {
 		t.Errorf("pickServer() = (%v, %v), want (nil, error)", sc, err)
 	}
@@ -183,7 +183,7 @@ func TestFlushSelectServerError(t *testing.T) {
 	w.bf = bf
 	w.logger = r.With().Logger()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
 	defer cancel()
 	w.Flush(ctx)
 
@@ -207,7 +207,7 @@ func TestConnectErrorMetric(t *testing.T) {
 	}}
 	w.connectFn = w.ensureConnected
 
-	if sc, err := w.pickServer(context.Background()); sc != nil || err == nil {
+	if sc, err := w.pickServer(t.Context()); sc != nil || err == nil {
 		t.Fatalf("pickServer() = (%v, %v), want (nil, error)", sc, err)
 	}
 	gotMetrics := r.GetMetrics("akvorado_outlet_clickhouse_", "errors_total")
@@ -236,7 +236,7 @@ func TestPickServerStickyReconnectBreakRepicks(t *testing.T) {
 
 	// The reuse attempt fails, so the worker drops the pin and re-picks the next
 	// healthy server.
-	sc, err := w.pickServer(context.Background())
+	sc, err := w.pickServer(t.Context())
 	if err != nil {
 		t.Fatalf("pickServer() error:\n%v", err)
 	}
