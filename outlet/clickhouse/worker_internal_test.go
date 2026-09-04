@@ -17,12 +17,12 @@ import (
 	"akvorado/common/schema"
 )
 
-func newCommon(addrs []string, connectFn func(context.Context, *serverConn) error) commonWorker {
+func newCommon(addrs []string, connectFn func(context.Context, *serverConn) error) *commonWorker {
 	conns := make([]*serverConn, len(addrs))
 	for i, a := range addrs {
 		conns[i] = &serverConn{address: a}
 	}
-	return commonWorker{servers: conns, connectFn: connectFn}
+	return &commonWorker{servers: conns, connectFn: connectFn}
 }
 
 func newRoundRobin(addrs []string, connectFn func(context.Context, *serverConn) error) *roundRobinWorker {
@@ -197,7 +197,7 @@ func TestConnectErrorMetric(t *testing.T) {
 	c.initMetrics()
 	// A single unreachable server (invalid port 0): a pick fails and must count
 	// exactly one connect error.
-	w := &roundRobinWorker{commonWorker: commonWorker{
+	w := &roundRobinWorker{commonWorker: &commonWorker{
 		c:       c,
 		logger:  r.With().Logger(),
 		servers: []*serverConn{{address: "127.0.0.1:0"}},

@@ -78,7 +78,7 @@ func (c *realComponent) NewWorker(i int, bf *schema.FlowMessage) Worker {
 	for j, s := range servers {
 		conns[j] = &serverConn{address: s}
 	}
-	common := commonWorker{
+	common := &commonWorker{
 		c:      c,
 		bf:     bf,
 		logger: c.r.With().Int("worker", i).Logger(),
@@ -102,24 +102,19 @@ func (c *realComponent) NewWorker(i int, bf *schema.FlowMessage) Worker {
 			},
 		},
 	}
-	if c.config.ServerSelection == ServerSelectionRoundRobin {
+	common.connectFn = common.ensureConnected
+	switch c.config.ServerSelection {
+	case ServerSelectionRoundRobin:
 		// Stagger the starting server per worker so batches spread across all
 		// servers from the first flush instead of all piling onto servers[0].
 		w := &roundRobinWorker{commonWorker: common, next: i}
-		w.setup(w.pickServer)
+		common.selectServer = w.pickServer
+		return w
+	default:
+		w := &stickyRandomWorker{commonWorker: common, shuffleFn: rand.Perm}
+		common.selectServer = w.pickServer
 		return w
 	}
-	w := &stickyRandomWorker{commonWorker: common, shuffleFn: rand.Perm}
-	w.setup(w.pickServer)
-	return w
-}
-
-// setup wires the strategy-independent bits: connections go through
-// ensureConnected (a field so tests can inject a fake dialer) and batches
-// through the strategy's pickServer.
-func (w *commonWorker) setup(pickServer selectServerFunc) {
-	w.connectFn = w.ensureConnected
-	w.selectServer = pickServer
 }
 
 // FinalizeAndSend sends data to ClickHouse after finalizing if we have a full
@@ -235,7 +230,7 @@ func (w *commonWorker) Flush(ctx context.Context) {
 // roundRobinWorker spreads a worker's batches across all servers in round-robin
 // order.
 type roundRobinWorker struct {
-	commonWorker
+	*commonWorker
 	next int
 }
 
@@ -261,7 +256,7 @@ func (w *roundRobinWorker) pickServer(ctx context.Context) (*serverConn, error) 
 // stickyRandomWorker pins the worker to a single, randomly-chosen ClickHouse
 // server for the lifetime of its connection.
 type stickyRandomWorker struct {
-	commonWorker
+	*commonWorker
 	// current is the server the worker is pinned to.
 	current *serverConn
 	// shuffleFn returns a random permutation of [0,n) and is used to pick a
