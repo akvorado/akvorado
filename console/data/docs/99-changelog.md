@@ -13,6 +13,9 @@ identified with a specific icon:
 ## Unreleased
 
 - 🩹 *console*: complete custom dictionary values like the other string columns
+- 🌱 *outlet*: ClickHouse server selection strategy is configurable through
+  `outlet.clickhouse.server-selection`: `sticky-random` (the default) or
+  `round-robin`.
 
 ## 2026.8.1 - 2026-08-29
 
