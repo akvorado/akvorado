@@ -50,3 +50,6 @@ func (w *mockWorker) Flush(_ context.Context) {
 	w.c.callback(&clone)
 	w.bf.Clear() // Clear instead of finalizing
 }
+
+// Close is a no-op for the mock worker.
+func (w *mockWorker) Close() {}

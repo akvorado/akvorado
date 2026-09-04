@@ -22,6 +22,7 @@ import (
 type Worker interface {
 	FinalizeAndSend(context.Context) WorkerStatus
 	Flush(context.Context)
+	Close()
 }
 
 // WorkerStatus tells if a worker is overloaded or not.
@@ -38,15 +39,34 @@ const (
 	WorkerStatusSteady
 )
 
-// realWorker is a working implementation of Worker.
-type realWorker struct {
+// serverConn holds, for one worker, the state of a single ClickHouse server: its
+// address and a lazily-established connection.
+type serverConn struct {
+	address string
+	conn    *ch.Client
+}
+
+// selectServerFunc picks and connects the ClickHouse server for the next batch;
+// each strategy provides its own.
+type selectServerFunc func(context.Context) (*serverConn, error)
+
+// commonWorker holds everything shared by the server-selection strategies. It is
+// embedded by roundRobinWorker and stickyRandomWorker, which add only the state
+// their own selection needs.
+type commonWorker struct {
 	c      *realComponent
 	bf     *schema.FlowMessage
 	last   time.Time
 	logger reporter.Logger
 
-	conn          *ch.Client
-	servers       []string
+	// servers holds one entry per configured ClickHouse server.
+	servers []*serverConn
+	// selectServer picks (and connects) the server for the next batch. It is set
+	// in NewWorker to the strategy's pickServer method.
+	selectServer selectServerFunc
+	// connectFn establishes/validates the connection for a server. It defaults to
+	// ensureConnected and is a field so tests can inject a fake dialer.
+	connectFn     func(context.Context, *serverConn) error
 	options       ch.Options
 	asyncSettings []ch.Setting
 }
@@ -54,12 +74,16 @@ type realWorker struct {
 // NewWorker creates a new worker to push data to ClickHouse.
 func (c *realComponent) NewWorker(i int, bf *schema.FlowMessage) Worker {
 	opts, servers := c.d.ClickHouse.ChGoOptions()
-	w := realWorker{
+	conns := make([]*serverConn, len(servers))
+	for j, s := range servers {
+		conns[j] = &serverConn{address: s}
+	}
+	common := &commonWorker{
 		c:      c,
 		bf:     bf,
 		logger: c.r.With().Int("worker", i).Logger(),
 
-		servers: servers,
+		servers: conns,
 		options: opts,
 		asyncSettings: []ch.Setting{
 			{
@@ -78,7 +102,19 @@ func (c *realComponent) NewWorker(i int, bf *schema.FlowMessage) Worker {
 			},
 		},
 	}
-	return &w
+	common.connectFn = common.ensureConnected
+	switch c.config.ServerSelection {
+	case ServerSelectionRoundRobin:
+		// Stagger the starting server per worker so batches spread across all
+		// servers from the first flush instead of all piling onto servers[0].
+		w := &roundRobinWorker{commonWorker: common, next: i}
+		common.selectServer = w.pickServer
+		return w
+	default:
+		w := &stickyRandomWorker{commonWorker: common, shuffleFn: rand.Perm}
+		common.selectServer = w.pickServer
+		return w
+	}
 }
 
 // FinalizeAndSend sends data to ClickHouse after finalizing if we have a full
@@ -86,7 +122,7 @@ func (c *realComponent) NewWorker(i int, bf *schema.FlowMessage) Worker {
 // https://clickhouse.com/docs/best-practices/selecting-an-insert-strategy for
 // tips on the insert strategy. Notably, we switch to async insert when the
 // batch size is too small.
-func (w *realWorker) FinalizeAndSend(ctx context.Context) WorkerStatus {
+func (w *commonWorker) FinalizeAndSend(ctx context.Context) WorkerStatus {
 	w.bf.Finalize()
 	now := time.Now()
 	batchSize := w.bf.FlowCount()
@@ -115,7 +151,7 @@ func (w *realWorker) FinalizeAndSend(ctx context.Context) WorkerStatus {
 // Flush sends remaining data to ClickHouse without an additional condition. It
 // should be called before shutting down to flush remaining data. Otherwise,
 // FinalizeAndSend() should be used instead.
-func (w *realWorker) Flush(ctx context.Context) {
+func (w *commonWorker) Flush(ctx context.Context) {
 	var useAsync bool
 	if w.bf.FlowCount() == 0 {
 		return
@@ -133,9 +169,12 @@ func (w *realWorker) Flush(ctx context.Context) {
 	b.MaxInterval = 30 * time.Second
 	b.InitialInterval = 20 * time.Millisecond
 	backoff.Retry(ctx, func() (any, error) {
-		// Connect or reconnect if connection is broken.
-		if err := w.connect(ctx); err != nil {
-			w.logger.Err(err).Msg("cannot connect to ClickHouse")
+		// Pick a server (per the configured strategy) and (re)connect if needed.
+		// Depending on the strategy each batch may land on a different server
+		// (round-robin) or stay on the pinned one (sticky-random).
+		sc, err := w.selectServer(ctx)
+		if err != nil {
+			w.logger.Err(err).Msg("cannot connect to any ClickHouse server")
 			return nil, err
 		}
 
@@ -168,18 +207,19 @@ func (w *realWorker) Flush(ctx context.Context) {
 
 		// Send to ClickHouse in flows_XXXXX_raw.
 		start := time.Now()
-		if err := w.conn.Do(chCtx, ch.Query{
+		if err := sc.conn.Do(chCtx, ch.Query{
 			Body:     w.bf.ClickHouseProtoInput().Into(fmt.Sprintf("flows_%s_raw", w.c.d.Schema.ClickHouseHash())),
 			Input:    w.bf.ClickHouseProtoInput(),
 			Settings: settings,
 		}); err != nil {
-			w.logger.Err(err).Int("flows", w.bf.FlowCount()).Bool("async", useAsync).Msg("cannot send batch to ClickHouse")
+			w.logger.Err(err).Str("server", sc.address).Int("flows", w.bf.FlowCount()).Bool("async", useAsync).Msg("cannot send batch to ClickHouse")
 			w.c.metrics.errors.WithLabelValues("send").Inc()
 			return nil, err
 		}
 		pushDuration := time.Since(start)
 		w.c.metrics.insertTime.Observe(pushDuration.Seconds())
 		w.c.metrics.flows.Observe(float64(w.bf.FlowCount()))
+		w.c.metrics.batchesSent.WithLabelValues(sc.address).Inc()
 
 		// Clear batch
 		w.bf.Clear()
@@ -187,45 +227,111 @@ func (w *realWorker) Flush(ctx context.Context) {
 	}, backoff.WithBackOff(b), backoff.WithMaxElapsedTime(0))
 }
 
-// connect establishes or reestablish the connection to ClickHouse.
-func (w *realWorker) connect(ctx context.Context) error {
-	// If connection exists and is healthy, reuse it
-	if w.conn != nil {
-		if err := w.conn.Ping(ctx); err == nil {
+// roundRobinWorker spreads a worker's batches across all servers in round-robin
+// order.
+type roundRobinWorker struct {
+	*commonWorker
+	next int
+}
+
+// pickServer selects the next ClickHouse server in round-robin order and makes
+// sure it is connected, so a worker's batches are spread across all servers
+// instead of pinning to one. If a server cannot be reached it moves on to the
+// next one within the same call.
+func (w *roundRobinWorker) pickServer(ctx context.Context) (*serverConn, error) {
+	n := len(w.servers)
+	var lastErr error
+	for tried := 0; tried < n; tried++ {
+		sc := w.servers[w.next%n]
+		w.next = (w.next + 1) % n
+		if err := w.connectFn(ctx, sc); err != nil {
+			lastErr = err
+			continue
+		}
+		return sc, nil
+	}
+	return nil, lastErr
+}
+
+// stickyRandomWorker pins the worker to a single, randomly-chosen ClickHouse
+// server for the lifetime of its connection.
+type stickyRandomWorker struct {
+	*commonWorker
+	// current is the server the worker is pinned to.
+	current *serverConn
+	// shuffleFn returns a random permutation of [0,n) and is used to pick a
+	// server. It defaults to rand.Perm and is a field so tests can make the
+	// choice deterministic.
+	shuffleFn func(int) []int
+}
+
+// pickServer keeps using the pinned server as long as its connection stays
+// healthy. A new server is picked (at random, via shuffleFn) only when there is
+// no pinned server or the pinned connection broke, reproducing the historical
+// rand.Perm selection.
+func (w *stickyRandomWorker) pickServer(ctx context.Context) (*serverConn, error) {
+	// Reuse the pinned server while its connection is (or can be made) healthy.
+	if w.current != nil {
+		if err := w.connectFn(ctx, w.current); err == nil {
+			return w.current, nil
+		}
+		// The connection broke: drop the pin and re-pick a different one below.
+		w.current = nil
+	}
+
+	// Pick a new server at random.
+	var lastErr error
+	for _, idx := range w.shuffleFn(len(w.servers)) {
+		sc := w.servers[idx]
+		if err := w.connectFn(ctx, sc); err != nil {
+			lastErr = err
+			continue
+		}
+		w.current = sc
+		return sc, nil
+	}
+	return nil, lastErr
+}
+
+// ensureConnected makes sure sc has a healthy connection, dialing (or redialing)
+// as needed.
+func (w *commonWorker) ensureConnected(ctx context.Context, sc *serverConn) error {
+	// If connection exists and is healthy, reuse it.
+	if sc.conn != nil {
+		if err := sc.conn.Ping(ctx); err == nil {
 			return nil
 		}
-		// Connection is unhealthy, close it
-		w.conn.Close()
-		w.conn = nil
+		sc.conn.Close()
+		sc.conn = nil
 	}
 
-	// Try each server until one connects successfully
-	var lastErr error
-	for _, idx := range rand.Perm(len(w.servers)) {
-		w.options.Address = w.servers[idx]
-		conn, err := ch.Dial(ctx, w.options)
-		if err != nil {
-			w.logger.Err(err).Str("server", w.options.Address).Msg("failed to connect to ClickHouse server")
-			w.c.metrics.errors.WithLabelValues("connect").Inc()
-			lastErr = err
-			continue
-		}
-
-		// Test the connection
-		if err := conn.Ping(ctx); err != nil {
-			w.logger.Err(err).Str("server", w.options.Address).Msg("ClickHouse server ping failed")
-			w.c.metrics.errors.WithLabelValues("ping").Inc()
-			conn.Close()
-			conn = nil
-			lastErr = err
-			continue
-		}
-
-		// Success
-		w.conn = conn
-		w.logger.Info().Str("server", w.options.Address).Msg("connected to ClickHouse server")
-		return nil
+	// Dial this specific server. Copy options so the per-server address does not
+	// clobber the shared template.
+	opts := w.options
+	opts.Address = sc.address
+	conn, err := ch.Dial(ctx, opts)
+	if err != nil {
+		w.logger.Err(err).Str("server", sc.address).Msg("failed to connect to ClickHouse server")
+		w.c.metrics.errors.WithLabelValues("connect").Inc()
+		return err
 	}
+	if err := conn.Ping(ctx); err != nil {
+		w.logger.Err(err).Str("server", sc.address).Msg("ClickHouse server ping failed")
+		w.c.metrics.errors.WithLabelValues("ping").Inc()
+		conn.Close()
+		return err
+	}
+	sc.conn = conn
+	w.logger.Info().Str("server", sc.address).Msg("connected to ClickHouse server")
+	return nil
+}
 
-	return lastErr
+// Close releases every connection this worker opened.
+func (w *commonWorker) Close() {
+	for _, sc := range w.servers {
+		if sc.conn != nil {
+			sc.conn.Close()
+			sc.conn = nil
+		}
+	}
 }

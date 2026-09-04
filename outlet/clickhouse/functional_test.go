@@ -21,6 +21,20 @@ import (
 )
 
 func TestInsert(t *testing.T) {
+	// Run the same scenario under both server-selection strategies. With a single
+	// server they behave identically (all batches go to that one server), so the
+	// assertions hold for both while covering each selection branch.
+	for _, serverSelection := range []clickhouse.ServerSelectionAlgorithm{
+		clickhouse.ServerSelectionStickyRandom,
+		clickhouse.ServerSelectionRoundRobin,
+	} {
+		t.Run(serverSelection.String(), func(t *testing.T) {
+			runInsertTest(t, serverSelection)
+		})
+	}
+}
+
+func runInsertTest(t *testing.T, serverSelection clickhouse.ServerSelectionAlgorithm) {
 	server, database := clickhousedb.SetupClickHouseDatabase(t)
 	r := reporter.NewMock(t)
 	sch := schema.NewMock(t)
@@ -46,6 +60,7 @@ func TestInsert(t *testing.T) {
 	conf := clickhouse.DefaultConfiguration()
 	conf.MaximumBatchSize = 10
 	conf.MaximumWaitTime = time.Second
+	conf.ServerSelection = serverSelection
 	ch, err := clickhouse.New(r, conf, clickhouse.Dependencies{
 		ClickHouse: chdb,
 		Schema:     sch,
@@ -158,6 +173,9 @@ func TestInsert(t *testing.T) {
 				`worker_underloaded_total`:        "1",
 			}
 		}
+		// With a single server, batches_sent{server} equals the number of batches
+		// flushed so far, i.e. flow_per_batch_count.
+		expectedMetrics[fmt.Sprintf(`batches_sent_total{server=%q}`, server)] = expectedMetrics[`flow_per_batch_count`]
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics, iteration %d, (-got, +want):\n%s", i, diff)
 		}

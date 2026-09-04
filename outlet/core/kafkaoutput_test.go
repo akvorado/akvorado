@@ -48,6 +48,8 @@ func (w *finalizingWorker) FinalizeAndSend(context.Context) clickhouse.WorkerSta
 
 func (w *finalizingWorker) Flush(context.Context) { w.bf.Clear() }
 
+func (w *finalizingWorker) Close() {}
+
 // TestCoreKafkaOutput wires an enabled Kafka output into the worker and checks the
 // enriched flow is both stored to ClickHouse and produced to the kafka-output
 // topic. This covers the worker's dual-encode/Send path, which is inert (and
