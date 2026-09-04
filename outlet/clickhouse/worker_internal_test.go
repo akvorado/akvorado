@@ -178,8 +178,10 @@ func TestFlushSelectServerError(t *testing.T) {
 	// A worker whose every server refuses to connect: Flush must keep retrying
 	// until the context expires and never reach ClickHouse.
 	connectFn := func(context.Context, *serverConn) error { return errors.New("no server available") }
+	c := &realComponent{r: r, config: DefaultConfiguration()}
+	c.initMetrics()
 	w := newRoundRobin([]string{"s0"}, connectFn)
-	w.c = &realComponent{r: r, config: Configuration{}}
+	w.c = c
 	w.bf = bf
 	w.logger = r.With().Logger()
 
@@ -188,8 +190,15 @@ func TestFlushSelectServerError(t *testing.T) {
 	w.Flush(ctx)
 
 	// Nothing could be sent, so the batch must be preserved (no data lost).
-	if got := w.bf.FlowCount(); got == 0 {
-		t.Errorf("Flush() cleared the batch despite no reachable server (FlowCount()=%d)", got)
+	if diff := helpers.Diff(w.bf.FlowCount(), 1); diff != "" {
+		t.Errorf("FlowCount() after Flush() (-got, +want):\n%s", diff)
+	}
+
+	// Giving up on a batch must be counted.
+	gotMetrics := r.GetMetrics("akvorado_outlet_clickhouse_", "errors_total")
+	expected := map[string]string{`errors_total{error="flush"}`: "1"}
+	if diff := helpers.Diff(gotMetrics, expected); diff != "" {
+		t.Errorf("Metrics (-got, +want):\n%s", diff)
 	}
 }
 

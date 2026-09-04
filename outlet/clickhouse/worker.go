@@ -168,17 +168,10 @@ func (w *commonWorker) Flush(ctx context.Context) {
 	b := backoff.NewExponentialBackOff()
 	b.MaxInterval = 30 * time.Second
 	b.InitialInterval = 20 * time.Millisecond
-	backoff.Retry(ctx, func() (any, error) {
-		// Pick a server (per the configured strategy) and (re)connect if needed.
-		// Depending on the strategy each batch may land on a different server
-		// (round-robin) or stay on the pinned one (sticky-random).
-		sc, err := w.selectServer(ctx)
-		if err != nil {
-			w.logger.Err(err).Msg("cannot connect to any ClickHouse server")
-			return nil, err
-		}
-
-		// Ensure the context lives for at least GracePeriod.
+	if _, err := backoff.Retry(ctx, func() (any, error) {
+		// Ensure the context lives for at least GracePeriod. Picking a server and
+		// connecting to it share it with the insert, otherwise a parent context
+		// about to expire leaves no time to reach any server.
 		chCtx, cancel := context.WithCancel(context.Background())
 		defer cancel() // needed in case the operation completes before grace period and parent context
 		go func() {
@@ -205,6 +198,15 @@ func (w *commonWorker) Flush(ctx context.Context) {
 			cancel()
 		}()
 
+		// Pick a server (per the configured strategy) and (re)connect if needed.
+		// Depending on the strategy each batch may land on a different server
+		// (round-robin) or stay on the pinned one (sticky-random).
+		sc, err := w.selectServer(chCtx)
+		if err != nil {
+			w.logger.Err(err).Msg("cannot connect to any ClickHouse server")
+			return nil, err
+		}
+
 		// Send to ClickHouse in flows_XXXXX_raw.
 		start := time.Now()
 		if err := sc.conn.Do(chCtx, ch.Query{
@@ -224,7 +226,10 @@ func (w *commonWorker) Flush(ctx context.Context) {
 		// Clear batch
 		w.bf.Clear()
 		return nil, nil
-	}, backoff.WithBackOff(b), backoff.WithMaxElapsedTime(0))
+	}, backoff.WithBackOff(b), backoff.WithMaxElapsedTime(0)); err != nil {
+		w.logger.Err(err).Int("flows", w.bf.FlowCount()).Msg("batch lost, cannot flush to ClickHouse")
+		w.c.metrics.errors.WithLabelValues("flush").Inc()
+	}
 }
 
 // roundRobinWorker spreads a worker's batches across all servers in round-robin
