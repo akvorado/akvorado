@@ -12,6 +12,8 @@ import (
 
 	"github.com/ClickHouse/ch-go"
 
+	"akvorado/common/clickhousedb"
+	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
@@ -240,5 +242,56 @@ func TestPickServerStickyReconnectBreakRepicks(t *testing.T) {
 	}
 	if diff := helpers.Diff(sc.address, "s1"); diff != "" {
 		t.Errorf("re-pick after broken connection (-got, +want):\n%s", diff)
+	}
+}
+
+// TestClose checks Close releases every connection the worker opened. The same
+// address is listed twice so a round-robin worker opens two of them.
+func TestClose(t *testing.T) {
+	server, database := clickhousedb.SetupClickHouseDatabase(t)
+	r := reporter.NewMock(t)
+	sch := schema.NewMock(t)
+
+	dbConf := clickhousedb.DefaultConfiguration()
+	dbConf.Servers = []string{server, server}
+	dbConf.Database = database
+	chdb, err := clickhousedb.New(r, dbConf, clickhousedb.Dependencies{Daemon: daemon.NewMock(t)})
+	if err != nil {
+		t.Fatalf("clickhousedb.New() error:\n%+v", err)
+	}
+	helpers.StartStop(t, chdb)
+
+	conf := DefaultConfiguration()
+	conf.ServerSelection = ServerSelectionRoundRobin
+	c, err := New(r, conf, Dependencies{ClickHouse: chdb, Schema: sch})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	helpers.StartStop(t, c)
+
+	w := c.NewWorker(0, sch.NewFlowMessage()).(*roundRobinWorker)
+	openConns := func() int {
+		n := 0
+		for _, sc := range w.servers {
+			if sc.conn != nil {
+				n++
+			}
+		}
+		return n
+	}
+
+	// One pick per server opens all the connections.
+	for range w.servers {
+		if _, err := w.pickServer(t.Context()); err != nil {
+			t.Fatalf("pickServer() error:\n%+v", err)
+		}
+	}
+	if diff := helpers.Diff(openConns(), len(w.servers)); diff != "" {
+		t.Fatalf("open connections before Close() (-got, +want):\n%s", diff)
+	}
+
+	w.Close()
+	if diff := helpers.Diff(openConns(), 0); diff != "" {
+		t.Fatalf("open connections after Close() (-got, +want):\n%s", diff)
 	}
 }
