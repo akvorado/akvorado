@@ -75,6 +75,9 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 		dependencies.Schema, dependencies.ClickHouseDB.DatabaseName()); err != nil {
 		return nil, fmt.Errorf("cannot parse homepage graph filter: %w", err)
 	}
+	if name := config.ClickHouseUserSetting; name != "" && !clickHouseSettingName.MatchString(name) {
+		return nil, fmt.Errorf("%q is not a valid ClickHouse setting name", name)
+	}
 	c := Component{
 		r:           r,
 		d:           &dependencies,
@@ -103,7 +106,8 @@ func (c *Component) Start() error {
 	c.d.HTTP.AddHandler("/assets/", http.StripPrefix("/assets/", http.HandlerFunc(c.staticAssetsHandlerFunc)))
 	c.d.HTTP.AddHandler("/assets/docs/", http.StripPrefix("/assets/docs/", http.HandlerFunc(c.docAssetsHandlerFunc)))
 	// Dynamic assets
-	endpoint := c.d.HTTP.APIRouter.Group("/api/v0/console", c.d.Auth.UserAuthentication())
+	endpoint := c.d.HTTP.APIRouter.Group("/api/v0/console",
+		c.d.Auth.UserAuthentication(), c.userScoping())
 	endpoint.GET("/configuration", c.configHandlerFunc)
 	endpoint.GET("/docs/{name}", c.docsHandlerFunc)
 	endpoint.GET("/widget/flow-last", c.widgetFlowLastHandlerFunc, c.d.HTTP.CacheByRequestPath(5*time.Second))
