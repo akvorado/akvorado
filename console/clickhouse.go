@@ -33,10 +33,11 @@ type flowsTable struct {
 func (c *Component) refreshFlowsTables() error {
 	ctx := c.t.Context(nil)
 	var tables []struct {
-		Name string `ch:"name"`
+		Name   string `ch:"name"`
+		Engine string `ch:"engine"`
 	}
 	err := c.d.ClickHouseDB.Select(ctx, &tables, `
-SELECT name
+SELECT name, engine
 FROM system.tables
 WHERE database=currentDatabase()
 AND table LIKE 'flows%'
@@ -60,12 +61,21 @@ AND (engine LIKE '%MergeTree' OR engine = 'Distributed')
 				continue
 			}
 		}
-		// Get oldest timestamp
+		// Get oldest timestamp. This query runs outside of any request, so it
+		// carries no user: a row policy relying on clickhouse-user-setting
+		// would make it fail on the table itself. system.parts holds the same
+		// information and is not subject to row policies. A Distributed table
+		// has no parts, but row policies do not apply to it either.
 		var oldest []struct {
 			T time.Time `ch:"t"`
 		}
-		err := c.d.ClickHouseDB.Conn.Select(ctx, &oldest,
-			fmt.Sprintf(`SELECT MIN(TimeReceived) AS t FROM %s`, table.Name))
+		query := fmt.Sprintf(`SELECT MIN(TimeReceived) AS t FROM %s`, table.Name)
+		if table.Engine != "Distributed" {
+			query = fmt.Sprintf(
+				`SELECT MIN(min_time) AS t FROM system.parts WHERE database=currentDatabase() AND table=%s AND active`,
+				sb.String(table.Name))
+		}
+		err := c.d.ClickHouseDB.Conn.Select(ctx, &oldest, query)
 		if err != nil {
 			return fmt.Errorf("cannot query table %s for oldest timestamp: %w", table.Name, err)
 		}
