@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 import { syntaxTree } from "@codemirror/language";
+import { EditorView } from "@codemirror/view";
 
+import type { EditorState, TransactionSpec } from "@codemirror/state";
 import type {
   CompletionContext,
   CompletionResult,
@@ -208,3 +210,30 @@ export const complete = async (ctx: CompletionContext) => {
   });
   return completion;
 };
+
+// dropTrailingComma builds the change closing a list of values when the last
+// value is followed by a comma.
+export const dropTrailingComma = (
+  state: EditorState,
+  pos: number,
+): TransactionSpec | null => {
+  const comma = state.sliceDoc(0, pos).search(/,\s*$/);
+  if (comma === -1) return null;
+  if (syntaxTree(state).resolve(comma, 1).name !== "ValueComma") return null;
+  return {
+    changes: { from: comma, to: pos, insert: ")" },
+    selection: { anchor: comma + 1 },
+    userEvent: "input.type",
+    scrollIntoView: true,
+  };
+};
+
+export const closeValueList = EditorView.inputHandler.of(
+  (view, from, to, text) => {
+    if (text !== ")" || from !== to) return false;
+    const change = dropTrailingComma(view.state, from);
+    if (change === null) return false;
+    view.dispatch(change);
+    return true;
+  },
+);

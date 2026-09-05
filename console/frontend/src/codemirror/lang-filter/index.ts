@@ -4,7 +4,7 @@
 import { LRLanguage, LanguageSupport } from "@codemirror/language";
 import { styleTags, tags as t } from "@lezer/highlight";
 import { parser } from "./syntax.grammar";
-import { complete } from "./complete";
+import { complete, closeValueList } from "./complete";
 import { linterSource } from "./linter";
 
 export const FilterLanguage = LRLanguage.define({
@@ -30,7 +30,7 @@ export const FilterLanguage = LRLanguage.define({
 });
 
 export function filterLanguage() {
-  return new LanguageSupport(FilterLanguage);
+  return new LanguageSupport(FilterLanguage, [closeValueList]);
 }
 export function filterCompletion() {
   return FilterLanguage.data.of({ autocomplete: complete });

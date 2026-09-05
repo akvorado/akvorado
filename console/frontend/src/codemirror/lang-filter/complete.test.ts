@@ -5,6 +5,7 @@ import { EditorState } from "@codemirror/state";
 import { CompletionContext, autocompletion } from "@codemirror/autocomplete";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { filterLanguage, filterCompletion } from ".";
+import { dropTrailingComma } from "./complete";
 import type { complete } from "./complete";
 
 async function get(doc: string) {
@@ -469,5 +470,58 @@ describe("filter completion", () => {
         { apply: "SrcCountry ", detail: "column name", label: "SrcCountry" },
       ],
     });
+  });
+});
+
+describe("value list closing", () => {
+  // When there is "|", we type ")" and return the new content, with "|" for the
+  // cursor.
+  const close = (doc: string) => {
+    const cur = doc.indexOf("|");
+    const state = EditorState.create({
+      doc: doc.slice(0, cur) + doc.slice(cur + 1),
+      selection: { anchor: cur },
+      extensions: [filterLanguage()],
+    });
+    const change = dropTrailingComma(state, cur) ?? state.replaceSelection(")");
+    const after = state.update(change).state;
+    const pos = after.selection.main.head;
+    return `${after.sliceDoc(0, pos)}|${after.sliceDoc(pos)}`;
+  };
+
+  it("removes the comma added by the completion", () => {
+    expect(close("SrcAS IN (1111, 8887, |")).toEqual("SrcAS IN (1111, 8887)|");
+  });
+
+  it("removes a comma without space", () => {
+    expect(close("SrcAS IN (1111,|")).toEqual("SrcAS IN (1111)|");
+  });
+
+  it("keeps the remaining text", () => {
+    expect(close("SrcAS IN (1111, | AND DstAS = 2")).toEqual(
+      "SrcAS IN (1111)| AND DstAS = 2",
+    );
+  });
+
+  it("does not remove anything without a comma", () => {
+    expect(close("SrcAS IN (1111, 8887|")).toEqual("SrcAS IN (1111, 8887)|");
+  });
+
+  it("does not remove a comma inside a string", () => {
+    expect(close('ExporterName = "paris, |')).toEqual(
+      'ExporterName = "paris, )|',
+    );
+  });
+
+  it("does not remove a comma inside a string inside a list", () => {
+    expect(close('ExporterName IN ("paris, |')).toEqual(
+      'ExporterName IN ("paris, )|',
+    );
+  });
+
+  it("does not remove a comma inside a comment", () => {
+    expect(close("SrcAS = 1111 -- first, |")).toEqual(
+      "SrcAS = 1111 -- first, )|",
+    );
   });
 });
