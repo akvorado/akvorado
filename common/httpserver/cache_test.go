@@ -60,6 +60,105 @@ func TestCacheByRequestPath(t *testing.T) {
 	}
 }
 
+// discriminateByRemoteUser makes the caches below key on the `Remote-User'
+// header, the way the console does with the login of the authenticated user.
+func discriminateByRemoteUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		ctx := httpserver.WithCacheKeyDiscriminator(req.Context(),
+			req.Header.Get("Remote-User"))
+		next.ServeHTTP(w, req.WithContext(ctx))
+	})
+}
+
+func TestCacheByRequestPathWithDiscriminator(t *testing.T) {
+	r := reporter.NewMock(t)
+	h := httpserver.NewMock(t, r)
+
+	count := 0
+	h.APIRouter.GET("/api/v0/test",
+		func(w http.ResponseWriter, _ *http.Request) {
+			count++
+			httpserver.WriteJSON(w, http.StatusOK, helpers.M{
+				"message": "ping",
+				"count":   count,
+			})
+		},
+		discriminateByRemoteUser, h.CacheByRequestPath(time.Minute))
+
+	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
+		{
+			Description: "first user",
+			URL:         "/api/v0/test",
+			Header:      http.Header{"Remote-User": []string{"alfred"}},
+			JSONOutput:  helpers.M{"message": "ping", "count": 1},
+		}, {
+			Description: "first user, cached",
+			URL:         "/api/v0/test",
+			Header:      http.Header{"Remote-User": []string{"alfred"}},
+			JSONOutput:  helpers.M{"message": "ping", "count": 1},
+		}, {
+			Description: "second user does not get the response of the first one",
+			URL:         "/api/v0/test",
+			Header:      http.Header{"Remote-User": []string{"bernard"}},
+			JSONOutput:  helpers.M{"message": "ping", "count": 2},
+		}, {
+			Description: "second user, cached",
+			URL:         "/api/v0/test",
+			Header:      http.Header{"Remote-User": []string{"bernard"}},
+			JSONOutput:  helpers.M{"message": "ping", "count": 2},
+		}, {
+			Description: "first user still has their own response",
+			URL:         "/api/v0/test",
+			Header:      http.Header{"Remote-User": []string{"alfred"}},
+			JSONOutput:  helpers.M{"message": "ping", "count": 1},
+		},
+	})
+}
+
+func TestCacheByRequestBodyWithDiscriminator(t *testing.T) {
+	r := reporter.NewMock(t)
+	h := httpserver.NewMock(t, r)
+
+	count := 0
+	h.APIRouter.POST("/api/v0/test",
+		func(w http.ResponseWriter, _ *http.Request) {
+			count++
+			httpserver.WriteJSON(w, http.StatusOK, helpers.M{
+				"message": "ping",
+				"count":   count,
+			})
+		},
+		discriminateByRemoteUser, h.CacheByRequestBody(time.Minute))
+
+	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
+		{
+			Description: "first user",
+			URL:         "/api/v0/test",
+			Header:      http.Header{"Remote-User": []string{"alfred"}},
+			JSONInput:   helpers.M{"hop": 1},
+			JSONOutput:  helpers.M{"message": "ping", "count": 1},
+		}, {
+			Description: "first user, cached",
+			URL:         "/api/v0/test",
+			Header:      http.Header{"Remote-User": []string{"alfred"}},
+			JSONInput:   helpers.M{"hop": 1},
+			JSONOutput:  helpers.M{"message": "ping", "count": 1},
+		}, {
+			Description: "second user, same body, does not get the response of the first one",
+			URL:         "/api/v0/test",
+			Header:      http.Header{"Remote-User": []string{"bernard"}},
+			JSONInput:   helpers.M{"hop": 1},
+			JSONOutput:  helpers.M{"message": "ping", "count": 2},
+		}, {
+			Description: "first user still has their own response",
+			URL:         "/api/v0/test",
+			Header:      http.Header{"Remote-User": []string{"alfred"}},
+			JSONInput:   helpers.M{"hop": 1},
+			JSONOutput:  helpers.M{"message": "ping", "count": 1},
+		},
+	})
+}
+
 func TestCacheByRequestBody(t *testing.T) {
 	r := reporter.NewMock(t)
 	h := httpserver.NewMock(t, r)

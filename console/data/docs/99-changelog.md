@@ -12,9 +12,13 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 🔒 *console*: do not share a cached response between users when
+  `console.clickhouse-user-setting` is set
 - 🩹 *console*: complete custom dictionary values like the other string columns
 - 🌱 *console*: apply a filter with Ctrl-Enter even when its validation is still running
 - 🌱 *console*: remove the trailing when closing a list of values
+- 🌱 *console*: add `console.clickhouse-user-setting` to pass the authenticated
+  user to ClickHouse as a query setting
 - 🌱 *outlet*: ClickHouse server selection strategy is configurable through
   `outlet.clickhouse.server-selection`: `sticky-random` (the default) or
   `round-robin`.

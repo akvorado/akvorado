@@ -5,6 +5,7 @@ package httpserver
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -25,11 +26,32 @@ type cachedResponse struct {
 	Body    []byte
 }
 
+// cacheKeyContextKey is the key under which an additional discriminator for
+// the cache keys is stored in the request context.
+type cacheKeyContextKey struct{}
+
+// WithCacheKeyDiscriminator returns a context making the caching middlewares
+// mix the provided value into the keys they build. A response depending on
+// something else than the request itself, like the identity of the
+// authenticated user, must set it. Otherwise, the response computed for one
+// user is served to the next one.
+func WithCacheKeyDiscriminator(ctx context.Context, discriminator string) context.Context {
+	return context.WithValue(ctx, cacheKeyContextKey{}, discriminator)
+}
+
+// cacheKeyDiscriminator returns the discriminator attached to the request by
+// WithCacheKeyDiscriminator, or an empty string when there is none.
+func cacheKeyDiscriminator(req *http.Request) string {
+	discriminator, _ := req.Context().Value(cacheKeyContextKey{}).(string)
+	return discriminator
+}
+
 // CacheByRequestPath is a middleware that caches the response keyed
 // on the request path.
 func (c *Component) CacheByRequestPath(expire time.Duration) Middleware {
 	return c.cacheMiddleware(expire, func(req *http.Request) (string, bool) {
-		return fmt.Sprintf("cache-path-%s", req.URL.Path), true
+		return fmt.Sprintf("cache-path-%s\x00%s",
+			cacheKeyDiscriminator(req), req.URL.Path), true
 	})
 }
 
@@ -45,7 +67,8 @@ func (c *Component) CacheByRequestBody(expire time.Duration) Middleware {
 			return "", false
 		}
 		h := sha256.New()
-		fmt.Fprintf(h, "%s\x00%s\x00", req.Method, req.URL.Path)
+		fmt.Fprintf(h, "%s\x00%s\x00%s\x00",
+			cacheKeyDiscriminator(req), req.Method, req.URL.Path)
 		h.Write(body)
 		return fmt.Sprintf("cache-request-%s", string(h.Sum(nil))), true
 	})
