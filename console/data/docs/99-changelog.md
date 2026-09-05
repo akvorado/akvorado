@@ -13,6 +13,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🩹 *console*: complete custom dictionary values like the other string columns
+- 🌱 *console*: apply a filter with Ctrl-Enter even when its validation is still running
 - 🌱 *outlet*: ClickHouse server selection strategy is configurable through
   `outlet.clickhouse.server-selection`: `sticky-random` (the default) or
   `round-robin`.

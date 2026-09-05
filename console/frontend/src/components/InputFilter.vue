@@ -66,7 +66,15 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, inject, watch, computed, onMounted, onBeforeUnmount } from "vue";
+import {
+  ref,
+  inject,
+  watch,
+  computed,
+  nextTick,
+  onMounted,
+  onBeforeUnmount,
+} from "vue";
 import { useFetch } from "@vueuse/core";
 import { TrashIcon, EyeIcon, EyeOffIcon } from "@heroicons/vue/solid";
 import InputBase from "@/components/InputBase.vue";
@@ -84,7 +92,7 @@ import {
 import { EditorView, keymap, placeholder } from "@codemirror/view";
 import { syntaxHighlighting, HighlightStyle } from "@codemirror/language";
 import { standardKeymap, history } from "@codemirror/commands";
-import { linter } from "@codemirror/lint";
+import { linter, forceLinting } from "@codemirror/lint";
 import { autocompletion, acceptCompletion } from "@codemirror/autocomplete";
 import { tags as t } from "@lezer/highlight";
 import {
@@ -152,6 +160,8 @@ const addFilter = async ({
 const elEditor = ref<HTMLDivElement | null>(null);
 const expression = ref(""); // Keep in sync with modelValue.expression
 const error = ref(""); // Keep in sync with modelValue.errors
+let validatedExpression: string | null = null; // Text "error" applies to
+let pendingSubmit = false;
 let component:
   | { view: EditorView; state: EditorState }
   | { view: null; state: null } = {
@@ -206,8 +216,15 @@ const filterTheme = computed(() => [
   EditorView.theme({}, { dark: isDark.value }),
 ]);
 
-const submitFilter = (_: EditorView): boolean => {
-  emit("submit");
+// When the current text is not validated yet, wait for the result instead of
+// dropping the submission.
+const submitFilter = (view: EditorView): boolean => {
+  if (view.state.doc.toString() === validatedExpression) {
+    emit("submit");
+  } else {
+    pendingSubmit = true;
+    forceLinting(view);
+  }
   return true;
 };
 
@@ -220,9 +237,20 @@ onMounted(() => {
       filterCompletion(),
       autocompletion({ icons: false }),
       linter(async (v) => {
-        const diags = await filterLinterSource(v);
-        error.value = diags.length > 0 ? "Invalid filter expression" : "";
-        return diags;
+        const code = v.state.doc.toString();
+        try {
+          const diags = await filterLinterSource(v);
+          if (code === v.state.doc.toString()) {
+            error.value = diags.length > 0 ? "Invalid filter expression" : "";
+            validatedExpression = code;
+          }
+          return diags;
+        } finally {
+          if (pendingSubmit && code === v.state.doc.toString()) {
+            nextTick(() => emit("submit"));
+            pendingSubmit = false;
+          }
+        }
       }),
       keymap.of([
         ...standardKeymap.filter((b) => b.key !== "Mod-a"),
@@ -236,6 +264,7 @@ onMounted(() => {
       EditorView.updateListener.of((viewUpdate) => {
         if (viewUpdate.docChanged) {
           expression.value = viewUpdate.state.doc.toString();
+          pendingSubmit = false;
         }
         if (viewUpdate.focusChanged) {
           if (!viewUpdate.view.hasFocus) {
