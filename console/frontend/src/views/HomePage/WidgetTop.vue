@@ -52,70 +52,65 @@ const { data } = useFetch(url, { refetch: true })
   .json<
     { top: Array<{ name: string; percent: number }> } | { message: string }
   >();
-const options = computed(
-  (): ECOption => ({
-    darkMode: isDark.value,
-    backgroundColor: "transparent",
-    tooltip: {
-      trigger: "item",
-      confine: true,
-      valueFormatter(value) {
-        return ((value?.valueOf() as number) ?? 0).toFixed(2) + "%";
-      },
+const options = computed((): ECOption => ({
+  darkMode: isDark.value,
+  backgroundColor: "transparent",
+  tooltip: {
+    trigger: "item",
+    confine: true,
+    valueFormatter(value) {
+      return ((value?.valueOf() as number) ?? 0).toFixed(2) + "%";
     },
-    legend: {
-      orient: "horizontal",
-      bottom: "bottom",
-      itemGap: 5,
-      itemWidth: 14,
-      itemHeight: 14,
-      textStyle: {
-        fontSize: 10,
-        color: isDark.value ? "#eee" : "#111",
-      },
-      formatter(name: string) {
-        return name.split(": ")[0];
-      },
+  },
+  legend: {
+    orient: "horizontal",
+    bottom: "bottom",
+    itemGap: 5,
+    itemWidth: 14,
+    itemHeight: 14,
+    textStyle: {
+      fontSize: 10,
+      color: isDark.value ? "#eee" : "#111",
     },
-    series: [
-      {
-        type: "pie",
-        label: { show: false },
-        center: ["50%", "40%"],
-        radius: "60%",
-        data:
-          !data.value || "message" in data.value
-            ? []
-            : [
-                ...(data.value?.top || [])
-                  .filter(({ percent }) => percent > 0)
-                  .map(({ name, percent }) => ({
-                    name,
-                    value: percent,
-                  })),
-                {
-                  name: "Others",
-                  value: Math.max(
-                    100 -
-                      (data.value?.top || []).reduce(
-                        (c, n) => c + n.percent,
-                        0,
-                      ),
-                    0,
-                  ),
-                },
-              ].filter(({ value }) => value > 0.05),
-        itemStyle: {
-          color({ name, dataIndex }: { name: string; dataIndex: number }) {
-            const theme = isDark.value ? "dark" : "light";
-            if (name === "Others") {
-              return dataColorGrey(0, false, theme);
-            }
-            return dataColor(dataIndex, false, theme);
-          },
+    formatter(name: string) {
+      return name.split(": ")[0];
+    },
+  },
+  series: [
+    {
+      type: "pie",
+      label: { show: false },
+      center: ["50%", "40%"],
+      radius: "60%",
+      data:
+        !data.value || "message" in data.value
+          ? []
+          : [
+              ...(data.value?.top || [])
+                .filter(({ percent }) => percent > 0)
+                .map(({ name, percent }) => ({
+                  name,
+                  value: percent,
+                })),
+              {
+                name: "Others",
+                value: Math.max(
+                  100 -
+                    (data.value?.top || []).reduce((c, n) => c + n.percent, 0),
+                  0,
+                ),
+              },
+            ].filter(({ value }) => value > 0.05),
+      itemStyle: {
+        color({ name, dataIndex }: { name: string; dataIndex: number }) {
+          const theme = isDark.value ? "dark" : "light";
+          if (name === "Others") {
+            return dataColorGrey(0, false, theme);
+          }
+          return dataColor(dataIndex, false, theme);
         },
       },
-    ],
-  }),
-);
+    },
+  ],
+}));
 </script>
