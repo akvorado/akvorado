@@ -1,13 +1,9 @@
 # Introduction
 
-*Akvorado*[^name] receives network flows, such as NetFlow/IPFIX and sFlow. It enriches
+*Akvorado* receives network flows, such as NetFlow/IPFIX and sFlow. It enriches
 them with interface names (using SNMP), and geographic information (using
 [IPinfo](https://ipinfo.io/) or MaxMind). Then, it exports them to ClickHouse via
 Kafka. It also provides a web interface to explore the data.
-
-[^name]: [Akvorado][] means "water wheel" in Esperanto.
-
-[Akvorado]: https://eo.wikipedia.org/wiki/Akvorado
 
 A public instance filled with generated traffic runs on
 [demo.akvorado.net](https://demo.akvorado.net). It is the best place to see what
@@ -74,3 +70,9 @@ Questions go to the [discussions on
 GitHub](https://github.com/akvorado/akvorado/discussions/categories/q-a).
 Explain what you tried and what you observed, and include the output of the
 commands from the troubleshooting guide.
+
+## Colophon
+
+[Akvorado][] means "water wheel" in Esperanto.
+
+[Akvorado]: https://eo.wikipedia.org/wiki/Akvorado

@@ -59,8 +59,6 @@ func TestServeDocs(t *testing.T) {
 			// the page.
 			{"usage", `<a href=\"docs/configuration\">configuration section</a>`},
 			{"configuration", `<a href=\"docs/configuration#kafka-1\">orchestrator service</a>`},
-			// This includes the links to an anchor added by the footnotes.
-			{"intro", `<a href=\"docs/intro#fn:1\"`},
 			{"design", `<img src=\"assets/docs/design.svg\"`},
 			// Documents which do not exist anymore are served by their
 			// replacement.

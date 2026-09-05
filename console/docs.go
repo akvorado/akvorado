@@ -73,7 +73,6 @@ var (
 	docParser = parser.New(
 		parser.WithExtensions(
 			extension.TableParser,
-			extension.FootnoteParser,
 			extension.TypographerParser,
 			highlighting.Parser,
 			admonitionParser,
@@ -86,7 +85,6 @@ var (
 	docRenderer = html.New(
 		html.WithExtensions(
 			extension.TableHTMLRenderer,
-			extension.FootnoteHTMLRenderer,
 			highlighting.NewHTMLRenderer(
 				highlighting.WithCustomStyle(draculaStyle),
 			),
@@ -167,22 +165,19 @@ func (c *Component) docsHandlerFunc(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	parserContext := parser.NewContext()
+	parserContext.Set(documentNameKey, requestedDocument)
+
 	var buf strings.Builder
-	if err := docRenderer.Render(&buf, markdown, docParser.Parse(markdown)); err != nil {
+	node := docParser.Parse(markdown, parser.WithContext(parserContext))
+	if err := docRenderer.Render(&buf, markdown, node); err != nil {
 		c.r.Err(err).Str("path", requestedDocument).Msg("unable to render markdown document")
 		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "Unable to render document."})
 		return
 	}
 
-	// Because of the <base> tag, the browser resolves a link to an anchor from
-	// the base URL instead of from the current page: name the page in each of
-	// them. This is done on the rendered document to also cover the links built
-	// by the footnote extension, which does it in its renderer.
-	rendered := strings.ReplaceAll(buf.String(), `href="#`,
-		fmt.Sprintf(`href="docs/%s#`, requestedDocument))
-
 	httpserver.WritePureJSON(w, http.StatusOK, helpers.M{
-		"markdown": rendered,
+		"markdown": buf.String(),
 		"toc":      c.documentTOC(),
 	})
 }
@@ -389,23 +384,32 @@ func prefersOverMarkdown(accept, mediaType string) bool {
 	return quality > 0 && quality > mediaTypeQuality(accept, docsTypeMarkdown)
 }
 
-// linkTransformer rewrites the links to the other documents and the images to
-// URLs relative to the <base> tag of the web interface.
+// documentNameKey is the parser context key holding the name of the document
+// being parsed.
+var documentNameKey = parser.NewContextKey()
+
+// linkTransformer rewrites the links to the other documents, the links to an
+// anchor and the images to URLs relative to the <base> tag of the web
+// interface.
 type linkTransformer struct{}
 
 // Transform implements parser.ASTTransformer
-func (r *linkTransformer) Transform(node *ast.Document, reader text.Reader, _ parser.Context) {
+func (r *linkTransformer) Transform(node *ast.Document, reader text.Reader, pc parser.Context) {
 	source := reader.Source()
+	currentDocument, _ := pc.Get(documentNameKey).(string)
 	ast.Walk(node, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
 			return ast.WalkContinue, nil
 		}
 		switch node := n.(type) {
 		case *ast.Link:
-			matches := internalLinkRegexp.FindStringSubmatch(node.Destination.Value(source))
-			if matches != nil {
+			destination := node.Destination.Value(source)
+			if matches := internalLinkRegexp.FindStringSubmatch(destination); matches != nil {
 				node.Destination = text.NewSingleLineValueFromString(
 					fmt.Sprintf("docs/%s%s", matches[3], matches[4]), text.IdentityDecoder)
+			} else if strings.HasPrefix(destination, "#") {
+				node.Destination = text.NewSingleLineValueFromString(
+					fmt.Sprintf("docs/%s%s", currentDocument, destination), text.IdentityDecoder)
 			}
 		case *ast.Image:
 			if path := node.Destination.Value(source); !strings.Contains(path, "/") {
