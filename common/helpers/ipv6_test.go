@@ -4,9 +4,9 @@
 package helpers_test
 
 import (
-	"fmt"
 	"net/netip"
 	"testing"
+	"unique"
 
 	"akvorado/common/helpers"
 )
@@ -73,25 +73,56 @@ func addrTo6Safe(ip netip.Addr) netip.Addr {
 	return ip
 }
 
+// The types below mirror the internals of net/netip. They give the cost of
+// AddrTo6 if netip had a Map() method.
+type (
+	netipUint128 struct{ hi, lo uint64 }
+
+	netipAddrDetail struct {
+		isV6   bool
+		zoneV6 string
+	}
+
+	netipAddr struct {
+		addr netipUint128
+		z    unique.Handle[netipAddrDetail]
+	}
+)
+
+var (
+	netipZ4    = unique.Make(netipAddrDetail{})
+	netipZ6noz = unique.Make(netipAddrDetail{isV6: true})
+)
+
+func (ip netipAddr) Is4() bool { return ip.z == netipZ4 }
+
+func (ip netipAddr) Map() netipAddr {
+	if ip.Is4() {
+		ip.z = netipZ6noz
+	}
+	return ip
+}
+
 func BenchmarkAddrTo6(b *testing.B) {
 	ipv4 := netip.MustParseAddr("192.168.1.1")
-	ipv6 := netip.MustParseAddr("2a01:db8::1")
-	for _, ip := range []netip.Addr{ipv4, ipv6} {
-		version := "v4"
-		if ip.Is6() {
-			version = "v6"
+	nativeIPv4 := netipAddr{netipUint128{0, 0xffff_c0a80101}, netipZ4}
+	_ = nativeIPv4.z.Value().zoneV6 // silence staticcheck
+
+	b.Run("safe", func(b *testing.B) {
+		for b.Loop() {
+			_ = addrTo6Safe(ipv4)
 		}
-		b.Run(fmt.Sprintf("safe %s", version), func(b *testing.B) {
-			for b.Loop() {
-				_ = addrTo6Safe(ip)
-			}
-		})
-		b.Run(fmt.Sprintf("unsafe %s", version), func(b *testing.B) {
-			for b.Loop() {
-				_ = helpers.AddrTo6(ip)
-			}
-		})
-	}
+	})
+	b.Run("unsafe", func(b *testing.B) {
+		for b.Loop() {
+			_ = helpers.AddrTo6(ipv4)
+		}
+	})
+	b.Run("native", func(b *testing.B) {
+		for b.Loop() {
+			_ = nativeIPv4.Map()
+		}
+	})
 	b.Run("do nothing", func(b *testing.B) {
 		for b.Loop() {
 		}
