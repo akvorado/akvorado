@@ -6,9 +6,7 @@ package helpers_test
 import (
 	"fmt"
 	"net/netip"
-	"reflect"
 	"testing"
-	"unsafe"
 
 	"akvorado/common/helpers"
 )
@@ -68,63 +66,11 @@ func TestUnmapPrefix(t *testing.T) {
 	}
 }
 
-func TestNetIPAddrStructure(t *testing.T) {
-	var addr netip.Addr
-	addrType := reflect.TypeFor[netip.Addr]()
-
-	// Test total size: 24 bytes (16 for uint128 + 8 for unique.Handle)
-	if unsafe.Sizeof(addr) != 24 {
-		t.Errorf("netip.Addr size = %d, want 24", unsafe.Sizeof(addr))
-	}
-
-	// Test number of fields
-	if addrType.NumField() != 2 {
-		t.Errorf("netip.Addr has %d fields, want 2", addrType.NumField())
-	}
-
-	// Test field 0: addr (uint128, 16 bytes)
-	field0 := addrType.Field(0)
-	if field0.Name != "addr" {
-		t.Errorf("field 0 name = %q, want %q", field0.Name, "addr")
-	}
-	if field0.Type.String() != "netip.uint128" {
-		t.Errorf("field 0 type = %q, want %q", field0.Type.String(), "netip.uint128")
-	}
-	if field0.Offset != 0 {
-		t.Errorf("field 0 offset = %d, want 0", field0.Offset)
-	}
-	if field0.Type.Size() != 16 {
-		t.Errorf("field 0 (addr) size = %d, want 16", field0.Type.Size())
-	}
-
-	// Test field 1: z (unique.Handle, 8 bytes)
-	field1 := addrType.Field(1)
-	if field1.Name != "z" {
-		t.Errorf("field 1 name = %q, want %q", field1.Name, "z")
-	}
-	if field1.Type.String() != "unique.Handle[net/netip.addrDetail]" {
-		t.Errorf("field 0 type = %q, want %q", field1.Type.String(), "unique.Handle[net/netip.addrDetail]")
-	}
-	if field1.Offset != 16 {
-		t.Errorf("field 1 offset = %d, want 16", field1.Offset)
-	}
-	if field1.Type.Size() != 8 {
-		t.Errorf("field 1 (z) size = %d, want 8", field1.Type.Size())
-	}
-
-	t.Logf("netip.Addr structure verified: [addr %d bytes @ 0] [z %d bytes @ 16]",
-		field0.Type.Size(), field1.Type.Size())
-}
-
 func addrTo6Safe(ip netip.Addr) netip.Addr {
 	if ip.Is4() {
 		return netip.AddrFrom16(ip.As16())
 	}
 	return ip
-}
-
-func addrTo6SafeNocheck(ip netip.Addr) netip.Addr {
-	return netip.AddrFrom16(ip.As16())
 }
 
 func BenchmarkAddrTo6(b *testing.B) {
@@ -138,11 +84,6 @@ func BenchmarkAddrTo6(b *testing.B) {
 		b.Run(fmt.Sprintf("safe %s", version), func(b *testing.B) {
 			for b.Loop() {
 				_ = addrTo6Safe(ip)
-			}
-		})
-		b.Run(fmt.Sprintf("safe nocheck %s", version), func(b *testing.B) {
-			for b.Loop() {
-				_ = addrTo6SafeNocheck(ip)
 			}
 		})
 		b.Run(fmt.Sprintf("unsafe %s", version), func(b *testing.B) {

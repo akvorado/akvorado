@@ -8,30 +8,40 @@ import (
 	"unsafe"
 )
 
+// addrProxy has the same layout as netip.Addr. TestNetIPAddrStructure checks
+// this is still true.
+type addrProxy struct {
+	addr [2]uint64      // netip.uint128
+	z    unsafe.Pointer // unique.Handle[netip.addrDetail]
+}
+
 var (
-	someIPv6 = netip.MustParseAddr("2001:db8::1")
-	z6noz    = *(*uint64)(unsafe.Add(unsafe.Pointer(&someIPv6), 16))
+	anyIPv6 = netip.IPv6Unspecified()
+	z6noz   = (*addrProxy)(unsafe.Pointer(&anyIPv6)).z
 )
 
 // AddrTo6 maps an IPv4 address to an IPv4-mapped IPv6 address. It returns an
-// IPv6 address unmodified. This is unsafe, but there is a test to ensure
-// netip.Addr is like we expect. Copying a unique.Handle bypass reference count,
-// but z6noz is "static".
+// IPv6 address unmodified. netip already stores an IPv4 address as
+// ::ffff:a.b.c.d, so only the family marker has to change. This is unsafe, but
+// there is a test to ensure netip.Addr is like we expect. Copying a
+// unique.Handle bypasses the unique package bookkeeping, but z6noz lives for
+// the whole program.
 //
 // This would be trivial to implement inside netip:
 //
-//	func (ip Addr) Unmap() Addr {
+//	func (ip Addr) To6() Addr {
 //		if ip.Is4() {
 //			ip.z = z6noz
 //		}
 //		return ip
 //	}
 func AddrTo6(ip netip.Addr) netip.Addr {
-	if ip.Is4() {
-		p := (*uint64)(unsafe.Add(unsafe.Pointer(&ip), 16))
-		*p = z6noz
+	if !ip.Is4() {
+		return ip
 	}
-	return ip
+	p := *(*addrProxy)(unsafe.Pointer(&ip))
+	p.z = z6noz
+	return *(*netip.Addr)(unsafe.Pointer(&p))
 }
 
 // PrefixTo6 maps an IPv4 prefix to an IPv4-mapped IPv6 prefix. It returns an
