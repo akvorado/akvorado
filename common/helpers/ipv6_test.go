@@ -92,4 +92,8 @@ func BenchmarkAddrTo6(b *testing.B) {
 			}
 		})
 	}
+	b.Run("do nothing", func(b *testing.B) {
+		for b.Loop() {
+		}
+	})
 }
