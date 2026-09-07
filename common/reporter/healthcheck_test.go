@@ -93,24 +93,26 @@ func TestHealthcheckCancelContext(t *testing.T) {
 }
 
 func TestChannelHealthcheck(t *testing.T) {
-	contact := make(chan reporter.ChannelHealthcheckFunc)
-	go func() {
-		select {
-		case f := <-contact:
-			f(reporter.HealthcheckOK, "all well, thank you!")
-		case <-time.After(50 * time.Millisecond):
-		}
-	}()
+	synctest.Test(t, func(t *testing.T) {
+		contact := make(chan reporter.ChannelHealthcheckFunc)
+		go func() {
+			select {
+			case f := <-contact:
+				f(reporter.HealthcheckOK, "all well, thank you!")
+			case <-time.After(50 * time.Millisecond):
+			}
+		}()
 
-	r := reporter.NewMock(t)
-	r.RegisterHealthcheck("hc1", reporter.ChannelHealthcheck(t.Context(), contact))
-	testHealthchecks(t.Context(), t, r,
-		reporter.MultipleHealthcheckResults{
-			Status: reporter.HealthcheckOK,
-			Details: map[string]reporter.HealthcheckResult{
-				"hc1": {reporter.HealthcheckOK, "all well, thank you!"},
-			},
-		})
+		r := reporter.NewMock(t)
+		r.RegisterHealthcheck("hc1", reporter.ChannelHealthcheck(t.Context(), contact))
+		testHealthchecks(t.Context(), t, r,
+			reporter.MultipleHealthcheckResults{
+				Status: reporter.HealthcheckOK,
+				Details: map[string]reporter.HealthcheckResult{
+					"hc1": {reporter.HealthcheckOK, "all well, thank you!"},
+				},
+			})
+	})
 }
 
 func TestHealthcheckHTTPHandler(t *testing.T) {
