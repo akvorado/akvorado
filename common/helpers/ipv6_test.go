@@ -103,24 +103,29 @@ func (ip netipAddr) Map() netipAddr {
 	return ip
 }
 
+// The inputs are package-level and public on purpose. With a local, the
+// compiler optimizes part of the work by putting it outside b.Loop().
+var (
+	BenchIPv4       = netip.MustParseAddr("192.168.1.1")
+	BenchNativeIPv4 = netipAddr{netipUint128{0, 0xffff_c0a80101}, netipZ4}
+)
+
 func BenchmarkAddrTo6(b *testing.B) {
-	ipv4 := netip.MustParseAddr("192.168.1.1")
-	nativeIPv4 := netipAddr{netipUint128{0, 0xffff_c0a80101}, netipZ4}
-	_ = nativeIPv4.z.Value().zoneV6 // silence staticcheck
+	_ = BenchNativeIPv4.z.Value().zoneV6 // silence staticcheck
 
 	b.Run("safe", func(b *testing.B) {
 		for b.Loop() {
-			_ = addrTo6Safe(ipv4)
+			_ = addrTo6Safe(BenchIPv4)
 		}
 	})
 	b.Run("unsafe", func(b *testing.B) {
 		for b.Loop() {
-			_ = helpers.AddrTo6(ipv4)
+			_ = helpers.AddrTo6(BenchIPv4)
 		}
 	})
 	b.Run("native", func(b *testing.B) {
 		for b.Loop() {
-			_ = nativeIPv4.Map()
+			_ = BenchNativeIPv4.Map()
 		}
 	})
 	b.Run("do nothing", func(b *testing.B) {
