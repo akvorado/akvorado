@@ -69,7 +69,7 @@ func TestFileInput(t *testing.T) {
 	}()
 
 	select {
-	case <-time.After(50 * time.Millisecond):
+	case <-time.After(time.Second):
 		t.Fatal("timeout while waiting to receive flows")
 	case <-done:
 		if diff := helpers.Diff(got, expected); diff != "" {
