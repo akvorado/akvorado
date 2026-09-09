@@ -3,13 +3,13 @@
 # labels and the source location becomes a comment.
 #
 # Usage:
-#   ./dis.sh <symbol-regexp>
+#   ./go-disassemble <symbol-regexp>
 #
 # The package is built as a test binary, so tests and benchmarks are included.
 # An inlined function keeps no symbol: disassemble a caller and read the
 # file:line column to find it.
 #
-#   ./dis.sh 'BenchmarkAddrTo6\.func[123]$'
+#   ./go-disassemble 'BenchmarkAddrTo6\.func[123]$'
 
 set -eu
 
@@ -29,8 +29,9 @@ if [ -z "$out" ]; then
 	exit 1
 fi
 
+# Convert jump targets to labels
 printf '%s\n' "$out" | awk '
-function flush(   i, x, a, src, instr) {
+function flush(i, x, a, src, instr) {
 	if (n == 0) return
 	for (i = 1; i <= n; i++)
 		if (addr[i] in tgt && !(addr[i] in lbl)) lbl[addr[i]] = "L" ++c
