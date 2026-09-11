@@ -39,9 +39,8 @@ func AddrTo6(ip netip.Addr) netip.Addr {
 	if !ip.Is4() {
 		return ip
 	}
-	p := *(*addrProxy)(unsafe.Pointer(&ip))
-	p.z = z6noz
-	return *(*netip.Addr)(unsafe.Pointer(&p))
+	(*addrProxy)(unsafe.Pointer(&ip)).z = z6noz
+	return ip
 }
 
 // PrefixTo6 maps an IPv4 prefix to an IPv4-mapped IPv6 prefix. It returns an
