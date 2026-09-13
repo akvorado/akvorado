@@ -9,10 +9,6 @@
     <span class="shrink-0 py-0.5">
       <CalendarIcon class="inline h-4 px-1 align-middle" />
       <span class="align-middle">{{ start }} — {{ end }}</span>
-      <span
-        class="ml-1 rounded bg-gray-200 px-1 py-0.5 font-mono text-[10px] text-gray-600 dark:bg-slate-700 dark:text-gray-300"
-        >{{ tzAbbr }}</span
-      >
     </span>
     <span class="shrink-0 py-0.5">
       <ChartPieIcon class="inline h-4 px-1 align-middle" />
@@ -64,31 +60,25 @@ import {
   FilterIcon,
   HashtagIcon,
 } from "@heroicons/vue/solid";
+import { Date as SugarDate } from "sugar-date";
 import type { ModelType } from "./OptionsPanel.vue";
 import { graphTypes } from "./graphtypes";
 import { TitleKey } from "@/components/TitleProvider.vue";
-import { useTimezone } from "@/components/TimezoneProvider.vue";
 
 const props = defineProps<{ request: ModelType }>();
 
-const { timezone, formatDate, timezoneAbbr } = useTimezone();
-
-const start = computed(() => {
-  if (!props.request) return null;
-  return formatDate(props.request.start, "full");
-});
-
+const start = computed(() =>
+  props.request ? SugarDate(props.request.start).long() : null,
+);
 const end = computed(() => {
-  if (!props.request) return null;
-  const startDay = formatDate(props.request.start, "iso").split(" ")[0];
-  const endDay = formatDate(props.request.end, "iso").split(" ")[0];
-  if (startDay === endDay) {
-    return formatDate(props.request.end, "timeOnly");
-  }
-  return formatDate(props.request.end, "full");
+  if (props.request === null) return null;
+  return SugarDate(props.request.end).format(
+    SugarDate(props.request.start).toDateString().raw ===
+      SugarDate(props.request.end).toDateString().raw
+      ? "%X"
+      : "{long}",
+  );
 });
-
-const tzAbbr = computed(() => timezoneAbbr.value || timezone.value);
 
 // Also set title
 const title = inject(TitleKey)!;
@@ -99,7 +89,6 @@ const computedTitle = computed(() =>
     props.request?.filter,
     start.value,
     end.value,
-    tzAbbr.value,
   ]
     .filter((e) => !!e)
     .join(" · "),

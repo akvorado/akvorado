@@ -131,7 +131,15 @@
           v-model="timeRange"
           @submit="submitOptions(true)"
         />
-        <InputTimezone />
+        <InputListBox
+          v-model="selectedTimezoneItem"
+          :items="timezones"
+          filter="name"
+          label="Timezone"
+        >
+          <template #selected>{{ selectedTimezoneItem.name }}</template>
+          <template #item="{ name }">{{ name }}</template>
+        </InputListBox>
         <SectionLabel>Dimensions</SectionLabel>
         <InputDimensions
           v-model="dimensions"
@@ -167,7 +175,7 @@ import {
   default as InputTimeRange,
   type ModelType as InputTimeRangeModelType,
 } from "@/components/InputTimeRange.vue";
-import InputTimezone from "@/components/InputTimezone.vue";
+import { timezones, selectedTimezoneItem } from "@/composables/useTimezone";
 import {
   default as InputDimensions,
   type ModelType as InputDimensionsModelType,

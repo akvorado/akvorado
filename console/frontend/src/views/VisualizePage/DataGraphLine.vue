@@ -25,7 +25,12 @@ import {
   rowName,
   type ECOption,
 } from "./useTimeSeriesGraph";
-import { useTimezone } from "@/components/TimezoneProvider.vue";
+import {
+  isBrowser,
+  isUTC,
+  timezoneAxisFormatter,
+  formatTimezoneTooltip,
+} from "@/composables/useTimezone";
 
 const props = defineProps<{
   data: GraphLineHandlerResult;
@@ -36,8 +41,6 @@ const emit = defineEmits<{
 }>();
 
 const { isDark } = inject(ThemeKey)!;
-const { isBrowser, shiftDate, unshiftDate, formatDate, timezoneAbbr } =
-  useTimezone();
 
 const graph = computed((): ECOption => {
   const theme = isDark.value ? "dark" : "light";
@@ -46,7 +49,7 @@ const graph = computed((): ECOption => {
   const source: [string, ...number[]][] = data.t
     .map((t, timeIdx) => {
       let result: [string, ...number[]] = [
-        shiftDate(t).toISOString(),
+        t,
         ...data.points.map(
           // Unfortunately, eCharts does not seem to make it easy
           // to inverse an axis and put the result below. Therefore,
@@ -66,7 +69,7 @@ const graph = computed((): ECOption => {
           0,
         );
         result = [
-          shiftDate(t).toISOString(),
+          t,
           ...values.map((v) =>
             v > 0 && positiveSum > 0
               ? v / positiveSum
@@ -86,8 +89,11 @@ const graph = computed((): ECOption => {
     },
     xAxis: ECOption["xAxis"] = {
       type: "time",
-      min: shiftDate(data.start).toISOString(),
-      max: shiftDate(data.end).toISOString(),
+      min: data.start,
+      max: data.end,
+      ...(!isBrowser.value && !isUTC.value
+        ? { axisLabel: { formatter: timezoneAxisFormatter } }
+        : {}),
     },
     yAxis: ECOption["yAxis"] = {
       type: "value",
@@ -176,12 +182,11 @@ const graph = computed((): ECOption => {
             ].join(""),
           )
           .join("");
-        const timeParam = (params as TooltipCallbackDataParams[])[0];
-        const rawTime = unshiftDate(timeParam.axisValue as number | string);
-        const formattedTime = formatDate(rawTime, "full");
-        const header = timezoneAbbr.value
-          ? `${formattedTime} (${timezoneAbbr.value})`
-          : formattedTime;
+        const header = formatTimezoneTooltip(
+          (params as TooltipCallbackDataParams[])[0].axisValue as
+            | string
+            | number,
+        );
         return `${header}<table>${rows}</table>`;
       },
     };
@@ -402,7 +407,5 @@ const { chartComponent, option, updateTimeRange } = useTimeSeriesGraph(
   emit,
   toRef(props, "highlight"),
   toRef(props, "data"),
-  0,
-  unshiftDate,
 );
 </script>

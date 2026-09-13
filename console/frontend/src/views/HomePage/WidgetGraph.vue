@@ -29,9 +29,7 @@ import {
 } from "echarts/components";
 import VChart from "vue-echarts";
 import { dataColor, formatXps } from "../../utils";
-import { useTimezone } from "@/components/TimezoneProvider.vue";
 const { isDark } = inject(ThemeKey)!;
-const { isBrowser, shiftDate } = useTimezone();
 
 const props = withDefaults(
   defineProps<{
@@ -54,7 +52,6 @@ const { data } = useFetch(url, { refetch: true })
   .get()
   .json<{ data: Array<{ t: string; gbps: number }> } | { message: string }>();
 const option = computed((): ECOption => ({
-  useUTC: !isBrowser.value,
   darkMode: isDark.value,
   backgroundColor: "transparent",
   xAxis: { type: "time" },
@@ -95,9 +92,7 @@ const option = computed((): ECOption => ({
       data:
         !data.value || "message" in data.value
           ? []
-          : data.value.data
-              .map(({ t, gbps }) => [shiftDate(t).toISOString(), gbps])
-              .slice(0, -1),
+          : data.value.data.map(({ t, gbps }) => [t, gbps]).slice(0, -1),
     },
   ],
 }));
