@@ -102,9 +102,7 @@
         </div>
 
         <div
-          v-if="
-            filteredData.quick.length > 0 && filteredData.groups.length > 0
-          "
+          v-if="filteredData.quick.length > 0 && filteredData.groups.length > 0"
           class="my-1 border-t border-gray-100 dark:border-gray-800"
         ></div>
 
@@ -181,8 +179,13 @@ import {
   type TimezoneItem,
 } from "@/utils/timezone";
 
-const { timezone, setTimezone, timezoneOffsetLabel, timezoneAbbr, resolvedTimezone } =
-  useTimezone();
+const {
+  timezone,
+  setTimezone,
+  timezoneOffsetLabel,
+  timezoneAbbr,
+  resolvedTimezone,
+} = useTimezone();
 
 const isOpen = ref(false);
 const searchQuery = ref("");
@@ -235,4 +238,3 @@ const selectTimezone = (id: string) => {
   isOpen.value = false;
 };
 </script>
-

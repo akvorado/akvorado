@@ -86,13 +86,21 @@ describe("formatDateInTimezone", () => {
   });
 
   it("formats in America/New_York correctly", () => {
-    expect(formatDateInTimezone(d, "America/New_York", "timeOnly")).toBe("08:30:45");
-    expect(formatDateInTimezone(d, "America/New_York", "iso")).toBe("2026-09-13 08:30:45");
+    expect(formatDateInTimezone(d, "America/New_York", "timeOnly")).toBe(
+      "08:30:45",
+    );
+    expect(formatDateInTimezone(d, "America/New_York", "iso")).toBe(
+      "2026-09-13 08:30:45",
+    );
   });
 
   it("formats in Europe/Paris correctly", () => {
-    expect(formatDateInTimezone(d, "Europe/Paris", "timeOnly")).toBe("14:30:45");
-    expect(formatDateInTimezone(d, "Europe/Paris", "iso")).toBe("2026-09-13 14:30:45");
+    expect(formatDateInTimezone(d, "Europe/Paris", "timeOnly")).toBe(
+      "14:30:45",
+    );
+    expect(formatDateInTimezone(d, "Europe/Paris", "iso")).toBe(
+      "2026-09-13 14:30:45",
+    );
   });
 });
 
@@ -107,7 +115,9 @@ describe("searchTimezones", () => {
 
   it("filters timezones by city or name", () => {
     const res = searchTimezones("Paris");
-    const found = res.groups.flatMap((g) => g.items).some((item) => item.id === "Europe/Paris");
+    const found = res.groups
+      .flatMap((g) => g.items)
+      .some((item) => item.id === "Europe/Paris");
     expect(found).toBe(true);
   });
 
@@ -117,3 +127,17 @@ describe("searchTimezones", () => {
   });
 });
 
+describe("getQuickTimezones and getAllTimezoneItems", () => {
+  it("returns quick timezone items including browser and UTC", () => {
+    const quick = getQuickTimezones();
+    expect(quick.length).toBe(2);
+    expect(quick[0].id).toBe("browser");
+    expect(quick[1].id).toBe("UTC");
+  });
+
+  it("returns a non-empty list of all timezone items", () => {
+    const all = getAllTimezoneItems();
+    expect(all.length).toBeGreaterThan(10);
+    expect(all.some((tz) => tz.id === "Europe/Paris")).toBe(true);
+  });
+});

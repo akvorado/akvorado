@@ -46,7 +46,6 @@ const graph = computed((): ECOption => {
   const source: [string, ...number[]][] = data.t
     .map((t, timeIdx) => {
       let result: [string, ...number[]] = [
-        t,
         shiftDate(t).toISOString(),
         ...data.points.map(
           // Unfortunately, eCharts does not seem to make it easy
@@ -67,7 +66,6 @@ const graph = computed((): ECOption => {
           0,
         );
         result = [
-          t,
           shiftDate(t).toISOString(),
           ...values.map((v) =>
             v > 0 && positiveSum > 0
@@ -88,8 +86,6 @@ const graph = computed((): ECOption => {
     },
     xAxis: ECOption["xAxis"] = {
       type: "time",
-      min: data.start,
-      max: data.end,
       min: shiftDate(data.start).toISOString(),
       max: shiftDate(data.end).toISOString(),
     },
@@ -180,9 +176,6 @@ const graph = computed((): ECOption => {
             ].join(""),
           )
           .join("");
-        return `${
-          (params as TooltipCallbackDataParams[])[0].axisValueLabel
-        }<table>${rows}</table>`;
         const timeParam = (params as TooltipCallbackDataParams[])[0];
         const rawTime = unshiftDate(timeParam.axisValue as number | string);
         const formattedTime = formatDate(rawTime, "full");
