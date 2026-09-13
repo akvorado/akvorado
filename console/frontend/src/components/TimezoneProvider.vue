@@ -6,7 +6,14 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, provide, inject, type InjectionKey, type Ref, type ComputedRef } from "vue";
+import {
+  computed,
+  provide,
+  inject,
+  type InjectionKey,
+  type Ref,
+  type ComputedRef,
+} from "vue";
 import { useStorage } from "@vueuse/core";
 import {
   getBrowserTimezone,
@@ -114,4 +121,3 @@ export function useTimezone(): TimezoneContext {
   return ctx;
 }
 </script>
-

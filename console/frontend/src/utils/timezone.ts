@@ -259,8 +259,9 @@ const fallbackTimezones = [
 function getAvailableTimezoneIds(): string[] {
   try {
     if (typeof Intl !== "undefined" && "supportedValuesOf" in Intl) {
-      return (Intl as unknown as { supportedValuesOf: (key: string) => string[] })
-        .supportedValuesOf("timeZone");
+      return (
+        Intl as unknown as { supportedValuesOf: (key: string) => string[] }
+      ).supportedValuesOf("timeZone");
     }
   } catch {
     // fallback
@@ -300,7 +301,8 @@ export function getAllTimezoneItems(): TimezoneItem[] {
       offsetStr,
       offsetMinutes,
       abbr,
-      searchKey: `${tz} ${name} ${region} ${offsetStr.replace("UTC", "")} ${abbr}`.toLowerCase(),
+      searchKey:
+        `${tz} ${name} ${region} ${offsetStr.replace("UTC", "")} ${abbr}`.toLowerCase(),
     });
   }
 
@@ -335,7 +337,8 @@ export function getQuickTimezones(): TimezoneItem[] {
     offsetStr: browserOffsetStr,
     offsetMinutes: browserOffset,
     abbr: browserAbbr,
-    searchKey: `browser time default local ${browserTz} ${browserCity} ${browserAbbr} ${browserOffsetStr}`.toLowerCase(),
+    searchKey:
+      `browser time default local ${browserTz} ${browserCity} ${browserAbbr} ${browserOffsetStr}`.toLowerCase(),
   };
 
   const utcItem: TimezoneItem = {

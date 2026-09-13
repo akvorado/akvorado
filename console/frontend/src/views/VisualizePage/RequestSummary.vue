@@ -64,7 +64,6 @@ import {
   FilterIcon,
   HashtagIcon,
 } from "@heroicons/vue/solid";
-import { Date as SugarDate } from "sugar-date";
 import type { ModelType } from "./OptionsPanel.vue";
 import { graphTypes } from "./graphtypes";
 import { TitleKey } from "@/components/TitleProvider.vue";
@@ -72,9 +71,6 @@ import { useTimezone } from "@/components/TimezoneProvider.vue";
 
 const props = defineProps<{ request: ModelType }>();
 
-const start = computed(() =>
-  props.request ? SugarDate(props.request.start).long() : null,
-);
 const { timezone, formatDate, timezoneAbbr } = useTimezone();
 
 const start = computed(() => {
@@ -83,13 +79,7 @@ const start = computed(() => {
 });
 
 const end = computed(() => {
-  if (props.request === null) return null;
-  return SugarDate(props.request.end).format(
-    SugarDate(props.request.start).toDateString().raw ===
-      SugarDate(props.request.end).toDateString().raw
-      ? "%X"
-      : "{long}",
-  );
+  if (!props.request) return null;
   const startDay = formatDate(props.request.start, "iso").split(" ")[0];
   const endDay = formatDate(props.request.end, "iso").split(" ")[0];
   if (startDay === endDay) {

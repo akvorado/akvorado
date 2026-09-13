@@ -58,7 +58,6 @@ const graph = computed((): ECOption => {
     .flatMap(([origRowIdx, row], rowIdx) =>
       data.t.flatMap((t, timeIdx) => {
         const value = row[timeIdx] * (data.axis[origRowIdx] % 2 ? 1 : -1);
-        const dataPoint: [string, number, number] = [t, rowIdx, value];
         const dataPoint: [string, number, number] = [
           shiftDate(t).toISOString(),
           rowIdx,
@@ -86,15 +85,12 @@ const graph = computed((): ECOption => {
     xAxis: [
       {
         type: "category",
-        data: data.t.map((row) => row),
         data: data.t.map((row) => shiftDate(row).toISOString()),
         show: false,
         axisPointer: { show: false },
       },
       {
         type: "time",
-        min: data.start,
-        max: data.end,
         min: shiftDate(data.start).toISOString(),
         max: shiftDate(data.end).toISOString(),
         position: "bottom",

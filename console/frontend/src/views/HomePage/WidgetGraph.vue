@@ -95,7 +95,6 @@ const option = computed((): ECOption => ({
       data:
         !data.value || "message" in data.value
           ? []
-          : data.value.data.map(({ t, gbps }) => [t, gbps]).slice(0, -1),
           : data.value.data
               .map(({ t, gbps }) => [shiftDate(t).toISOString(), gbps])
               .slice(0, -1),
