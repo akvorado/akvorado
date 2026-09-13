@@ -25,6 +25,7 @@ import {
   rowName,
   type ECOption,
 } from "./useTimeSeriesGraph";
+import { useTimezone } from "@/components/TimezoneProvider.vue";
 
 const props = defineProps<{
   data: GraphLineHandlerResult;
@@ -35,6 +36,8 @@ const emit = defineEmits<{
 }>();
 
 const { isDark } = inject(ThemeKey)!;
+const { isBrowser, shiftDate, unshiftDate, formatDate, timezoneAbbr } =
+  useTimezone();
 
 const graph = computed((): ECOption => {
   const theme = isDark.value ? "dark" : "light";
@@ -44,6 +47,7 @@ const graph = computed((): ECOption => {
     .map((t, timeIdx) => {
       let result: [string, ...number[]] = [
         t,
+        shiftDate(t).toISOString(),
         ...data.points.map(
           // Unfortunately, eCharts does not seem to make it easy
           // to inverse an axis and put the result below. Therefore,
@@ -64,6 +68,7 @@ const graph = computed((): ECOption => {
         );
         result = [
           t,
+          shiftDate(t).toISOString(),
           ...values.map((v) =>
             v > 0 && positiveSum > 0
               ? v / positiveSum
@@ -85,6 +90,8 @@ const graph = computed((): ECOption => {
       type: "time",
       min: data.start,
       max: data.end,
+      min: shiftDate(data.start).toISOString(),
+      max: shiftDate(data.end).toISOString(),
     },
     yAxis: ECOption["yAxis"] = {
       type: "value",
@@ -176,6 +183,13 @@ const graph = computed((): ECOption => {
         return `${
           (params as TooltipCallbackDataParams[])[0].axisValueLabel
         }<table>${rows}</table>`;
+        const timeParam = (params as TooltipCallbackDataParams[])[0];
+        const rawTime = unshiftDate(timeParam.axisValue as number | string);
+        const formattedTime = formatDate(rawTime, "full");
+        const header = timezoneAbbr.value
+          ? `${formattedTime} (${timezoneAbbr.value})`
+          : formattedTime;
+        return `${header}<table>${rows}</table>`;
       },
     };
 
@@ -190,6 +204,7 @@ const graph = computed((): ECOption => {
         findIndex(uniqRows, (orow) => isEqual(row, orow));
 
     return {
+      useUTC: !isBrowser.value,
       grid: {
         left: 60,
         top: 20,
@@ -314,6 +329,7 @@ const graph = computed((): ECOption => {
       height: (1 / rowNumber) * 100,
     }));
     return {
+      useUTC: !isBrowser.value,
       title: uniqRows.map((_, idx) => ({
         textAlign: "left",
         textStyle: {
@@ -393,5 +409,7 @@ const { chartComponent, option, updateTimeRange } = useTimeSeriesGraph(
   emit,
   toRef(props, "highlight"),
   toRef(props, "data"),
+  0,
+  unshiftDate,
 );
 </script>

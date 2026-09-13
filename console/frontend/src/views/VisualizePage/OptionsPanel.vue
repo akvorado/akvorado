@@ -131,6 +131,7 @@
           v-model="timeRange"
           @submit="submitOptions(true)"
         />
+        <InputTimezone />
         <SectionLabel>
           <span class="flex items-center gap-1">
             Dimensions
@@ -193,6 +194,7 @@ import {
   default as InputTimeRange,
   type ModelType as InputTimeRangeModelType,
 } from "@/components/InputTimeRange.vue";
+import InputTimezone from "@/components/InputTimezone.vue";
 import {
   default as InputDimensions,
   type ModelType as InputDimensionsModelType,
