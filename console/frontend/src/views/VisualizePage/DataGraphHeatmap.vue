@@ -21,6 +21,7 @@ import {
   rowName,
   type ECOption,
 } from "./useTimeSeriesGraph";
+import { useTimezone } from "@/components/TimezoneProvider.vue";
 
 const PALETTE_MAGMA = ["#fcfdbf", "#fc8961", "#b73779", "#51127c", "#000004"];
 
@@ -33,6 +34,7 @@ const emit = defineEmits<{
 }>();
 
 const { isDark } = inject(ThemeKey)!;
+const { isBrowser, shiftDate, unshiftDate } = useTimezone();
 
 const graph = computed((): ECOption => {
   const data = props.data;
@@ -57,6 +59,11 @@ const graph = computed((): ECOption => {
       data.t.flatMap((t, timeIdx) => {
         const value = row[timeIdx] * (data.axis[origRowIdx] % 2 ? 1 : -1);
         const dataPoint: [string, number, number] = [t, rowIdx, value];
+        const dataPoint: [string, number, number] = [
+          shiftDate(t).toISOString(),
+          rowIdx,
+          value,
+        ];
         return value === 0 ? [] : [dataPoint];
       }),
     );
@@ -69,6 +76,7 @@ const graph = computed((): ECOption => {
     .map(rowName);
 
   return {
+    useUTC: !isBrowser.value,
     grid: {
       left: 150,
       top: 20,
@@ -79,6 +87,7 @@ const graph = computed((): ECOption => {
       {
         type: "category",
         data: data.t.map((row) => row),
+        data: data.t.map((row) => shiftDate(row).toISOString()),
         show: false,
         axisPointer: { show: false },
       },
@@ -86,6 +95,8 @@ const graph = computed((): ECOption => {
         type: "time",
         min: data.start,
         max: data.end,
+        min: shiftDate(data.start).toISOString(),
+        max: shiftDate(data.end).toISOString(),
         position: "bottom",
       },
     ],
@@ -142,5 +153,6 @@ const { chartComponent, option, updateTimeRange } = useTimeSeriesGraph(
   toRef(props, "highlight"),
   toRef(props, "data"),
   1,
+  unshiftDate,
 );
 </script>

@@ -85,6 +85,7 @@ export function useTimeSeriesGraph(
   highlight: Ref<number | null>,
   data: Ref<unknown>,
   coordRangeIndex: number = 0,
+  unshiftDate?: (date: Date) => Date,
 ) {
   const chartComponent = ref<typeof VChart | null>(null);
 
@@ -117,7 +118,11 @@ export function useTimeSeriesGraph(
       return;
     }
     const coordRange = evt.areas[0].coordRanges[coordRangeIndex];
-    const [start, end] = coordRange.map((t) => new Date(t as number));
+    let [start, end] = coordRange.map((t) => new Date(t as number));
+    if (unshiftDate) {
+      start = unshiftDate(start);
+      end = unshiftDate(end);
+    }
     chartComponent.value.dispatchAction({
       type: "brush",
       areas: [],

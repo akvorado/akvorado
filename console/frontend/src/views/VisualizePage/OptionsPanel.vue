@@ -131,6 +131,7 @@
           v-model="timeRange"
           @submit="submitOptions(true)"
         />
+        <InputTimezone />
         <SectionLabel>Dimensions</SectionLabel>
         <InputDimensions
           v-model="dimensions"
@@ -166,6 +167,7 @@ import {
   default as InputTimeRange,
   type ModelType as InputTimeRangeModelType,
 } from "@/components/InputTimeRange.vue";
+import InputTimezone from "@/components/InputTimezone.vue";
 import {
   default as InputDimensions,
   type ModelType as InputDimensionsModelType,
