@@ -42,6 +42,12 @@ type Provider struct {
 	lastPeerReference uint32
 	staleTimer        *clock.Timer
 	mu                sync.RWMutex
+
+	// batched peer removal
+	peersToRemove    map[peerKey]peerToRemove
+	muPeersToRemove  sync.Mutex // lock for peersToRemove and removePeersTimer
+	muRemovePeers    sync.Mutex // lock for the removePeers timer callback
+	removePeersTimer *clock.Timer
 }
 
 // Dependencies define the dependencies of the BMP component.
@@ -78,6 +84,11 @@ func (configuration Configuration) New(r *reporter.Reporter, dependencies Depend
 		}
 	}
 	p.staleTimer = p.d.Clock.AfterFunc(time.Hour, p.removeStalePeers)
+
+	// Queue peers to remove in order to process them in batches
+	p.peersToRemove = make(map[peerKey]peerToRemove)
+	p.removePeersTimer = p.d.Clock.AfterFunc(10*time.Second, p.removePeers)
+	p.removePeersTimer.Stop()
 
 	p.d.Daemon.Track(&p.t, "outlet/bmp")
 	p.initMetrics()
