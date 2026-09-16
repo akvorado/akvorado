@@ -29,9 +29,9 @@
       spellcheck="false"
       @submit.prevent="submitOptions()"
     >
-      <div v-if="open" class="flex flex-col px-3 py-4 lg:max-h-screen">
+      <div v-if="open" class="flex flex-col gap-2 px-3 py-4 lg:max-h-screen">
         <div
-          class="mb-2 flex flex-row flex-wrap items-center justify-between gap-2 sm:max-lg:flex-nowrap"
+          class="flex flex-row flex-wrap items-center justify-between gap-2 sm:max-lg:flex-nowrap"
         >
           <div class="contents lg:flex lg:w-full lg:items-center lg:gap-2">
             <InputButton
@@ -147,7 +147,7 @@
             to execute
           </template>
         </SectionLabel>
-        <InputFilter v-model="filter" class="mb-2" @submit="submitOptions()" />
+        <InputFilter v-model="filter" @submit="submitOptions()" />
       </div>
     </form>
   </aside>

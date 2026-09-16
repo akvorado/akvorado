@@ -3,7 +3,7 @@
 
 <template>
   <p
-    class="my-2 flex w-full flex-row flex-nowrap items-center justify-between gap-2"
+    class="flex w-full flex-row flex-nowrap items-center justify-between gap-2"
   >
     <span class="text-sm font-semibold text-gray-900 dark:text-gray-400">
       <slot></slot>
