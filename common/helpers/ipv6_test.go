@@ -5,10 +5,16 @@ package helpers_test
 
 import (
 	"net/netip"
+	"reflect"
+	"runtime"
 	"testing"
 	"unique"
+	"unsafe"
+
+	"golang.org/x/arch/x86/x86asm"
 
 	"akvorado/common/helpers"
+	"akvorado/common/helpers/race"
 )
 
 func TestAddrTo6(t *testing.T) {
@@ -132,4 +138,64 @@ func BenchmarkAddrTo6(b *testing.B) {
 		for b.Loop() {
 		}
 	})
+}
+
+// instructionCount disassembles the compiled body of fn and counts the
+// instructions. The padding between functions is not counted.
+func instructionCount(t *testing.T, fn any) int {
+	t.Helper()
+	pc := reflect.ValueOf(fn).Pointer()
+
+	// Walk forward until we leave fn to get its size
+	var size uintptr
+	for {
+		owner := runtime.FuncForPC(pc + size)
+		if owner == nil || owner.Entry() != pc {
+			break
+		}
+		size++
+	}
+
+	code := unsafe.Slice((*byte)(unsafe.Pointer(pc)), size)
+	count, padding := 0, 0
+	for len(code) > 0 {
+		inst, err := x86asm.Decode(code, 64)
+		if err != nil {
+			t.Fatalf("x86asm.Decode() error:\n%+v", err)
+		}
+		code = code[inst.Len:]
+		if inst.Op == x86asm.INT {
+			// Functions are padded with INT3. Only count them if more code
+			// follows.
+			padding++
+			continue
+		}
+		count += padding + 1
+		padding = 0
+	}
+	return count
+}
+
+// TestAddrTo6Optimal checks AddrTo6 compiles to as few instructions as a native
+// Map() method would, while the safe version needs more.
+func TestAddrTo6Optimal(t *testing.T) {
+	if runtime.GOARCH != "amd64" {
+		t.Skipf("no disassembler for %s", runtime.GOARCH)
+	}
+	if race.Enabled || testing.CoverMode() != "" {
+		t.Skip("instrumented build")
+	}
+
+	native := instructionCount(t, netipAddr.Map)
+	withUnsafe := instructionCount(t, helpers.AddrTo6)
+	withoutUnsafe := instructionCount(t, addrTo6Safe)
+	t.Logf("instructions: native %d, unsafe %d, safe %d", native, withUnsafe, withoutUnsafe)
+
+	if diff := helpers.Diff(withUnsafe, native); diff != "" {
+		t.Errorf("AddrTo6() instruction count (-got, +want):\n%s", diff)
+	}
+	if withoutUnsafe <= native {
+		t.Errorf("addrTo6Safe() instruction count: %d, expected more than %d",
+			withoutUnsafe, native)
+	}
 }
