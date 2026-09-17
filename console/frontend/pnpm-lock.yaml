@@ -76,7 +76,7 @@ importers:
         version: 14.4.0(vue@3.5.42(typescript@6.0.3))
       '@vueuse/router':
         specifier: ^14.0.0
-        version: 14.4.0(vue-router@5.3.0(@vue/compiler-sfc@3.5.42)(esbuild@0.27.2)(rolldown@1.2.6)(vite@8.2.2(@types/node@22.20.0)(esbuild@0.27.2)(jiti@2.7.0)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3)))(vue@3.5.42(typescript@6.0.3))
+        version: 14.4.0(vue-router@5.3.1(@vue/compiler-sfc@3.5.42)(esbuild@0.27.2)(rolldown@1.2.6)(vite@8.2.2(@types/node@22.20.0)(esbuild@0.27.2)(jiti@2.7.0)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3)))(vue@3.5.42(typescript@6.0.3))
       echarts:
         specifier: ^6.0.0
         version: 6.1.0
@@ -124,7 +124,7 @@ importers:
         version: 1.2.0
       vue-router:
         specifier: ^5.0.0
-        version: 5.3.0(@vue/compiler-sfc@3.5.42)(esbuild@0.27.2)(rolldown@1.2.6)(vite@8.2.2(@types/node@22.20.0)(esbuild@0.27.2)(jiti@2.7.0)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3))
+        version: 5.3.1(@vue/compiler-sfc@3.5.42)(esbuild@0.27.2)(rolldown@1.2.6)(vite@8.2.2(@types/node@22.20.0)(esbuild@0.27.2)(jiti@2.7.0)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3))
       vue-tsc:
         specifier: ^3.0.1
         version: 3.3.11(typescript@6.0.3)
@@ -1653,8 +1653,8 @@ packages:
   vue-resizer@1.2.0:
     resolution: {integrity: sha512-ypEx1HcW3ZB1lj+/vNeRoyMXV3goxg6IucOq/JWEZcgf6UawqEDJgayIyUgoeOrSTOSnrKiWIkZFNByzsUHAKw==}
 
-  vue-router@5.3.0:
-    resolution: {integrity: sha512-a2PBXX9yfkS58JzSJALUffgDa09lEzKmCcEnLaepoIr88L+9hEnsgEQkcadJGID+vtHa0gFpVo064zmylA9fcg==}
+  vue-router@5.3.1:
+    resolution: {integrity: sha512-GDBZzgmILxA/kFnkFbJjQZdZ2QQbngnIMMuoUcjhZIfH1RGMaPjPwX5ASnV38qamuA9uhO0RDjSBHTDNG2uXyQ==}
     peerDependencies:
       '@pinia/colada': '>=0.21.2'
       '@vue/compiler-sfc': ^3.5.34 || ^4.0.0
@@ -2360,11 +2360,11 @@ snapshots:
 
   '@vueuse/metadata@14.4.0': {}
 
-  '@vueuse/router@14.4.0(vue-router@5.3.0(@vue/compiler-sfc@3.5.42)(esbuild@0.27.2)(rolldown@1.2.6)(vite@8.2.2(@types/node@22.20.0)(esbuild@0.27.2)(jiti@2.7.0)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3)))(vue@3.5.42(typescript@6.0.3))':
+  '@vueuse/router@14.4.0(vue-router@5.3.1(@vue/compiler-sfc@3.5.42)(esbuild@0.27.2)(rolldown@1.2.6)(vite@8.2.2(@types/node@22.20.0)(esbuild@0.27.2)(jiti@2.7.0)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3)))(vue@3.5.42(typescript@6.0.3))':
     dependencies:
       '@vueuse/shared': 14.4.0(vue@3.5.42(typescript@6.0.3))
       vue: 3.5.42(typescript@6.0.3)
-      vue-router: 5.3.0(@vue/compiler-sfc@3.5.42)(esbuild@0.27.2)(rolldown@1.2.6)(vite@8.2.2(@types/node@22.20.0)(esbuild@0.27.2)(jiti@2.7.0)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3))
+      vue-router: 5.3.1(@vue/compiler-sfc@3.5.42)(esbuild@0.27.2)(rolldown@1.2.6)(vite@8.2.2(@types/node@22.20.0)(esbuild@0.27.2)(jiti@2.7.0)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3))
 
   '@vueuse/shared@14.4.0(vue@3.5.42(typescript@6.0.3))':
     dependencies:
@@ -2885,7 +2885,7 @@ snapshots:
 
   vue-resizer@1.2.0: {}
 
-  vue-router@5.3.0(@vue/compiler-sfc@3.5.42)(esbuild@0.27.2)(rolldown@1.2.6)(vite@8.2.2(@types/node@22.20.0)(esbuild@0.27.2)(jiti@2.7.0)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3)):
+  vue-router@5.3.1(@vue/compiler-sfc@3.5.42)(esbuild@0.27.2)(rolldown@1.2.6)(vite@8.2.2(@types/node@22.20.0)(esbuild@0.27.2)(jiti@2.7.0)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3)):
     dependencies:
       '@vue-macros/common': 3.1.4(vue@3.5.42(typescript@6.0.3))
       '@vue/devtools-api': 8.2.1
