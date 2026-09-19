@@ -30,6 +30,7 @@ import {
   isUTC,
   timezoneAxisFormatter,
   formatTimezoneTooltip,
+  formatTimezoneAxisPointer,
 } from "@/composables/useTimezone";
 
 const props = defineProps<{
@@ -91,6 +92,12 @@ const graph = computed((): ECOption => {
       type: "time",
       min: data.start,
       max: data.end,
+      axisPointer: {
+        label: {
+          formatter: ({ value }) =>
+            formatTimezoneAxisPointer(value as number | string),
+        },
+      },
       ...(!isBrowser.value && !isUTC.value
         ? { axisLabel: { formatter: timezoneAxisFormatter } }
         : {}),
