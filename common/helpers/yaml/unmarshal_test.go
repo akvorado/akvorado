@@ -48,3 +48,18 @@ func TestUnmarshalWithIn(t *testing.T) {
 		t.Errorf("UnmarshalWithInclude() paths (-got, +want):\n%s", diff)
 	}
 }
+
+func TestUnmarshalWithIncludeMerge(t *testing.T) {
+	fsys := os.DirFS("testdata")
+	var got any
+	if _, err := yaml.UnmarshalWithInclude(fsys, "merge.yaml", &got); err != nil {
+		t.Fatalf("UnmarshalWithInclude() error:\n%+v", err)
+	}
+	expected := map[string]any{
+		"name":  "1.yaml",
+		"other": "value",
+	}
+	if diff := helpers.Diff(got, expected); diff != "" {
+		t.Errorf("UnmarshalWithInclude() (-got, +want):\n%s", diff)
+	}
+}
