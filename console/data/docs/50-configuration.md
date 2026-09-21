@@ -1321,6 +1321,9 @@ The console itself accepts the following keys:
    homepage. It defaults to 24 hours.
  - `dimensions-limit` to set the upper limit of the number of returned dimensions
  - `cache-ttl` sets the time costly requests are kept in cache
+ - `clickhouse-user-setting` names a ClickHouse custom setting carrying the
+   login of the authenticated user on each query. It is empty by default. See
+   [restricting the flows a user can see](#restricting-the-flows-a-user-can-see).
 
 It also takes a `clickhouse` key, accepting the [same
 configuration](#clickhouse-database) as the orchestrator service. These keys are
@@ -1402,6 +1405,99 @@ present in `docker/docker-compose-local.yml`.
 [oauth2 proxy]:
 https://oauth2-proxy.github.io/oauth2-proxy/configuration/integration#configuring-for-use-with-the-traefik-v2-forwardauth-middleware
 [traefik forward auth]: https://github.com/ItalyPaleAle/traefik-forward-auth
+
+#### Restricting the flows a user can see
+
+By default, everyone reaching the console sees every flow. The console does not
+carry an authorization model: a filter put in place by the authenticating proxy
+is only cosmetic, as the filter travels in the request body and a user can
+change it.
+
+Enforcement can be delegated to ClickHouse instead. When
+`console.clickhouse-user-setting` names a custom setting, the console attaches
+the login of the authenticated user to every query it makes on their behalf. A
+[row policy][] can then use it to keep only the rows this user is allowed to
+see. The console gains no authorization model: it only forwards *who is asking*,
+and what this implies is expressed in SQL, by the operator.
+
+```yaml
+console:
+  clickhouse-user-setting: SQL_akvorado_user
+```
+
+On the ClickHouse side, three things are needed. First, the prefix of the
+setting has to be declared in the server configuration, otherwise ClickHouse
+rejects the setting:
+
+```xml
+<clickhouse>
+  <custom_settings_prefixes>SQL_</custom_settings_prefixes>
+</clickhouse>
+```
+
+Second, the user the console connects with must be allowed to carry that setting
+on each query. A `readonly = 1` profile cannot: use `readonly = 2`, which still
+forbids writes.
+
+```xml
+<clickhouse>
+  <profiles>
+    <console>
+      <readonly>2</readonly>
+    </console>
+  </profiles>
+  <users>
+    <console>
+      <password_sha256_hex>…</password_sha256_hex>
+      <profile>console</profile>
+      <networks><ip>::/0</ip></networks>
+    </console>
+  </users>
+</clickhouse>
+```
+
+Keeping `readonly = 1` is possible with a `CHANGEABLE_IN_READONLY` constraint on
+that single setting, which requires `settings_constraints_replace_previous` to be
+enabled.
+
+Third, one row policy per flows table. The example below scopes a user to the
+flows whose source or destination belongs to them, using the `SrcNetTenant` and
+`DstNetTenant` attributes of the [networks](#networks) configuration.
+
+```sql
+CREATE ROW POLICY scope ON default.flows FOR SELECT
+  USING SrcNetTenant = getSetting('SQL_akvorado_user')
+     OR DstNetTenant = getSetting('SQL_akvorado_user')
+  TO console;
+```
+
+A policy only applies to the table it is created on, so repeat it for every
+consolidated table: with the default `resolutions`, `flows_1m0s`, `flows_5m0s`,
+and `flows_1h0m0s`.
+
+The behaviour is closed by default: the console never substitutes a value, and
+if the setting does not reach ClickHouse, `getSetting()` raises an error instead
+of returning everything.
+
+> [!IMPORTANT]
+> Row policies do not apply to `Distributed` tables. This setup only works on a
+> single ClickHouse node.
+
+> [!NOTE]
+> A row policy filters rows, not columns. A user still sees every column of the
+> flows they are allowed to see, including the exporter, the interfaces, and the
+> BGP communities.
+
+The console learns how far back each flows table goes with a query it runs on
+its own, outside of any request, so without a login. It reads `system.parts`
+for that, which row policies do not cover: the setting stays closed and the
+refresh keeps working.
+
+When the setting is configured, the responses the console keeps in cache become
+specific to each user, so one user never gets the rows of another one. Cache hit
+rate drops accordingly.
+
+[row policy]: https://clickhouse.com/docs/sql-reference/statements/create/row-policy
 
 ### Database
 

@@ -49,6 +49,10 @@
   <!-- For testing, ensure tables are dropped quickly -->
   <database_atomic_delay_before_drop_table_sec>0</database_atomic_delay_before_drop_table_sec>
 
+  <!-- For testing, allow the custom setting the console uses to carry the login
+       of the authenticated user (console.clickhouse-user-setting) -->
+  <custom_settings_prefixes>SQL_</custom_settings_prefixes>
+
   <!-- Also log to console -->
   <logger>
     <level>information</level>

@@ -40,6 +40,10 @@ type Configuration struct {
 	Branding bool
 	// CacheTTL tells how long to keep the most costly requests in cache.
 	CacheTTL time.Duration `validate:"min=5s"`
+	// ClickHouseUserSetting is the name of the ClickHouse custom setting
+	// carrying the login of the authenticated user on each query made on their
+	// behalf. When empty, no setting is attached and all users see all flows.
+	ClickHouseUserSetting string `yaml:"clickhouse-user-setting"`
 }
 
 // HomepageTopWidget represents a top widget on the homepage.
