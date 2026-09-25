@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: 2022 Free Mobile
-// SPDX-FileCopyrightText: 2020 Travis Bischel
-// SPDX-License-Identifier: AGPL-3.0-only AND BSD-3-Clause
+// SPDX-License-Identifier: AGPL-3.0-only
 
 //go:build !release
 
@@ -8,8 +7,6 @@ package kafka
 
 import (
 	"context"
-	"encoding/binary"
-	"fmt"
 	"testing"
 	"time"
 
@@ -67,34 +64,6 @@ func SetupKafkaBroker(t *testing.T) (*kgo.Client, []string) {
 	return client, []string{broker}
 }
 
-// forEachBatchRecord iterates through all records in a record batch. This
-// function is stolen from franz-go/pkg/kfake/data.go.
-func forEachBatchRecord(batch kmsg.RecordBatch, cb func(kmsg.Record) error) error {
-	records, err := kgo.DefaultDecompressor().Decompress(
-		batch.Records,
-		kgo.CompressionCodecType(batch.Attributes&0x0007),
-	)
-	if err != nil {
-		return err
-	}
-	for range batch.NumRecords {
-		rec := kmsg.NewRecord()
-		err := rec.ReadFrom(records)
-		if err != nil {
-			return fmt.Errorf("corrupt batch: %w", err)
-		}
-		if err := cb(rec); err != nil {
-			return err
-		}
-		length, amt := binary.Varint(records)
-		records = records[length+int64(amt):]
-	}
-	if len(records) > 0 {
-		return fmt.Errorf("corrupt batch, extra left over bytes after parsing batch: %v", len(records))
-	}
-	return nil
-}
-
 // InterceptMessages sets up a ControlKey to intercept all messages produced to a fake cluster
 // and calls the callback function for each record received.
 func InterceptMessages(t *testing.T, cluster *kfake.Cluster, callback func(*kgo.Record)) {
@@ -115,17 +84,17 @@ func InterceptMessages(t *testing.T, cluster *kfake.Cluster, callback func(*kgo.
 						if err := batch.ReadFrom(partitionData.Records); err != nil {
 							t.Fatalf("batch.ReadFrom() error:\n%+v", err)
 						}
-						if err := forEachBatchRecord(batch, func(rec kmsg.Record) error {
-							kgoRecord := &kgo.Record{
+						records, err := kfake.BatchRecords(batch)
+						if err != nil {
+							t.Fatalf("BatchRecords() error:\n%+v", err)
+						}
+						for _, rec := range records {
+							callback(&kgo.Record{
 								Topic:     topic,
 								Partition: partitionData.Partition,
 								Key:       rec.Key,
 								Value:     rec.Value,
-							}
-							callback(kgoRecord)
-							return nil
-						}); err != nil {
-							t.Fatalf("forEachBatchRecord() error:\n%+v", err)
+							})
 						}
 					}
 				}
