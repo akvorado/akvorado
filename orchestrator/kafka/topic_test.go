@@ -8,9 +8,7 @@ import (
 	"math/rand/v2"
 	"testing"
 
-	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kfake"
-	"github.com/twmb/franz-go/pkg/kgo"
 
 	"akvorado/common/helpers"
 	"akvorado/common/kafka"
@@ -19,10 +17,9 @@ import (
 	"akvorado/common/schema"
 )
 
-// newFakeKafka spins up an in-process fake broker and returns an admin client
-// (to assert on topic state) plus its broker addresses. Everything is torn down
-// on test cleanup.
-func newFakeKafka(t *testing.T) (*kadm.Client, []string) {
+// newFakeKafka spins up an in-process fake broker. It is torn down on test
+// cleanup.
+func newFakeKafka(t *testing.T) *kfake.Cluster {
 	t.Helper()
 	cluster, err := kfake.NewCluster(
 		kfake.NumBrokers(1),
@@ -32,25 +29,15 @@ func newFakeKafka(t *testing.T) (*kadm.Client, []string) {
 		t.Fatalf("NewCluster() error: %v", err)
 	}
 	t.Cleanup(func() { cluster.Close() })
-	client, err := kgo.NewClient(kgo.SeedBrokers(cluster.ListenAddrs()...))
-	if err != nil {
-		t.Fatalf("NewClient() error:\n%+v", err)
-	}
-	t.Cleanup(func() { client.Close() })
-	return kadm.NewClient(client), cluster.ListenAddrs()
+	return cluster
 }
 
-func mustListTopic(t *testing.T, admin *kadm.Client, name string) kadm.TopicDetail {
+func topicPartitions(t *testing.T, cluster *kfake.Cluster, name string) int {
 	t.Helper()
-	topics, err := admin.ListTopics(t.Context())
-	if err != nil {
-		t.Fatalf("ListTopics() error:\n%+v", err)
-	}
-	td, ok := topics[name]
-	if !ok {
+	if cluster.TopicInfo(name) == nil {
 		t.Fatalf("topic %q was not created", name)
 	}
-	return td
+	return len(cluster.PartitionInfos(name))
 }
 
 // TestManageInputTopicFake drives the input-topic reconciler against a fake
@@ -58,7 +45,8 @@ func mustListTopic(t *testing.T, admin *kadm.Client, name string) kadm.TopicDeta
 // existing-topic path — the decrease-is-refused warning, an unchanged no-op, and
 // a configuration change.
 func TestManageInputTopicFake(t *testing.T) {
-	admin, brokers := newFakeKafka(t)
+	cluster := newFakeKafka(t)
+	brokers := cluster.ListenAddrs()
 	topicName := fmt.Sprintf("test-topic-%d", rand.Int())
 	expected := fmt.Sprintf("%s-v%d", topicName, pb.Version)
 	retentionMs := "76548"
@@ -83,48 +71,48 @@ func TestManageInputTopicFake(t *testing.T) {
 	}
 
 	configOf := func(key string) string {
-		configs, err := admin.DescribeTopicConfigs(t.Context(), expected)
-		if err != nil || len(configs) != 1 {
-			t.Fatalf("DescribeTopicConfigs() error: %v (len %d)", err, len(configs))
+		info := cluster.TopicInfo(expected)
+		if info == nil {
+			t.Fatalf("topic %q was not created", expected)
 		}
-		for _, c := range configs[0].Configs {
-			if c.Key == key && c.Value != nil {
-				return *c.Value
-			}
+		if v := info.Configs[key]; v != nil {
+			return *v
 		}
 		return ""
 	}
 
 	// Create with 4 partitions.
 	start(4, map[string]*string{"retention.ms": &retentionMs})
-	if td := mustListTopic(t, admin, expected); len(td.Partitions) != 4 {
-		t.Fatalf("got %d partitions, want 4", len(td.Partitions))
+	if diff := helpers.Diff(topicPartitions(t, cluster, expected), 4); diff != "" {
+		t.Fatalf("Partitions (-got, +want):\n%s", diff)
 	}
 
 	// Ask for fewer partitions with the same config: decrease is refused (warning
 	// only) and nothing is altered; the count stays at 4.
 	start(2, map[string]*string{"retention.ms": &retentionMs})
-	if td := mustListTopic(t, admin, expected); len(td.Partitions) != 4 {
-		t.Fatalf("got %d partitions after decrease request, want 4", len(td.Partitions))
+	if diff := helpers.Diff(topicPartitions(t, cluster, expected), 4); diff != "" {
+		t.Fatalf("Partitions after decrease request (-got, +want):\n%s", diff)
 	}
 
 	// Change a config value: the alter path runs and the new value sticks.
 	start(4, map[string]*string{"retention.ms": &retentionMs2})
-	if got := configOf("retention.ms"); got != retentionMs2 {
-		t.Fatalf("retention.ms = %q after alter, want %q", got, retentionMs2)
+	if diff := helpers.Diff(configOf("retention.ms"), retentionMs2); diff != "" {
+		t.Fatalf("retention.ms after alter (-got, +want):\n%s", diff)
 	}
 
-	// Ask for more partitions: the increase path runs (CreatePartitions) without
-	// error. The fake broker does not actually grow the topic, so we only assert
-	// Start succeeded rather than the resulting count.
+	// Ask for more partitions: the increase path runs (CreatePartitions).
 	start(8, map[string]*string{"retention.ms": &retentionMs2})
+	if diff := helpers.Diff(topicPartitions(t, cluster, expected), 8); diff != "" {
+		t.Fatalf("Partitions after increase request (-got, +want):\n%s", diff)
+	}
 }
 
 // TestManageOutputTopicFake drives the kafka-output output-topic reconciler against
 // a fake broker: the output topic is created (schema-suffixed) while the input
 // topic is left untouched because ManageTopic is off.
 func TestManageOutputTopicFake(t *testing.T) {
-	admin, brokers := newFakeKafka(t)
+	cluster := newFakeKafka(t)
+	brokers := cluster.ListenAddrs()
 	sch := schema.NewMock(t)
 	inputBase := fmt.Sprintf("test-input-%d", rand.Int())
 	outputBase := fmt.Sprintf("test-output-%d", rand.Int())
@@ -150,14 +138,10 @@ func TestManageOutputTopicFake(t *testing.T) {
 	helpers.StartStop(t, c)
 
 	expectedOutput := fmt.Sprintf("%s-%s", outputBase, sch.ProtobufMessageHash())
-	mustListTopic(t, admin, expectedOutput)
+	topicPartitions(t, cluster, expectedOutput)
 
-	topics, err := admin.ListTopics(t.Context())
-	if err != nil {
-		t.Fatalf("ListTopics() error:\n%+v", err)
-	}
 	unexpectedInput := fmt.Sprintf("%s-v%d", inputBase, pb.Version)
-	if _, ok := topics[unexpectedInput]; ok {
+	if cluster.TopicInfo(unexpectedInput) != nil {
 		t.Fatalf("input topic %q was created despite ManageTopic=false", unexpectedInput)
 	}
 }
