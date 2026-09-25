@@ -618,11 +618,41 @@ func BenchmarkRTAHash(b *testing.B) {
 }
 
 func BenchmarkRTAEqual(b *testing.B) {
-	rta := routeAttributes{
-		asn:    2038,
-		asPath: []uint32{1, 2, 3, 4, 5, 6, 7},
+	makeRTA := func(asPathLen, communitiesLen, largeCommunitiesLen int) routeAttributes {
+		rta := routeAttributes{
+			asn:              65000,
+			asPath:           make([]uint32, asPathLen),
+			communities:      make([]uint32, communitiesLen),
+			largeCommunities: make([]bgp.LargeCommunity, largeCommunitiesLen),
+		}
+		for i := range rta.asPath {
+			rta.asPath[i] = uint32(64500 + i)
+		}
+		for i := range rta.communities {
+			rta.communities[i] = uint32(65000<<16 + i)
+		}
+		for i := range rta.largeCommunities {
+			rta.largeCommunities[i] = bgp.LargeCommunity{ASN: 65000, LocalData1: uint32(i), LocalData2: uint32(i)}
+		}
+		return rta
 	}
-	for b.Loop() {
-		rta.Equal(rta)
+
+	for _, size := range []struct {
+		asPath, communities, largeCommunities int
+	}{
+		{2, 0, 0},
+		{5, 8, 2},
+		{10, 30, 5},
+		{20, 100, 20},
+	} {
+		b.Run(fmt.Sprintf("%d-%d-%d", size.asPath, size.communities, size.largeCommunities), func(b *testing.B) {
+			rta1 := makeRTA(size.asPath, size.communities, size.largeCommunities)
+			rta2 := makeRTA(size.asPath, size.communities, size.largeCommunities)
+			for b.Loop() {
+				if !rta1.Equal(rta2) {
+					b.Fatal("Equal() == false")
+				}
+			}
+		})
 	}
 }
