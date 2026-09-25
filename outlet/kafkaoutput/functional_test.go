@@ -148,24 +148,12 @@ func TestProduceError(t *testing.T) {
 	}
 	defer cluster.Close()
 
-	// Fail every produce (key 0) with a non-retriable error so the callback runs.
-	cluster.ControlKey(0, func(kreq kmsg.Request) (kmsg.Response, error, bool) {
-		cluster.KeepControl()
-		req := kreq.(*kmsg.ProduceRequest)
-		resp := kreq.ResponseKind().(*kmsg.ProduceResponse)
-		for _, rt := range req.Topics {
-			st := kmsg.NewProduceResponseTopic()
-			st.Topic = rt.Topic
-			st.TopicID = rt.TopicID
-			for _, rp := range rt.Partitions {
-				sp := kmsg.NewProduceResponseTopicPartition()
-				sp.Partition = rp.Partition
-				sp.ErrorCode = kerr.CorruptMessage.Code
-				st.Partitions = append(st.Partitions, sp)
-			}
-			resp.Topics = append(resp.Topics, st)
-		}
-		return resp, nil, true
+	// Fail every produce with a non-retriable error so the callback runs.
+	cluster.Fault(kfake.Fault{
+		Keys:  []kmsg.Key{kmsg.Produce},
+		Topic: expectedTopicName,
+		Err:   kerr.CorruptMessage,
+		Count: -1,
 	})
 
 	configuration := DefaultConfiguration()
