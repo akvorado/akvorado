@@ -21,6 +21,12 @@ import {
   rowName,
   type ECOption,
 } from "./useTimeSeriesGraph";
+import {
+  isBrowser,
+  isUTC,
+  timezoneAxisFormatter,
+  formatTimezoneAxisPointer,
+} from "@/composables/useTimezone";
 
 const PALETTE_MAGMA = ["#fcfdbf", "#fc8961", "#b73779", "#51127c", "#000004"];
 
@@ -69,6 +75,7 @@ const graph = computed((): ECOption => {
     .map(rowName);
 
   return {
+    useUTC: !isBrowser.value,
     grid: {
       left: 150,
       top: 20,
@@ -87,6 +94,15 @@ const graph = computed((): ECOption => {
         min: data.start,
         max: data.end,
         position: "bottom",
+        axisPointer: {
+          label: {
+            formatter: ({ value }) =>
+              formatTimezoneAxisPointer(value as number | string),
+          },
+        },
+        ...(!isBrowser.value && !isUTC.value
+          ? { axisLabel: { formatter: timezoneAxisFormatter } }
+          : {}),
       },
     ],
     yAxis: {

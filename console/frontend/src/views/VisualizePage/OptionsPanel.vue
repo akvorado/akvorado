@@ -131,6 +131,15 @@
           v-model="timeRange"
           @submit="submitOptions(true)"
         />
+        <InputListBox
+          v-model="selectedTimezoneItem"
+          :items="timezones"
+          filter="name"
+          label="Timezone"
+        >
+          <template #selected>{{ selectedTimezoneItem.name }}</template>
+          <template #item="{ name }">{{ name }}</template>
+        </InputListBox>
         <SectionLabel>Dimensions</SectionLabel>
         <InputDimensions
           v-model="dimensions"
@@ -166,6 +175,11 @@ import {
   default as InputTimeRange,
   type ModelType as InputTimeRangeModelType,
 } from "@/components/InputTimeRange.vue";
+import {
+  timezones,
+  selectedTimezoneItem,
+  parseTimezoneDate,
+} from "@/composables/useTimezone";
 import {
   default as InputDimensions,
   type ModelType as InputDimensionsModelType,
@@ -233,8 +247,8 @@ const submitOptions = (force?: boolean, auto?: boolean) => {
         "update:modelValue",
         {
           ...options.value,
-          start: SugarDate.create(options.value.humanStart).toISOString(),
-          end: SugarDate.create(options.value.humanEnd).toISOString(),
+          start: parseTimezoneDate(options.value.humanStart).toISOString(),
+          end: parseTimezoneDate(options.value.humanEnd).toISOString(),
         },
         auto,
       );

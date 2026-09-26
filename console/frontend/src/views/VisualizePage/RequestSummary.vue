@@ -60,7 +60,7 @@ import {
   FilterIcon,
   HashtagIcon,
 } from "@heroicons/vue/solid";
-import { Date as SugarDate } from "sugar-date";
+import { formatTimezoneSummary } from "@/composables/useTimezone";
 import type { ModelType } from "./OptionsPanel.vue";
 import { graphTypes } from "./graphtypes";
 import { TitleKey } from "@/components/TitleProvider.vue";
@@ -68,16 +68,11 @@ import { TitleKey } from "@/components/TitleProvider.vue";
 const props = defineProps<{ request: ModelType }>();
 
 const start = computed(() =>
-  props.request ? SugarDate(props.request.start).long() : null,
+  props.request ? formatTimezoneSummary(props.request.start) : null,
 );
 const end = computed(() => {
   if (props.request === null) return null;
-  return SugarDate(props.request.end).format(
-    SugarDate(props.request.start).toDateString().raw ===
-      SugarDate(props.request.end).toDateString().raw
-      ? "%X"
-      : "{long}",
-  );
+  return formatTimezoneSummary(props.request.end, props.request.start);
 });
 
 // Also set title

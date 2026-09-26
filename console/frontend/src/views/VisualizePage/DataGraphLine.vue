@@ -25,6 +25,13 @@ import {
   rowName,
   type ECOption,
 } from "./useTimeSeriesGraph";
+import {
+  isBrowser,
+  isUTC,
+  timezoneAxisFormatter,
+  formatTimezoneTooltip,
+  formatTimezoneAxisPointer,
+} from "@/composables/useTimezone";
 
 const props = defineProps<{
   data: GraphLineHandlerResult;
@@ -85,6 +92,15 @@ const graph = computed((): ECOption => {
       type: "time",
       min: data.start,
       max: data.end,
+      axisPointer: {
+        label: {
+          formatter: ({ value }) =>
+            formatTimezoneAxisPointer(value as number | string),
+        },
+      },
+      ...(!isBrowser.value && !isUTC.value
+        ? { axisLabel: { formatter: timezoneAxisFormatter } }
+        : {}),
     },
     yAxis: ECOption["yAxis"] = {
       type: "value",
@@ -173,9 +189,12 @@ const graph = computed((): ECOption => {
             ].join(""),
           )
           .join("");
-        return `${
-          (params as TooltipCallbackDataParams[])[0].axisValueLabel
-        }<table>${rows}</table>`;
+        const header = formatTimezoneTooltip(
+          (params as TooltipCallbackDataParams[])[0].axisValue as
+            | string
+            | number,
+        );
+        return `${header}<table>${rows}</table>`;
       },
     };
 
@@ -190,6 +209,7 @@ const graph = computed((): ECOption => {
         findIndex(uniqRows, (orow) => isEqual(row, orow));
 
     return {
+      useUTC: !isBrowser.value,
       grid: {
         left: 60,
         top: 20,
@@ -314,6 +334,7 @@ const graph = computed((): ECOption => {
       height: (1 / rowNumber) * 100,
     }));
     return {
+      useUTC: !isBrowser.value,
       title: uniqRows.map((_, idx) => ({
         textAlign: "left",
         textStyle: {
