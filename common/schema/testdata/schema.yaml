@@ -491,3 +491,15 @@
   name: EgressVRFID
   parsertype: uint
   clickhousetype: UInt32
+- key: SrcOuterAddr
+  name: SrcOuterAddr
+  parsertype: ip
+  clickhousetype: IPv6
+- key: DstOuterAddr
+  name: DstOuterAddr
+  parsertype: ip
+  clickhousetype: IPv6
+- key: DecapProto
+  name: DecapProto
+  parsertype: string
+  clickhousetype: Enum8('none' = 0, 'ipip' = 1, 'gre' = 2, 'vxlan' = 3, 'srv6' = 4)

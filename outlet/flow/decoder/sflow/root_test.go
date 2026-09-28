@@ -634,6 +634,46 @@ func TestDecode(t *testing.T) {
 		}
 	})
 
+	t.Run("encap VXLAN (applied via prefix)", func(t *testing.T) {
+		decapProtocols := helpers.MustNewSubnetMap(map[string]pb.RawFlow_DecapsulationProtocol{
+			"192.168.108.0/24": pb.RawFlow_DECAP_VXLAN,
+		})
+		got = got[:0]
+		data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-encap-vxlan.pcap"))
+		_, err := sdecoder.Decode(
+			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+			decoder.Options{PrefixDecapsulationProtocols: decapProtocols}, bf, finalize)
+		if err != nil {
+			t.Fatalf("Decode() error:\n%+v", err)
+		}
+		expectedFlows := []*schema.FlowMessage{
+			{
+				SamplingRate:    1,
+				SrcAddr:         netip.MustParseAddr("2001:db8:4::1"),
+				DstAddr:         netip.MustParseAddr("2001:db8:4::3"),
+				ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+				OtherColumns: map[schema.ColumnKey]any{
+					schema.ColumnBytes:         uint64(104),
+					schema.ColumnPackets:       uint64(1),
+					schema.ColumnEType:         uint32(constants.ETypeIPv6),
+					schema.ColumnProto:         uint32(constants.ProtoICMPv6),
+					schema.ColumnSrcMAC:        uint64(0xca6e98f8498f),
+					schema.ColumnDstMAC:        uint64(0x010203040506),
+					schema.ColumnIPTTL:         uint8(64),
+					schema.ColumnICMPv6Type:    uint8(128),
+					schema.ColumnIPv6FlowLabel: uint32(0x0a461c),
+					schema.ColumnSrcOuterAddr:  netip.MustParseAddr("::ffff:192.168.108.40"),
+					schema.ColumnDstOuterAddr:  netip.MustParseAddr("::ffff:192.168.15.14"),
+					schema.ColumnDecapProto:    uint8(pb.RawFlow_DECAP_VXLAN),
+				},
+			},
+		}
+
+		if diff := helpers.Diff(got, expectedFlows); diff != "" {
+			t.Fatalf("Decode() (-got, +want):\n%s", diff)
+		}
+	})
+
 	// All pcaps without "encap" should return nothing.
 	t.Run("non-encap flows", func(t *testing.T) {
 		pcapPattern := filepath.Join("testdata", "*.pcap")
