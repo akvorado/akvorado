@@ -100,6 +100,9 @@ func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets 
 				if samplingRate > 0 {
 					tao.SetSamplingRate(version, obsDomainID, samplerID, samplingRate)
 				}
+				if !nd.d.Schema.IsDisabled(schema.ColumnGroupApplication) {
+					decodeApplicationOptions(version, tao, record.OptionsValues)
+				}
 			}
 		case netflow.DataFlowSet:
 			for _, record := range tFlowSet.Records {
@@ -269,6 +272,10 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 			// Remaining
 			case netflow.IPFIX_FIELD_forwardingStatus:
 				bf.AppendUint(schema.ColumnForwardingStatus, decodeUNumber(v))
+			case netflow.IPFIX_FIELD_applicationId:
+				if !nd.d.Schema.IsDisabled(schema.ColumnGroupApplication) {
+					appendApplication(bf, tao, version, v)
+				}
 			case netflow.IPFIX_FIELD_flowDirection:
 				switch decodeUNumber(v) {
 				case 0:
