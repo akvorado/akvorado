@@ -234,7 +234,6 @@ func TestDecodeSamplingRate(t *testing.T) {
 			DstAddr:         netip.MustParseAddr("::ffff:142.183.180.65"),
 			InIf:            13,
 			SrcVlan:         701,
-			NextHop:         netip.MustParseAddr("::ffff:0.0.0.0"),
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnPackets:       uint64(1),
 				schema.ColumnBytes:         uint64(160),
@@ -561,7 +560,6 @@ func TestDecodeMPLS(t *testing.T) {
 			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
 			SrcAddr:         netip.MustParseAddr("fd00::1:0:1:7:1"),
 			DstAddr:         netip.MustParseAddr("fd00::1:0:1:5:1"),
-			NextHop:         netip.MustParseAddr("::ffff:0.0.0.0"),
 			SamplingRate:    10,
 			OutIf:           16,
 			OtherColumns: map[schema.ColumnKey]any{
@@ -581,7 +579,6 @@ func TestDecodeMPLS(t *testing.T) {
 			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
 			SrcAddr:         netip.MustParseAddr("fd00::1:0:1:7:1"),
 			DstAddr:         netip.MustParseAddr("fd00::1:0:1:6:1"),
-			NextHop:         netip.MustParseAddr("::ffff:0.0.0.0"),
 			SamplingRate:    10,
 			OutIf:           17,
 			OtherColumns: map[schema.ColumnKey]any{
@@ -778,7 +775,6 @@ func TestDecodePhysicalInterfaces(t *testing.T) {
 			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
 			SrcAddr:         netip.MustParseAddr("::ffff:147.53.240.75"),
 			DstAddr:         netip.MustParseAddr("::ffff:212.82.101.24"),
-			NextHop:         netip.MustParseAddr("::"),
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnSrcMAC:       uint64(0xc014fef6c365),
 				schema.ColumnDstMAC:       uint64(0xe8b6c24ae34c),
