@@ -80,3 +80,12 @@ func TestDecodeMPLSLabelZero(t *testing.T) {
 		t.Errorf("Decode() MPLS labels (-got, +want):\n%s", diff)
 	}
 }
+
+func TestDecodeTCPControlBitsDataOffset(t *testing.T) {
+	// Data offset of 5 (the 4 most significant bits) with SYN and ACK.
+	got := decodeIPFIXRecord(t, rawField{[]byte{0x50, 0x12}, 6}).
+		OtherColumns[schema.ColumnTCPFlags]
+	if diff := helpers.Diff(got, uint16(0x12)); diff != "" {
+		t.Errorf("Decode() TCP flags (-got, +want):\n%s", diff)
+	}
+}
