@@ -51,6 +51,7 @@ flow record Akvorado
     collect counter packets
     collect timestamp sys-uptime first
     collect timestamp sys-uptime last
+    collect flow sampler
 !
 flow record Akvorado-IPV6
     match ipv6 protocol
@@ -68,6 +69,7 @@ flow record Akvorado-IPV6
     collect counter packets
     collect timestamp sys-uptime first
     collect timestamp sys-uptime last
+    collect flow sampler
 !
 sampler random1in100
     mode random 1 out-of 100
@@ -104,13 +106,15 @@ interface GigabitEthernet0/0/3
 !
 ```
 
-According to [issue #89](https://github.com/akvorado/akvorado/issues/89), the
-sampling rate is not reported correctly on this platform. The solution is to set
-a default sampling rate in `akvorado.yaml`. See the
+The `collect flow sampler` line is needed for *Akvorado* to match flows with
+the sampler options. IOS-XE exports these options with a different source ID
+than the flows. *Akvorado* uses them anyway when there is only one sampling rate
+for a given sampler ID ([issue #89](https://github.com/akvorado/akvorado/issues/89)).
+Otherwise, set a default sampling rate in `akvorado.yaml`. See the
 [documentation](50-configuration.md#core) for more details.
 
 ```yaml
-inlet:
+outlet:
   core:
     default-sampling-rate: 100
 ```
