@@ -12,6 +12,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 🩹 *outlet*: keep decoding a NetFlow or IPFIX packet after a data set with an unknown template
 - 🩹 *console*: complete custom dictionary values like the other string columns
 - 🌱 *console*: apply a filter with Ctrl-Enter even when its validation is still running
 - 🌱 *console*: remove the trailing when closing a list of values
