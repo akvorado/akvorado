@@ -160,7 +160,7 @@ func (nd *Decoder) Decode(in decoder.RawFlow, options decoder.Options, bf *schem
 			if !errors.Is(err, netflow.ErrorTemplateNotFound) {
 				nd.errLogger.Err(err).Str("exporter", key).Msg("error while decoding IPFIX")
 				nd.metrics.errors.WithLabelValues(key, "IPFIX decoding error").Inc()
-				return 0, fmt.Errorf("NetFlow v9 decoding error: %w", err)
+				return 0, fmt.Errorf("IPFIX decoding error: %w", err)
 			}
 			// Other sets of the packet may still be decoded.
 			nd.errLogger.Debug().Str("exporter", key).Msg("template not received yet")
