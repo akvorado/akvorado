@@ -336,7 +336,9 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 					case netflow.IPFIX_FIELD_flowLabelIPv6:
 						bf.AppendUint(schema.ColumnIPv6FlowLabel, decodeUNumber(v))
 					case netflow.IPFIX_FIELD_tcpControlBits:
-						bf.AppendUint(schema.ColumnTCPFlags, decodeUNumber(v))
+						// The 4 most significant bits encode the TCP data
+						// offset and must be ignored (RFC 9565).
+						bf.AppendUint(schema.ColumnTCPFlags, decodeUNumber(v)&0x0fff)
 					case netflow.IPFIX_FIELD_fragmentIdentification:
 						bf.AppendUint(schema.ColumnIPFragmentID, decodeUNumber(v))
 					case netflow.IPFIX_FIELD_fragmentOffset:
