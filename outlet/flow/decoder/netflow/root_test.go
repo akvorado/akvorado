@@ -256,7 +256,7 @@ func TestDecode(t *testing.T) {
 }
 
 func TestTemplatesMixedWithData(t *testing.T) {
-	r, nfdecoder, bf, _, finalize := setup(t, true)
+	r, nfdecoder, bf, got, finalize := setup(t, true)
 	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	// Send packet with both data and templates
@@ -265,8 +265,14 @@ func TestTemplatesMixedWithData(t *testing.T) {
 		decoder.RawFlow{Payload: template, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
 		options, bf, finalize)
 
-	// We don't really care about the data, but we should have accepted the
-	// templates. Check the stats.
+	// The first data set precedes its template and is dropped. The second
+	// one follows it and should be decoded, despite the missing template for
+	// the first one.
+	if len(*got) != 10 {
+		t.Errorf("Decode() returned %d flows, expected 10", len(*got))
+	}
+
+	// We should have accepted the templates. Check the stats.
 	gotMetrics := r.GetMetrics(
 		"akvorado_outlet_flow_decoder_netflow_",
 		"templates_",
@@ -986,10 +992,12 @@ func TestDecodeNonEncap(t *testing.T) {
 				`errors_total{error="non-encapsulated packet",exporter="::ffff:127.0.0.1"}`: "4",
 			},
 		}, {
-			// Data precedes the template in this combined PDU, so it is
-			// dropped before reaching the record decoder: no counter.
-			pcaps:                []string{"data+templates.pcap"},
-			expectedErrorMetrics: map[string]string{},
+			// The first data set precedes its template in this combined
+			// PDU and is dropped. The second one follows it.
+			pcaps: []string{"data+templates.pcap"},
+			expectedErrorMetrics: map[string]string{
+				`errors_total{error="non-encapsulated packet",exporter="::ffff:127.0.0.1"}`: "10",
+			},
 		}, {
 			pcaps: []string{"mpls.pcap"},
 			expectedErrorMetrics: map[string]string{

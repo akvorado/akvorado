@@ -143,8 +143,8 @@ func (nd *Decoder) Decode(in decoder.RawFlow, options decoder.Options, bf *schem
 				nd.metrics.errors.WithLabelValues(key, "NetFlow v9 decoding error").Inc()
 				return 0, fmt.Errorf("NetFlow v9 decoding error: %w", err)
 			}
+			// Other sets of the packet may still be decoded.
 			nd.errLogger.Debug().Str("exporter", key).Msg("template not received yet")
-			return 0, nil
 		}
 		versionStr = "9"
 		flowSets = packetNFv9.FlowSets
@@ -162,8 +162,8 @@ func (nd *Decoder) Decode(in decoder.RawFlow, options decoder.Options, bf *schem
 				nd.metrics.errors.WithLabelValues(key, "IPFIX decoding error").Inc()
 				return 0, fmt.Errorf("NetFlow v9 decoding error: %w", err)
 			}
+			// Other sets of the packet may still be decoded.
 			nd.errLogger.Debug().Str("exporter", key).Msg("template not received yet")
-			return 0, nil
 		}
 		versionStr = "10"
 		flowSets = packetIPFIX.FlowSets
