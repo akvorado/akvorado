@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"akvorado/common/helpers"
 	"akvorado/common/pb"
 	"akvorado/common/schema"
 	"akvorado/outlet/flow/decoder"
@@ -66,5 +67,16 @@ func TestDecodeNextHopUnset(t *testing.T) {
 		if expected := netip.MustParseAddr("::ffff:192.0.2.254"); got != expected {
 			t.Errorf("Decode() next hop = %s, expected %s", got, expected)
 		}
+	}
+}
+
+func TestDecodeMPLSLabelZero(t *testing.T) {
+	got := decodeIPFIXRecord(t,
+		rawField{[]byte{0x00, 0x01, 0x00}, 70}, // label 16
+		rawField{[]byte{0x00, 0x00, 0x01}, 71}, // label 0, bottom of stack
+		rawField{[]byte{0x00, 0x00, 0x00}, 72}, // unused
+	).OtherColumns[schema.ColumnMPLSLabels]
+	if diff := helpers.Diff(got, []uint32{16, 0}); diff != "" {
+		t.Errorf("Decode() MPLS labels (-got, +want):\n%s", diff)
 	}
 }

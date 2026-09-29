@@ -260,9 +260,10 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 
 			// MPLS
 			case netflow.IPFIX_FIELD_mplsTopLabelStackSection, netflow.IPFIX_FIELD_mplsLabelStackSection2, netflow.IPFIX_FIELD_mplsLabelStackSection3, netflow.IPFIX_FIELD_mplsLabelStackSection4, netflow.IPFIX_FIELD_mplsLabelStackSection5, netflow.IPFIX_FIELD_mplsLabelStackSection6, netflow.IPFIX_FIELD_mplsLabelStackSection7, netflow.IPFIX_FIELD_mplsLabelStackSection8, netflow.IPFIX_FIELD_mplsLabelStackSection9, netflow.IPFIX_FIELD_mplsLabelStackSection10:
-				uv := decodeUNumber(v) >> 4
-				if uv > 0 {
-					mplsLabels = append(mplsLabels, uint32(uv))
+				// Skip unused sections (all zero). A label of 0 (IPv4
+				// explicit null) has at least the bottom of stack bit.
+				if section := decodeUNumber(v); section > 0 {
+					mplsLabels = append(mplsLabels, uint32(section>>4))
 				}
 
 			// VRF
