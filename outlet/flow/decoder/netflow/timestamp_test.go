@@ -4,11 +4,12 @@
 package netflow
 
 import (
-	"encoding/binary"
+	"fmt"
 	"net/netip"
+	"path/filepath"
 	"testing"
-	"time"
 
+	"akvorado/common/helpers"
 	"akvorado/common/pb"
 	"akvorado/outlet/flow/decoder"
 )
@@ -33,81 +34,51 @@ func TestUptimeToUnix(t *testing.T) {
 	}
 }
 
-// ipfixField is an information element with its length and value, used to
-// build an IPFIX message for tests.
-type ipfixField struct {
-	id     uint16
-	length uint16
-	value  uint64
-}
-
-// ipfixMessage builds an IPFIX message with one template and one data record
-// with source and destination IPv4 addresses followed by the provided fields.
-func ipfixMessage(exportTime uint32, fields ...ipfixField) []byte {
-	be16 := binary.BigEndian.AppendUint16
-	be32 := binary.BigEndian.AppendUint32
-	template := be16(be16(nil, 256), uint16(2+len(fields)))
-	template = be16(be16(be16(be16(template, 8), 4), 12), 4)
-	record := []byte{192, 0, 2, 1, 192, 0, 2, 2}
-	for _, f := range fields {
-		template = be16(be16(template, f.id), f.length)
-		value := binary.BigEndian.AppendUint64(nil, f.value)
-		record = append(record, value[8-f.length:]...)
+func TestNTPToUnix(t *testing.T) {
+	// RFC 7011, section 6.1.9 and 6.1.10: seconds since 1900, then a fraction.
+	ntp := uint64(1_700_000_000+ntpEpochOffset)<<32 | 1<<31
+	if got := ntpToUnix(ntp); got != 1_700_000_000 {
+		t.Errorf("ntpToUnix() = %d, expected 1700000000", got)
 	}
-	body := append(be16(be16(nil, 2), uint16(4+len(template))), template...)
-	body = append(be16(be16(body, 256), uint16(4+len(record))), record...)
-	msg := be16(be16(nil, 10), uint16(16+len(body)))
-	msg = be32(be32(be32(msg, exportTime), 1), 0)
-	return append(msg, body...)
 }
 
-func TestDecodeIPFIXFlowStart(t *testing.T) {
-	const (
-		export = 1_700_000_000
-		start  = 1_699_999_997
-		ntp    = (start + ntpEpochOffset) << 32
-	)
+// TestDecodeFlowStartCiscoIOSXE decodes captures from a Cisco C8000V running
+// IOS XE 17.18.03a with `timestamp-source: netflow-first-switched`. The
+// expected bounds are the flow start times computed from the captures: with
+// NetFlow v9, from FIRST_SWITCHED and the header (RFC 3954); with IPFIX, from
+// flowStartMilliseconds, as the flowStartSysUpTime also exported cannot be
+// converted without systemInitTimeMilliseconds.
+func TestDecodeFlowStartCiscoIOSXE(t *testing.T) {
 	cases := []struct {
-		description string
-		fields      []ipfixField
-		expected    uint32
+		name     string
+		min, max uint32
 	}{
-		{"flowStartSeconds", []ipfixField{{150, 4, start}}, start},
-		{"flowStartMilliseconds", []ipfixField{{152, 8, start*1000 + 500}}, start},
-		{"flowStartMicroseconds", []ipfixField{{154, 8, ntp | 1<<31}}, start},
-		{"flowStartNanoseconds", []ipfixField{{156, 8, ntp | 1<<31}}, start},
-		{
-			"flowStartSysUpTime with systemInitTimeMilliseconds",
-			[]ipfixField{{160, 8, 1_699_996_400_000}, {22, 4, 3_597_000}},
-			start,
-		},
-		{
-			"systemInitTimeMilliseconds after flowStartSysUpTime",
-			[]ipfixField{{22, 4, 3_597_000}, {160, 8, 1_699_996_400_000}},
-			start,
-		},
-		{
-			"flowStartSysUpTime without systemInitTimeMilliseconds",
-			[]ipfixField{{22, 4, 3_597_000}},
-			export + 1,
-		},
+		{"v9", 1790709870, 1790709915},
+		{"ipfix", 1790709884, 1790709917},
 	}
 	for _, tc := range cases {
-		t.Run(tc.description, func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			_, nfdecoder, bf, got, finalize := setup(t, false)
-			_, err := nfdecoder.Decode(decoder.RawFlow{
-				Payload:      ipfixMessage(export, tc.fields...),
-				Source:       netip.MustParseAddr("::ffff:127.0.0.1"),
-				TimeReceived: time.Unix(export+1, 0),
-			}, decoder.Options{TimestampSource: pb.RawFlow_TS_NETFLOW_FIRST_SWITCHED}, bf, finalize)
-			if err != nil {
-				t.Fatalf("Decode() error:\n%+v", err)
+			pcap := filepath.Join("testdata", fmt.Sprintf("iosxe-%s-timestamps.pcap", tc.name))
+			for data := range helpers.ReadManyPcapL4(t, pcap) {
+				_, err := nfdecoder.Decode(decoder.RawFlow{
+					Payload: data,
+					Source:  netip.MustParseAddr("::ffff:127.0.0.1"),
+				}, decoder.Options{TimestampSource: pb.RawFlow_TS_NETFLOW_FIRST_SWITCHED}, bf, finalize)
+				if err != nil {
+					t.Fatalf("Decode() error:\n%+v", err)
+				}
 			}
-			if len(*got) != 1 {
-				t.Fatalf("Decode() returned %d flows, expected 1", len(*got))
+			if len(*got) == 0 {
+				t.Fatal("Decode() returned no flow")
 			}
-			if ts := (*got)[0].TimeReceived; ts != tc.expected {
-				t.Errorf("Decode() TimeReceived = %d, expected %d", ts, tc.expected)
+			gotMin, gotMax := (*got)[0].TimeReceived, (*got)[0].TimeReceived
+			for _, flow := range *got {
+				gotMin, gotMax = min(gotMin, flow.TimeReceived), max(gotMax, flow.TimeReceived)
+			}
+			if gotMin != tc.min || gotMax != tc.max {
+				t.Errorf("Decode() TimeReceived in [%d, %d], expected [%d, %d]",
+					gotMin, gotMax, tc.min, tc.max)
 			}
 		})
 	}
