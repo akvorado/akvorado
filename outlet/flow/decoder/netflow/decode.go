@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"net/netip"
+	"slices"
 
 	"akvorado/common/constants"
 	"akvorado/common/pb"
@@ -101,7 +102,10 @@ func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets 
 					tao.SetSamplingRate(version, obsDomainID, samplerID, samplingRate)
 				}
 				if !nd.d.Schema.IsDisabled(schema.ColumnGroupApplication) {
-					decodeApplicationOptions(version, tao, record.OptionsValues)
+					// With IPFIX, Cisco IOS XE uses the application ID as the
+					// scope of the application tables.
+					decodeApplicationOptions(version, tao,
+						slices.Concat(record.ScopesValues, record.OptionsValues))
 				}
 			}
 		case netflow.DataFlowSet:
