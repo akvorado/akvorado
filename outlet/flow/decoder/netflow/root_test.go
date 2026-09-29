@@ -624,7 +624,8 @@ func TestDecodeNFv5(t *testing.T) {
 
 			ts := uint32(1680626679)
 			if tsSource == pb.RawFlow_TS_NETFLOW_FIRST_SWITCHED {
-				ts = 1680611679
+				// First packet was switched 15 s before export.
+				ts = 1680626664
 			}
 
 			expectedFlows := []*schema.FlowMessage{
@@ -703,9 +704,9 @@ func TestDecodeTimestampFromFirstSwitched(t *testing.T) {
 	}
 
 	// 4 flows in capture
-	var sysUptime uint32 = 944951609
-	var packetTS uint32 = 1647285928
-	expectedFirstSwitched := []uint32{
+	var sysUptime uint64 = 944951609
+	var packetTS uint64 = 1647285928
+	expectedFirstSwitched := []uint64{
 		944948659,
 		944948659,
 		944948660,
@@ -713,7 +714,8 @@ func TestDecodeTimestampFromFirstSwitched(t *testing.T) {
 	}
 
 	for i, flow := range *got {
-		if val := packetTS - sysUptime + expectedFirstSwitched[i]; flow.TimeReceived != val {
+		// FIRST_SWITCHED and sysUptime are in milliseconds.
+		if val := (packetTS*1000 - (sysUptime - expectedFirstSwitched[i])) / 1000; uint64(flow.TimeReceived) != val {
 			t.Errorf("Decode() (-got, +want):\n-%d, +%d", flow.TimeReceived, val)
 		}
 	}
