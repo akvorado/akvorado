@@ -212,7 +212,12 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 			case netflow.IPFIX_FIELD_destinationIPv4PrefixLength, netflow.IPFIX_FIELD_destinationIPv6PrefixLength:
 				bf.DstNetMask = uint8(decodeUNumber(v))
 			case netflow.IPFIX_FIELD_ipNextHopIPv4Address, netflow.IPFIX_FIELD_bgpNextHopIPv4Address, netflow.IPFIX_FIELD_ipNextHopIPv6Address, netflow.IPFIX_FIELD_bgpNextHopIPv6Address:
-				bf.NextHop = decoder.DecodeIP(v)
+				// A record may contain several next hops. An unset one
+				// (for example, the BGP next hop of a non-BGP route) should
+				// not override another one.
+				if current := bf.NextHop.Unmap(); !isAllZeroIP(v) || !current.IsValid() || current.IsUnspecified() {
+					bf.NextHop = decoder.DecodeIP(v)
+				}
 
 			// L4
 			case netflow.IPFIX_FIELD_sourceTransportPort:
