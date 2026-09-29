@@ -7,6 +7,7 @@ package netflow
 import (
 	"bytes"
 	"encoding/binary"
+	"math"
 	"net/netip"
 
 	"akvorado/common/constants"
@@ -74,9 +75,11 @@ func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets 
 		case netflow.OptionsDataFlowSet:
 			for _, record := range tFlowSet.Records {
 				var (
-					samplingRate                uint32
-					samplerID                   uint64
-					packetInterval, packetSpace uint32
+					samplingRate                     uint32
+					samplerID                        uint64
+					packetInterval, packetSpace      uint32
+					samplingSize, samplingPopulation uint32
+					samplingProbability              float64
 				)
 				for _, field := range record.OptionsValues {
 					v, ok := field.Value.([]byte)
@@ -92,10 +95,24 @@ func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets 
 						packetInterval = uint32(decodeUNumber(v))
 					case netflow.IPFIX_FIELD_samplingPacketSpace:
 						packetSpace = uint32(decodeUNumber(v))
+					case netflow.IPFIX_FIELD_samplingSize:
+						samplingSize = uint32(decodeUNumber(v))
+					case netflow.IPFIX_FIELD_samplingPopulation:
+						samplingPopulation = uint32(decodeUNumber(v))
+					case netflow.IPFIX_FIELD_samplingProbability:
+						samplingProbability = decodeFloat(v)
 					}
 				}
-				if packetInterval > 0 {
+				switch {
+				case packetInterval > 0:
+					// Systematic count-based sampling (RFC 5476, 6.5.2.1).
 					samplingRate = (packetInterval + packetSpace) / packetInterval
+				case samplingSize > 0:
+					// Random n-out-of-N sampling (RFC 5476, 6.5.2.3).
+					samplingRate = samplingPopulation / samplingSize
+				case samplingProbability > 0 && samplingProbability <= 1:
+					// Uniform probabilistic sampling (RFC 5476, 6.5.2.4).
+					samplingRate = uint32(math.Round(1 / samplingProbability))
 				}
 				if samplingRate > 0 {
 					tao.SetSamplingRate(version, obsDomainID, samplerID, samplingRate)
@@ -426,6 +443,18 @@ func decodeUNumber(b []byte) uint64 {
 		return uint64(b[6]) | uint64(b[5])<<8 | uint64(b[4])<<16 | uint64(b[3])<<24 | uint64(b[2])<<32 | uint64(b[1])<<40 | uint64(b[0])<<48
 	case 8:
 		return binary.BigEndian.Uint64(b)
+	}
+	return 0
+}
+
+// decodeFloat decodes a float64, possibly using reduced-size encoding (RFC
+// 7011, section 6.2).
+func decodeFloat(b []byte) float64 {
+	switch len(b) {
+	case 4:
+		return float64(math.Float32frombits(binary.BigEndian.Uint32(b)))
+	case 8:
+		return math.Float64frombits(binary.BigEndian.Uint64(b))
 	}
 	return 0
 }
