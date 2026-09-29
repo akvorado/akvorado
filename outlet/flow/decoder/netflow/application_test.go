@@ -4,15 +4,15 @@
 package netflow
 
 import (
-	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"net/netip"
+	"path/filepath"
+	"strings"
 	"testing"
-	"time"
 
 	"akvorado/common/helpers"
 	"akvorado/common/pb"
-	"akvorado/common/schema"
 	"akvorado/outlet/flow/decoder"
 )
 
@@ -49,230 +49,58 @@ func TestApplicationKeyMarshalText(t *testing.T) {
 	}
 }
 
-// nbarField is a template field with its value.
-type nbarField struct {
-	value []byte
-	id    uint16
-	pen   uint32
-}
-
-func nbarString(s string, size int) []byte {
-	b := make([]byte, size)
-	copy(b, s)
-	return b
-}
-
-func nbarAppID(engine byte, selector uint32) []byte {
-	return []byte{engine, byte(selector >> 16), byte(selector >> 8), byte(selector)}
-}
-
-// nbarMessage builds a NetFlow v9 packet or an IPFIX message with one set.
-func nbarMessage(version uint16, domain uint32, setID uint16, content []byte) []byte {
-	be16 := binary.BigEndian.AppendUint16
-	be32 := binary.BigEndian.AppendUint32
-	set := append(be16(be16(nil, setID), uint16(4+len(content))), content...)
-	if version == 9 {
-		msg := be16(be16(nil, 9), 1)
-		msg = be32(be32(be32(be32(msg, 0), 1_700_000_000), 1), domain)
-		return append(msg, set...)
-	}
-	msg := be16(be16(nil, 10), uint16(16+len(set)))
-	msg = be32(be32(be32(msg, 1_700_000_000), 1), domain)
-	return append(msg, set...)
-}
-
-// nbarFieldSpecifiers encodes field specifiers. For IPFIX, an enterprise
-// number sets the enterprise bit.
-func nbarFieldSpecifiers(version uint16, fields []nbarField) []byte {
-	var b []byte
-	for _, f := range fields {
-		id := f.id
-		if version == 10 && f.pen != 0 {
-			id |= 0x8000
-		}
-		b = binary.BigEndian.AppendUint16(b, id)
-		b = binary.BigEndian.AppendUint16(b, uint16(len(f.value)))
-		if version == 10 && f.pen != 0 {
-			b = binary.BigEndian.AppendUint32(b, f.pen)
-		}
-	}
-	return b
-}
-
-// nbarOptions builds an options template and its data record, with a system
-// scope like Cisco IOS XE.
-func nbarOptions(
-	version uint16,
-	domain uint32,
-	templateID uint16,
-	records ...[]nbarField,
-) [][]byte {
-	be16 := binary.BigEndian.AppendUint16
-	scope := nbarField{[]byte{192, 0, 2, 1}, 1, 0}
-	specs := nbarFieldSpecifiers(version, records[0])
-	var template []byte
-	if version == 9 {
-		template = be16(be16(be16(nil, templateID), 4), uint16(len(specs)))
-		template = append(be16(be16(template, 1), 4), specs...)
-	} else {
-		template = be16(be16(be16(nil, templateID), uint16(1+len(records[0]))), 1)
-		// IPFIX scope: exporter IPv4 address.
-		template = append(be16(be16(template, 130), 4), specs...)
-	}
-	var data []byte
-	for _, record := range records {
-		data = append(data, scope.value...)
-		for _, f := range record {
-			data = append(data, f.value...)
-		}
-	}
-	setID := uint16(1)
-	if version == 10 {
-		setID = 3
-	}
-	return [][]byte{
-		nbarMessage(version, domain, setID, template),
-		nbarMessage(version, domain, templateID, data),
-	}
-}
-
-// nbarFlows builds a data template with addresses and applicationId, and
-// one record per application ID.
-func nbarFlows(version uint16, domain uint32, ids ...[]byte) [][]byte {
-	be16 := binary.BigEndian.AppendUint16
-	template := be16(be16(nil, 263), 3)
-	template = be16(be16(be16(be16(be16(be16(template, 8), 4), 12), 4), 95), 4)
-	var data []byte
-	for _, id := range ids {
-		data = append(data, 192, 0, 2, 10, 198, 51, 100, 10)
-		data = append(data, id...)
-	}
-	setID := uint16(0)
-	if version == 10 {
-		setID = 2
-	}
-	return [][]byte{
-		nbarMessage(version, domain, setID, template),
-		nbarMessage(version, domain, 263, data),
-	}
-}
-
-func decodeNBAR(t *testing.T, packets ...[]byte) []map[schema.ColumnKey]any {
+// decodeApplications decodes captures from a Cisco C8000V running IOS XE
+// 17.18.03a with NBAR2 protocol pack 78.0 (options with source ID 6, flows
+// with another source ID) and counts the flows for each set of application
+// columns.
+func decodeApplications(t *testing.T, format string) map[string]int {
 	t.Helper()
 	_, nfdecoder, bf, got, finalize := setup(t, false)
-	for _, packet := range packets {
+	pcap := filepath.Join("testdata", fmt.Sprintf("iosxe-%s-nbar2.pcap", format))
+	for data := range helpers.ReadManyPcapL4(t, pcap) {
 		_, err := nfdecoder.Decode(decoder.RawFlow{
-			Payload:      packet,
-			Source:       netip.MustParseAddr("::ffff:127.0.0.1"),
-			TimeReceived: time.Unix(1_700_000_000, 0),
+			Payload: data,
+			Source:  netip.MustParseAddr("::ffff:127.0.0.1"),
 		}, decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}, bf, finalize)
 		if err != nil {
 			t.Fatalf("Decode() error:\n%+v", err)
 		}
 	}
-	result := []map[schema.ColumnKey]any{}
+	result := map[string]int{}
 	for _, flow := range *got {
-		columns := map[schema.ColumnKey]any{}
+		values := []string{}
 		for _, column := range applicationColumns {
 			if value, ok := flow.OtherColumns[column]; ok {
-				columns[column] = value
+				values = append(values, fmt.Sprintf("%s=%s", column, value))
 			}
 		}
-		result = append(result, columns)
+		result[strings.Join(values, " ")]++
 	}
 	return result
 }
 
-func TestDecodeNBARApplicationNetFlowV9(t *testing.T) {
-	ssl, http, unknown := nbarAppID(13, 453), nbarAppID(3, 80), nbarAppID(13, 9999)
-	// Same layout as Cisco IOS XE 17.18 option application-table (template
-	// 258) and option application-attributes (template 259), exported with
-	// source ID 6 while flows use another source ID.
-	names := nbarOptions(
-		9,
-		6,
-		258,
-		[]nbarField{
-			{ssl, 95, 0},
-			{nbarString("ssl", 24), 96, 0},
-			{nbarString("Secure Socket Layer", 55), 94, 0},
-		},
-		[]nbarField{
-			{http, 95, 0},
-			{nbarString("http", 24), 96, 0},
-			{nbarString("World Wide Web traffic", 55), 94, 0},
-		},
-	)
-	attributes := nbarOptions(9, 6, 259, []nbarField{
-		{ssl, 95, 0},
-		{nbarString("browsing", 32), 45000, 0},
-		{nbarString("other", 32), 45001, 0},
-		{nbarString("other", 32), 45002, 0},
-		{nbarString("transactional-data", 32), 45011, 0},
-		{nbarString("business-relevant", 32), 45012, 0},
-		{nbarString("no", 10), 288, 0},
-		{nbarString("no", 10), 289, 0},
-		{nbarString("yes", 10), 290, 0},
-		{nbarString("general-browsing", 32), 44999, 0},
-		{nbarString("web", 32), 44998, 0},
-	})
-	packets := append(append(names, attributes...), nbarFlows(9, 768, ssl, http, unknown)...)
-
-	got := decodeNBAR(t, packets...)
-	expected := []map[schema.ColumnKey]any{
-		{
-			schema.ColumnApplication:                  "ssl",
-			schema.ColumnApplicationCategory:          "browsing",
-			schema.ColumnApplicationSubCategory:       "other",
-			schema.ColumnApplicationGroup:             "other",
-			schema.ColumnApplicationTrafficClass:      "transactional-data",
-			schema.ColumnApplicationBusinessRelevance: "business-relevant",
-			schema.ColumnApplicationFamily:            "web",
-			schema.ColumnApplicationSet:               "general-browsing",
-			schema.ColumnApplicationP2P:               "no",
-			schema.ColumnApplicationTunnel:            "no",
-			schema.ColumnApplicationEncrypted:         "yes",
-		},
-		{schema.ColumnApplication: "http"},
-		{schema.ColumnApplication: "13:9999"},
+func TestDecodeApplications(t *testing.T) {
+	expected := map[string]int{
+		"Application=ssl ApplicationCategory=browsing " +
+			"ApplicationSubCategory=enterprise-transactional-apps ApplicationGroup=other " +
+			"ApplicationTrafficClass=transactional-data ApplicationBusinessRelevance=default " +
+			"ApplicationFamily=encrypted ApplicationSet=general-browsing " +
+			"ApplicationP2P=no ApplicationTunnel=yes ApplicationEncrypted=yes": 11,
+		// Not in the captured part of the application table.
+		"Application=13:1297": 6,
+		// Attributes captured, but not the name.
+		"Application=13:1 ApplicationCategory=other ApplicationSubCategory=other " +
+			"ApplicationGroup=other ApplicationTrafficClass=bulk-data " +
+			"ApplicationBusinessRelevance=default ApplicationFamily=network-service " +
+			"ApplicationSet=general-misc ApplicationP2P=no ApplicationTunnel=no " +
+			"ApplicationEncrypted=no": 1,
 	}
-	if diff := helpers.Diff(got, expected); diff != "" {
-		t.Fatalf("Decode() (-got, +want):\n%s", diff)
-	}
-}
-
-func TestDecodeNBARApplicationIPFIX(t *testing.T) {
-	webex := nbarAppID(13, 10000)
-	names := nbarOptions(10, 0, 258, []nbarField{
-		{webex, 95, 0},
-		{nbarString("webex-meeting", 24), 96, 0},
-	})
-	attributes := nbarOptions(10, 0, 259, []nbarField{
-		{webex, 95, 0},
-		{nbarString("voice-and-video", 32), 12232, ciscoPEN},
-		{nbarString("multimedia", 32), 12243, ciscoPEN},
-		{nbarString("collaboration", 32), 374, 0},
-	})
-	packets := append(append(names, attributes...), nbarFlows(10, 0, webex)...)
-
-	got := decodeNBAR(t, packets...)
-	expected := []map[schema.ColumnKey]any{{
-		schema.ColumnApplication:             "webex-meeting",
-		schema.ColumnApplicationCategory:     "voice-and-video",
-		schema.ColumnApplicationTrafficClass: "multimedia",
-		schema.ColumnApplicationGroup:        "collaboration",
-	}}
-	if diff := helpers.Diff(got, expected); diff != "" {
-		t.Fatalf("Decode() (-got, +want):\n%s", diff)
-	}
-}
-
-func TestDecodeNBARApplicationBeforeOptions(t *testing.T) {
-	ssl := nbarAppID(13, 453)
-	got := decodeNBAR(t, nbarFlows(9, 768, ssl)...)
-	expected := []map[schema.ColumnKey]any{{schema.ColumnApplication: "13:453"}}
-	if diff := helpers.Diff(got, expected); diff != "" {
-		t.Fatalf("Decode() (-got, +want):\n%s", diff)
+	for _, format := range []string{"v9", "ipfix"} {
+		t.Run(format, func(t *testing.T) {
+			if diff := helpers.Diff(decodeApplications(t, format), expected); diff != "" {
+				t.Fatalf("Decode() (-got, +want):\n%s", diff)
+			}
+		})
 	}
 }
 
@@ -280,7 +108,7 @@ func TestApplicationsPersisted(t *testing.T) {
 	tao := &templatesAndOptions{}
 	var update application
 	update[applicationName] = "ssl"
-	tao.UpdateApplication(9, nbarAppID(13, 453), &update)
+	tao.UpdateApplication(9, []byte{13, 0, 0x01, 0xc5}, &update)
 	raw, err := json.Marshal(tao)
 	if err != nil {
 		t.Fatalf("json.Marshal() error:\n%+v", err)
@@ -291,7 +119,7 @@ func TestApplicationsPersisted(t *testing.T) {
 	}
 	if app, ok := restored.GetApplication(
 		9,
-		nbarAppID(13, 453),
+		[]byte{13, 0, 0x01, 0xc5},
 	); !ok ||
 		app[applicationName] != "ssl" {
 		t.Errorf("GetApplication() after restore = %v, %v", app, ok)
