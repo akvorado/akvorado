@@ -348,10 +348,48 @@ func TestBMP(t *testing.T) {
 		}
 	})
 
-	t.Run("init, peers up, eor, reach NLRI, 1 peer down", func(t *testing.T) {
+	t.Run("init, no peers up, eor, reach NLRI, peers up, down and up", func(t *testing.T) {
 		r := reporter.NewMock(t)
 		config := DefaultConfiguration()
-		p, _ := NewMock(t, r, config)
+		c, mockClock := NewMock(t, r, config)
+		helpers.StartStop(t, c)
+		conn := dial(t, c)
+
+		send(t, conn, "bmp-init.pcap")
+		send(t, conn, "bmp-reach.pcap")
+		send(t, conn, "bmp-peers-up.pcap")
+		send(t, conn, "bmp-eor.pcap")
+		send(t, conn, "bmp-peer-down.pcap")
+		send(t, conn, "bmp-peer-up.pcap") // re-adding a peer should cancel any deferred removals
+		time.Sleep(20 * time.Millisecond)
+		mockClock.Add(time.Minute) // process deferred peer removals
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-buffer_size", "-message_queue")
+		expectedMetrics := map[string]string{
+			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:             "1",
+			`received_messages_total{exporter="127.0.0.1",type="peer-down-notification"}`: "1",
+			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`:   "5",
+			`received_messages_total{exporter="127.0.0.1",type="route-mirroring"}`:        "0",
+			`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`:       "25",
+			`received_messages_total{exporter="127.0.0.1",type="statistics-report"}`:      "5",
+			`received_messages_total{exporter="127.0.0.1",type="termination"}`:            "0",
+			`received_messages_total{exporter="127.0.0.1",type="unknown"}`:                "0",
+			`closed_connections_total{exporter="127.0.0.1"}`:                              "0",
+			`opened_connections_total{exporter="127.0.0.1"}`:                              "1",
+			`peers{exporter="127.0.0.1"}`:                                                 "4",
+			`routes{exporter="127.0.0.1"}`:                                                "17",
+			`prefixes_added_total{exporter="127.0.0.1"}`:                                  "10",
+			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "0",
+			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "7",
+		}
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+			t.Errorf("Metrics (-got, +want):\n%s", diff)
+		}
+	})
+
+	t.Run("init, peers up, eor, reach NLRI, 1 peer down, connection down", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		config := DefaultConfiguration()
+		p, mockClock := NewMock(t, r, config)
 		helpers.StartStop(t, p)
 		conn := dial(t, p)
 
@@ -361,7 +399,8 @@ func TestBMP(t *testing.T) {
 		send(t, conn, "bmp-reach.pcap")
 		send(t, conn, "bmp-peer-down.pcap")
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration", "-buffer_size", "-message_queue")
+		mockClock.Add(time.Minute) // process deferred peer removals
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration_seconds{", "-locked_duration_seconds_sum", "-buffer_size", "-message_queue")
 		expectedMetrics := map[string]string{
 			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:             "1",
 			`received_messages_total{exporter="127.0.0.1",type="peer-down-notification"}`: "1",
@@ -379,6 +418,7 @@ func TestBMP(t *testing.T) {
 			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "1",
 			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "7",
 			`removed_peers_total{exporter="127.0.0.1"}`:                                   "1",
+			`locked_duration_seconds_count{reason="peer-removal"}`:                        "1",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -405,6 +445,29 @@ func TestBMP(t *testing.T) {
 			},
 		}
 		gotRIB := dumpRIB(t, p)
+		if diff := helpers.Diff(gotRIB, expectedRIB); diff != "" {
+			t.Errorf("RIB (-got, +want):\n%s", diff)
+		}
+
+		// Closing the connection marks the three remaining peers as stale.
+		// They should all be removed at once, increasing the removed_peers_total metric by three,
+		// but locked_duration_seconds_count{reason="peer-removal"} only by one.
+		conn.Close()
+		time.Sleep(20 * time.Millisecond)
+		mockClock.Add(time.Hour)
+		gotMetrics = r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "peers", "routes", "removed_peers_total", "locked_duration_seconds_count")
+		expectedMetrics = map[string]string{
+			`peers{exporter="127.0.0.1"}`:                          "0",
+			`routes{exporter="127.0.0.1"}`:                         "0",
+			`removed_peers_total{exporter="127.0.0.1"}`:            "4",
+			`locked_duration_seconds_count{reason="peer-removal"}`: "2",
+		}
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+			t.Errorf("Metrics (-got, +want):\n%s", diff)
+		}
+
+		expectedRIB = map[netip.Addr][]string{}
+		gotRIB = dumpRIB(t, p)
 		if diff := helpers.Diff(gotRIB, expectedRIB); diff != "" {
 			t.Errorf("RIB (-got, +want):\n%s", diff)
 		}
