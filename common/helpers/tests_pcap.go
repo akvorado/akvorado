@@ -45,16 +45,20 @@ func ReadPcapL4(t testing.TB, pcapfile string) []byte {
 	return payload.Bytes()
 }
 
-// ReadPcapL2 reads and parses a PCAP file and returns the payload (Layer 2). If
-// there are several packets, only the first one is returned.
+// ReadPcapL2 reads and parses a PCAP file and returns the payload (Layer 2).
+// Only one packet is allowed in pcap.
 func ReadPcapL2(t testing.TB, pcapfile string) []byte {
 	t.Helper()
 	source := readPcap(t, pcapfile)
 	payload := bytes.NewBuffer([]byte{})
+	count := 0
 	for packet := range source.Packets() {
+		if count > 0 {
+			t.Fatalf("%q contains more than one packet", pcapfile)
+		}
 		payload.Write(packet.LinkLayer().LayerContents())
 		payload.Write(packet.LinkLayer().LayerPayload())
-		break
+		count++
 	}
 	return payload.Bytes()
 }
