@@ -350,6 +350,11 @@ func TestWorkerScaling(t *testing.T) {
 		t.Errorf("Start() max workers should have been capped to 4 instead of %d", maxWorkers)
 	}
 	msg := atomic.Uint32{}
+	fetchFault := cluster.Fault(kfake.Fault{
+		Keys:    []kmsg.Key{kmsg.Fetch},
+		Observe: true,
+		Count:   -1,
+	})
 	c.StartWorkers(func(_ int, ch chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
 		return func(context.Context, []byte) error {
 			c := msg.Add(1)
@@ -364,8 +369,13 @@ func TestWorkerScaling(t *testing.T) {
 		}, func() {}
 	})
 
-	// 1 worker
-	time.Sleep(10 * time.Millisecond)
+	// 1 worker, wait for it to fetch
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+	defer cancel()
+	if err := fetchFault.Wait(ctx, 1); err != nil {
+		t.Fatalf("Wait() error:\n%+v", err)
+	}
+	fetchFault.Remove()
 	gotMetrics := r.GetMetrics("akvorado_outlet_kafkainput_", "worker", "max", "min")
 	expected := map[string]string{
 		"worker_decrease_total": "0",
