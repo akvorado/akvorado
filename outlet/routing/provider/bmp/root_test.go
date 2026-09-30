@@ -4,9 +4,12 @@
 package bmp
 
 import (
+	"encoding/binary"
+	"errors"
 	"fmt"
 	"net"
 	"net/netip"
+	"os"
 	"path"
 	"slices"
 	"strconv"
@@ -18,6 +21,7 @@ import (
 	"akvorado/outlet/routing/provider"
 
 	"github.com/osrg/gobgp/v4/pkg/packet/bgp"
+	"github.com/osrg/gobgp/v4/pkg/packet/bmp"
 )
 
 func TestBMP(t *testing.T) {
@@ -176,6 +180,38 @@ func TestBMP(t *testing.T) {
 			break
 		}
 	})
+
+	for _, length := range []uint32{0, 5, maxBMPMessageSize + 1, 0xffffffff} {
+		t.Run(fmt.Sprintf("invalid length %d", length), func(t *testing.T) {
+			r := reporter.NewMock(t)
+			p, _ := NewMock(t, r, DefaultConfiguration())
+			helpers.StartStop(t, p)
+			conn := dial(t, p)
+
+			header := []byte{3, 0, 0, 0, 0, bmp.BMP_MSG_INITIATION}
+			binary.BigEndian.PutUint32(header[1:5], length)
+			if _, err := conn.Write(header); err != nil {
+				t.Fatalf("Write() error:\n%+v", err)
+			}
+
+			// The server should close the connection.
+			conn.SetReadDeadline(time.Now().Add(time.Second))
+			_, err := conn.Read(make([]byte, 1))
+			if err == nil {
+				t.Fatal("Read() did not error while connection should be closed")
+			} else if errors.Is(err, os.ErrDeadlineExceeded) {
+				t.Fatalf("Read() error:\n%+v", err)
+			}
+
+			gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "errors_total")
+			expectedMetrics := map[string]string{
+				`errors_total{error="invalid BMP message length",exporter="127.0.0.1"}`: "1",
+			}
+			if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+				t.Errorf("Metrics (-got, +want):\n%s", diff)
+			}
+		})
+	}
 
 	t.Run("init, peers up, eor", func(t *testing.T) {
 		r := reporter.NewMock(t)
