@@ -7,6 +7,7 @@ package helpers
 
 import (
 	"bytes"
+	"iter"
 	"os"
 	"testing"
 
@@ -54,6 +55,20 @@ func ReadPcapL4(t testing.TB, pcapfile string) []byte {
 		payload.Write(packet.TransportLayer().LayerPayload())
 	}
 	return payload.Bytes()
+}
+
+// ReadManyPcapL4 reads and parses a PCAP file and returns an iterator over the
+// payload (Layer 4) of each packet.
+func ReadManyPcapL4(t testing.TB, pcapfile string) iter.Seq[[]byte] {
+	t.Helper()
+	source := readPcap(t, pcapfile)
+	return func(yield func([]byte) bool) {
+		for packet := range source.Packets() {
+			if !yield(packet.TransportLayer().LayerPayload()) {
+				return
+			}
+		}
+	}
 }
 
 // ReadPcapL2 reads and parses a PCAP file and returns the payload (Layer 2).
