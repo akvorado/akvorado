@@ -4,12 +4,15 @@
 package netflow
 
 import (
+	"encoding/binary"
+	"errors"
 	"fmt"
 	"net/netip"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"akvorado/common/constants"
 	"akvorado/common/helpers"
@@ -19,6 +22,7 @@ import (
 	"akvorado/outlet/flow/decoder"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/netsampler/goflow2/v3/decoders/netflow"
 )
 
 func setup(t *testing.T, clearTS bool) (*reporter.Reporter, decoder.Decoder, *schema.FlowMessage, *[]*schema.FlowMessage, decoder.FinalizeFlowFunc) {
@@ -457,6 +461,86 @@ func TestDecodeWithoutTemplate(t *testing.T) {
 	expectedFlows := []*schema.FlowMessage{}
 	if diff := helpers.Diff(got, &expectedFlows); diff != "" {
 		t.Fatalf("Decode() (-got, +want):\n%s", diff)
+	}
+}
+
+func TestDecodeZeroSizeRecord(t *testing.T) {
+	u16 := func(v uint16) []byte { return binary.BigEndian.AppendUint16(nil, v) }
+	set := func(id uint16, content ...[]byte) []byte {
+		var body []byte
+		for _, c := range content {
+			body = append(body, c...)
+		}
+		b := u16(id)
+		b = binary.BigEndian.AppendUint16(b, uint16(4+len(body)))
+		return append(b, body...)
+	}
+	nfv9 := func(sets ...[]byte) []byte {
+		b := u16(9)
+		b = append(b, u16(uint16(len(sets)))...)
+		b = append(b, make([]byte, 16)...) // uptime, secs, sequence, source ID
+		for _, s := range sets {
+			b = append(b, s...)
+		}
+		return b
+	}
+	ipfix := func(sets ...[]byte) []byte {
+		var body []byte
+		for _, s := range sets {
+			body = append(body, s...)
+		}
+		b := u16(10)
+		b = append(b, u16(uint16(16+len(body)))...)
+		b = append(b, make([]byte, 12)...) // export time, sequence, domain
+		return append(b, body...)
+	}
+
+	cases := []struct {
+		description string
+		payload     []byte
+	}{
+		{
+			description: "NetFlow v9 template without fields",
+			payload: nfv9(
+				set(0, u16(256), u16(0)),
+				set(256, []byte{0, 0, 0, 0})),
+		}, {
+			description: "NetFlow v9 options template without scope nor option",
+			payload: nfv9(
+				set(1, u16(257), u16(0), u16(0), []byte{0, 0}),
+				set(257, []byte{0, 0, 0, 0})),
+		}, {
+			description: "IPFIX template withdrawal followed by data",
+			payload: ipfix(
+				set(2, u16(256), u16(0)),
+				set(256, []byte{0, 0, 0, 0})),
+		}, {
+			description: "IPFIX template with a zero-length field",
+			payload: ipfix(
+				set(2, u16(256), u16(1), u16(8), u16(0)),
+				set(256, []byte{0, 0, 0, 0})),
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.description, func(t *testing.T) {
+			_, nfdecoder, bf, _, finalize := setup(t, true)
+			options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
+			done := make(chan error, 1)
+			go func() {
+				_, err := nfdecoder.Decode(
+					decoder.RawFlow{Payload: tc.payload, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+					options, bf, finalize)
+				done <- err
+			}()
+			select {
+			case err := <-done:
+				if !errors.Is(err, netflow.ErrorEmptyRecord) {
+					t.Errorf("Decode() error:\n%+v", err)
+				}
+			case <-time.After(time.Second):
+				t.Fatal("Decode() did not terminate")
+			}
+		})
 	}
 }
 

@@ -12,6 +12,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 🔒 *outlet*: fix memory exhaustion when decoding NetFlow or IPFIX records of zero size
 - 🩹 *outlet*: keep decoding a NetFlow or IPFIX packet after a data set with an unknown template
 - 🩹 *console*: complete custom dictionary values like the other string columns
 - 🌱 *console*: apply a filter with Ctrl-Enter even when its validation is still running
