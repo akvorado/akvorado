@@ -12,8 +12,10 @@ identified with a specific icon:
 
 ## Unreleased
 
-- 🔒 *outlet*: fix memory exhaustion when decoding NetFlow or IPFIX records of zero size
-- 🔒 *outlet*: fix memory exhaustion when receiving BMP messages with an invalid length
+- 🔒 *outlet*: fix memory exhaustion when decoding NetFlow or IPFIX records of
+  zero size (reported by [Pavel Lavrukhin](https://github.com/dantte-lp))
+- 🔒 *outlet*: fix memory exhaustion when receiving BMP messages with an invalid
+  length (reported by [Sobhan Hosseinpour](https://github.com/0xBlu3Guy))
 - 💥 *outlet*: do not store 0.0.0.0 as the nexthop
 - 🩹 *outlet*: keep decoding a NetFlow or IPFIX packet after a data set with an unknown template
 - 🩹 *outlet*: fix inverted BMP message queue full/not full metrics
