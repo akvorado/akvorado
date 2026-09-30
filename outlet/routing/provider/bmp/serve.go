@@ -161,14 +161,14 @@ func (p *Provider) serveConnection(conn *net.TCPConn, exporter netip.AddrPort, e
 
 		select {
 		case ch <- bmpMessage{msg: msg, body: body}:
-			metricsFull.Inc()
+			metricsNotFull.Inc()
 		case <-processingDone:
 			// Processsing of messages has exited unexpectedly.
 			return nil
 		case <-p.t.Dying():
 			return nil
 		default:
-			metricsNotFull.Inc()
+			metricsFull.Inc()
 			select {
 			case ch <- bmpMessage{msg: msg, body: body}:
 			case <-processingDone:

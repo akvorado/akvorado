@@ -14,6 +14,7 @@ identified with a specific icon:
 
 - 🔒 *outlet*: fix memory exhaustion when decoding NetFlow or IPFIX records of zero size
 - 🩹 *outlet*: keep decoding a NetFlow or IPFIX packet after a data set with an unknown template
+- 🩹 *outlet*: fix inverted BMP message queue full/not full metrics
 - 🩹 *console*: complete custom dictionary values like the other string columns
 - 🌱 *console*: apply a filter with Ctrl-Enter even when its validation is still running
 - 🌱 *console*: remove the trailing comma when closing a list of values
