@@ -16,7 +16,7 @@ func TestRefreshFlowsTables(t *testing.T) {
 	c, _, mockConn, _ := NewMock(t, DefaultConfiguration())
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), `
-SELECT name
+SELECT name, engine
 FROM system.tables
 WHERE database=currentDatabase()
 AND table LIKE 'flows%'
@@ -26,15 +26,17 @@ AND (engine LIKE '%MergeTree' OR engine = 'Distributed')
 `).
 		Return(nil).
 		SetArg(1, []struct {
-			Name string `ch:"name"`
+			Name   string `ch:"name"`
+			Engine string `ch:"engine"`
 		}{
-			{"flows"},
-			{"flows_1h0m0s"},
-			{"flows_1m0s"},
-			{"flows_5m0s"},
+			{"flows", "MergeTree"},
+			// A Distributed table has no parts: it is queried directly.
+			{"flows_1h0m0s", "Distributed"},
+			{"flows_1m0s", "SummingMergeTree"},
+			{"flows_5m0s", "SummingMergeTree"},
 		})
 	mockConn.EXPECT().
-		Select(gomock.Any(), gomock.Any(), `SELECT MIN(TimeReceived) AS t FROM flows`).
+		Select(gomock.Any(), gomock.Any(), `SELECT MIN(min_time) AS t FROM system.parts WHERE database=currentDatabase() AND table='flows' AND active`).
 		Return(nil).
 		SetArg(1, []struct {
 			T time.Time `ch:"t"`
@@ -46,13 +48,13 @@ AND (engine LIKE '%MergeTree' OR engine = 'Distributed')
 			T time.Time `ch:"t"`
 		}{{time.Date(2022, 1, 10, 15, 45, 10, 0, time.UTC)}})
 	mockConn.EXPECT().
-		Select(gomock.Any(), gomock.Any(), `SELECT MIN(TimeReceived) AS t FROM flows_1m0s`).
+		Select(gomock.Any(), gomock.Any(), `SELECT MIN(min_time) AS t FROM system.parts WHERE database=currentDatabase() AND table='flows_1m0s' AND active`).
 		Return(nil).
 		SetArg(1, []struct {
 			T time.Time `ch:"t"`
 		}{{time.Date(2022, 4, 20, 15, 45, 10, 0, time.UTC)}})
 	mockConn.EXPECT().
-		Select(gomock.Any(), gomock.Any(), `SELECT MIN(TimeReceived) AS t FROM flows_5m0s`).
+		Select(gomock.Any(), gomock.Any(), `SELECT MIN(min_time) AS t FROM system.parts WHERE database=currentDatabase() AND table='flows_5m0s' AND active`).
 		Return(nil).
 		SetArg(1, []struct {
 			T time.Time `ch:"t"`

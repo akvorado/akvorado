@@ -13,12 +13,16 @@ identified with a specific icon:
 ## Unreleased
 
 - 🔒 *outlet*: fix memory exhaustion when decoding NetFlow or IPFIX records of zero size
+- 🔒 *console*: do not share a cached response between users when
+  `console.clickhouse-user-setting` is set
 - 💥 *outlet*: do not store 0.0.0.0 as the nexthop
 - 🩹 *outlet*: keep decoding a NetFlow or IPFIX packet after a data set with an unknown template
 - 🩹 *outlet*: fix inverted BMP message queue full/not full metrics
 - 🩹 *console*: complete custom dictionary values like the other string columns
 - 🌱 *console*: apply a filter with Ctrl-Enter even when its validation is still running
 - 🌱 *console*: remove the trailing comma when closing a list of values
+- 🌱 *console*: add `console.clickhouse-user-setting` to pass the authenticated
+  user to ClickHouse as a query setting
 - 🌱 *outlet*: ClickHouse server selection strategy is configurable through
   `outlet.clickhouse.server-selection`: `sticky-random` (the default) or
   `round-robin`.
