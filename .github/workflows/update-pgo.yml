@@ -20,8 +20,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           rm -f default.pgo
-          run_id=$(gh run list --workflow ci.yml --branch main --status success \
-                               --limit 1 --json databaseId --jq '.[0].databaseId')
+          # Filters in "gh run list" are unreliable: filter with jq
+          run_id=$(gh run list --workflow ci.yml --limit 100 \
+                     --json databaseId,headBranch,event,conclusion \
+                     --jq '[.[] | select(.headBranch == "main" and .event == "push" and .conclusion == "success")][0].databaseId')
           gh run download "$run_id" --name pgo --dir .
       - name: Set up git identity
         uses: ./.github/actions/identity
