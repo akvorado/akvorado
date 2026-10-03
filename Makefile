@@ -10,7 +10,7 @@ GO      = go
 PNPM    = $(CURDIR)/bin/external-tool pnpm
 CLANG   = clang
 TIMEOUT = 60s
-LSFILES = 2>&1 git ls-files -cmo --exclude-standard --
+LSFILES = 2> /dev/null git ls-files -cmo --exclude-standard --
 V = 0
 Q = $(if $(filter 1,$V),,@)
 M = $(shell if [ -t 2 ] && [ "$$(tput colors 2> /dev/null || echo 0)" -ge 8 ]; then printf "\033[34;1m▶\033[0m"; else printf "▶"; fi)
@@ -169,7 +169,7 @@ console/frontend/node_modules:
 	$(call log,fetching node modules…)
 	$Q (cd console/frontend ; NODE_OPTIONS=--trace-deprecation $(PNPM) install --loglevel=error --frozen-lockfile) && touch $@
 console/data/frontend: $(GENERATED_JS)
-console/data/frontend: $(shell $(LSFILES) console/frontend 2> /dev/null)
+console/data/frontend: $(shell $(LSFILES) console/frontend)
 console/data/frontend:
 	$(call log,building console frontend…)
 	$Q cd console/frontend && $(PNPM) run --silent build
@@ -309,11 +309,11 @@ test-coverage-js: ; @ ## Run JS coverage tests
 
 .PHONY: lint
 lint: .gitignore .lint-go~ .lint-js~ ## Run linting
-.lint-go~: .revive.toml $(shell $(LSFILES) '*.go' 2> /dev/null)
+.lint-go~: .revive.toml $(shell $(LSFILES) '*.go')
 	$(call log,running golint…)
 	$Q $(REVIVE) -config $(PWD)/.revive.toml -formatter stylish -set_exit_status ./...
 	$Q touch $@
-.lint-js~: $(shell $(LSFILES) '*.js' '*.ts' '*.vue' '*.html' 2> /dev/null)
+.lint-js~: $(shell $(LSFILES) '*.js' '*.ts' '*.vue' '*.html')
 .lint-js~: $(GENERATED_JS)
 	$(call log,running jslint…)
 	$Q cd console/frontend && $(PNPM) run --silent lint
@@ -321,11 +321,11 @@ lint: .gitignore .lint-go~ .lint-js~ ## Run linting
 
 .PHONY: fmt
 fmt: .fmt-go~ .fmt-js~ ## Format all source files
-.fmt-go~: $(shell $(LSFILES) '*.go' 2> /dev/null)
+.fmt-go~: $(shell $(LSFILES) '*.go')
 	$(call log,formatting Go code…)
 	$Q $(GOIMPORTS) -local $(MODULE) -w $? < /dev/null
 	$Q touch $@
-.fmt-js~: $(shell $(LSFILES) '*.js' '*.ts' '*.vue' '*.html' 2> /dev/null)
+.fmt-js~: $(shell $(LSFILES) '*.js' '*.ts' '*.vue' '*.html')
 .fmt-js~: $(GENERATED_JS)
 	$(call log,formatting JS code…)
 	$Q cd console/frontend && $(PNPM) run --silent format
