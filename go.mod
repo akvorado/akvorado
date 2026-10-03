@@ -43,9 +43,9 @@ require (
 	github.com/scrapli/scrapligo v1.4.0
 	github.com/slayercat/GoSNMPServer v0.5.2
 	github.com/spf13/cobra v1.10.2
-	github.com/twmb/franz-go v1.22.0
+	github.com/twmb/franz-go v1.22.1
 	github.com/twmb/franz-go/pkg/kadm v1.19.0
-	github.com/twmb/franz-go/pkg/kfake v0.0.0-20260925040417-67711bad7b74
+	github.com/twmb/franz-go/pkg/kfake v0.0.0-20260927204940-b5a45ccfdf7e
 	github.com/twmb/franz-go/pkg/kmsg v1.14.0
 	github.com/twmb/franz-go/plugin/kprom v1.5.0
 	github.com/uptrace/bun v1.2.18
