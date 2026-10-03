@@ -73,7 +73,7 @@ jobs:
         with:
           fetch-depth: ${{ matrix.binary && 0 || 1 }}
           persist-credentials: false
-      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
         if: matrix.compose
       - name: Docker Compose up
         if: matrix.compose
@@ -196,7 +196,7 @@ jobs:
       AKVORADO_COVERAGE_DIRECTORY: /tmp/akvorado-coverage
     steps:
       # Setup
-      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
       - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -280,7 +280,7 @@ jobs:
           name: e2e-coverage
           path: test/e2e
       - name: Upload unittests coverage
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
         with:
           token: &codecov-token bab8d6d9-e90c-4e37-b156-38a9a4c2108e  # not ideal, but limited risk
           files: ./test/linux/go/profile.out,./test/macos/profile.out,./test/linux/js/cobertura-coverage.xml
@@ -288,7 +288,7 @@ jobs:
           disable_search: true
           fail_ci_if_error: true
       - name: Upload e2e coverage
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
         with:
           token: *codecov-token
           files: ./test/e2e/e2e-coverage.out
@@ -388,8 +388,8 @@ jobs:
         run: |
           echo version=$(make version) >> "$GITHUB_OUTPUT"
           echo node_version=$(cat console/frontend/.nvmrc) >> "$GITHUB_OUTPUT"
-      - uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4
-      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
       - uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
         id: meta
         env:
@@ -412,7 +412,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build image
         id: build
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
           context: .
           file: docker/Dockerfile
@@ -448,7 +448,7 @@ jobs:
       packages: write
       attestations: write
     steps:
-      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
       - uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
         id: meta
         with:
