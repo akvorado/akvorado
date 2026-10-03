@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"net/netip"
+	"slices"
 
 	"akvorado/common/constants"
 	"akvorado/common/pb"
@@ -78,7 +79,15 @@ func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets 
 					samplerID                   uint64
 					packetInterval, packetSpace uint32
 				)
-				for _, field := range record.OptionsValues {
+				fields := record.OptionsValues
+				if version == 10 {
+					// In IPFIX, scope fields are information elements. The
+					// selector ID is the scope of the PSAMP selector
+					// report (RFC 5476, section 6.5.2). In NetFlow
+					// v9, scope fields use a different set of types.
+					fields = slices.Concat(record.ScopesValues, record.OptionsValues)
+				}
+				for _, field := range fields {
 					v, ok := field.Value.([]byte)
 					if !ok || field.PenProvided {
 						continue

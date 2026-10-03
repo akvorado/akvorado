@@ -108,15 +108,32 @@ func (t *templatesAndOptions) AddTemplate(_ netflow.FlowContext, version uint16,
 	return netflow.TemplateAdded, nil
 }
 
-// GetSamplingRate returns the requested sampling rate.
+// GetSamplingRate returns the requested sampling rate. When there is no
+// sampling rate for the provided observation domain, a sampling rate for the
+// same sampler in another observation domain is used, if there is only one.
+// Cisco IOS XE exports the sampler option table and the flows with different
+// source IDs.
 func (t *templatesAndOptions) GetSamplingRate(version uint16, obsDomainID uint32, samplerID uint64) uint32 {
 	t.samplingRateLock.RLock()
 	defer t.samplingRateLock.RUnlock()
-	rate := t.SamplingRates[samplingRateKey{
+	rate, ok := t.SamplingRates[samplingRateKey{
 		version:     version,
 		obsDomainID: obsDomainID,
 		samplerID:   samplerID,
 	}]
+	if ok {
+		return rate
+	}
+	for key, candidate := range t.SamplingRates {
+		if key.version != version || key.samplerID != samplerID {
+			continue
+		}
+		if rate != 0 && rate != candidate {
+			// Ambiguous: several observation domains disagree.
+			return 0
+		}
+		rate = candidate
+	}
 	return rate
 }
 
