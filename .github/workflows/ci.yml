@@ -350,6 +350,32 @@ jobs:
       - name: Build and test JS frontend
         run: make console/data/frontend test-js
 
+  pnpm-bootstrap:
+    name: 📦 Test pnpm bootstrap
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: console/frontend/.nvmrc
+      - name: Bootstrap pnpm through npx
+        run: |
+          export npm_config_cache=$RUNNER_TEMP/npm-cache
+          tools=$RUNNER_TEMP/tools
+          mkdir $tools
+          ln -s $(command -v node) $tools/node
+          ln -s $(command -v npx) $tools/npx
+          export PATH=$tools:/usr/bin:/bin
+          ! command -v pnpm || exit 1
+          expected=$(node -p 'require("./console/frontend/package.json").packageManager.split("@")[1]')
+          [ "$(bin/external-tool pnpm --version)" = "$expected" ]
+          rm $tools/npx
+          [ "$(bin/external-tool pnpm --version)" = "$expected" ]
+
   licenses:
     name: ⚖️ Check licenses
     runs-on: ubuntu-latest
@@ -372,6 +398,7 @@ jobs:
     needs:
       - build-go
       - build-js
+      - pnpm-bootstrap
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref_type == 'tag'
     permissions:
