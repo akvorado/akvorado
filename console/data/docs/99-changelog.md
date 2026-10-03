@@ -10,7 +10,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 2026.10.0 - 2026-10-03
+
+This release contains two security fixes. Most users don't expose the IPFIX or
+BMP endpoints on an untrusted network, but if you do, be sure to upgrade!
 
 - 🔒 *outlet*: fix memory exhaustion when decoding NetFlow or IPFIX records of
   zero size (reported by [Pavel Lavrukhin](https://github.com/dantte-lp))
