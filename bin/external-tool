@@ -26,9 +26,14 @@ const [root, npx, ...args] = process.argv.slice(1)
 const spec = require(path.resolve(root, "console/frontend/package.json")).packageManager
 const hash = require("crypto").createHash("sha512").update(spec).digest("hex").slice(0, 16)
 const cache = process.env.npm_config_cache || path.join(require("os").homedir(), ".npm")
-const bin = path.join(cache, "_npx", hash, "node_modules/.bin")
-const pnpm = path.join(bin, "pnpm")
-const cmd = fs.existsSync(pnpm)
+const modules = path.join(cache, "_npx", hash, "node_modules")
+const bin = path.join(modules, ".bin")
+const exe = path.join(modules, "@pnpm")
+const pnpm = fs.existsSync(exe) && fs.readdirSync(exe)
+      .filter(d => d.startsWith("exe."))
+      .map(d => path.join(exe, d, "pnpm"))
+      .find(f => fs.existsSync(f))
+const cmd = pnpm
       ? [pnpm, ...args]
       : [npx, "--yes", spec, ...args]
 process.execve(cmd[0], cmd, { ...process.env, PATH: `${bin}:${process.env.PATH}` })
