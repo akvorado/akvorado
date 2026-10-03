@@ -22,6 +22,7 @@ identified with a specific icon:
 - 🌱 *outlet*: ClickHouse server selection strategy is configurable through
   `outlet.clickhouse.server-selection`: `sticky-random` (the default) or
   `round-robin`.
+- 🌱 *outlet*: faster network attribute lookups for IPv4 addresses
 - 🌱 *docker*: update ClickHouse to 26.8 (not mandatory)
 
 ## 2026.8.1 - 2026-08-29

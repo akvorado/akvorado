@@ -114,6 +114,40 @@ func TestLookupStaticNetworks(t *testing.T) {
 	}
 }
 
+func TestLookupIPv6CoversIPv4(t *testing.T) {
+	r := reporter.NewMock(t)
+	config := DefaultConfiguration()
+	config.Networks = helpers.MustNewSubnetMap(map[string]NetworkAttributes{
+		"::/0":                 {Tenant: "default"},
+		"::ffff:192.0.2.0/120": {Name: "customer1"},
+		"2001:db8::/32":        {Name: "customer2"},
+	})
+	c, err := New(r, config, Dependencies{
+		Daemon: daemon.NewMock(t),
+	})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	helpers.StartStop(t, c)
+
+	cases := []struct {
+		ip       string
+		expected NetworkAttributes
+	}{
+		{"::ffff:192.0.2.1", NetworkAttributes{Name: "customer1", Tenant: "default"}},
+		{"192.0.2.1", NetworkAttributes{Name: "customer1", Tenant: "default"}},
+		{"::ffff:203.0.113.1", NetworkAttributes{Tenant: "default"}},
+		{"2001:db8::1", NetworkAttributes{Name: "customer2", Tenant: "default"}},
+		{"2001:db9::1", NetworkAttributes{Tenant: "default"}},
+	}
+	for _, tc := range cases {
+		got := c.Lookup(netip.MustParseAddr(tc.ip))
+		if diff := helpers.Diff(got, tc.expected); diff != "" {
+			t.Errorf("Lookup(%q) (-got, +want):\n%s", tc.ip, diff)
+		}
+	}
+}
+
 func TestLookupHierarchicalInheritance(t *testing.T) {
 	r := reporter.NewMock(t)
 	config := DefaultConfiguration()
