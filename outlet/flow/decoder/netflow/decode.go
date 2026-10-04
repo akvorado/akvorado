@@ -117,22 +117,16 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 	// needDecap is true when we need to decapsulate a packet. This requires a
 	// data link frame section.
 	needDecap := options.DecapsulationProtocol != pb.RawFlow_DECAP_NONE
-	// systemInit is the IPFIX systemInitTimeMilliseconds, needed to convert
-	// flowStartSysUpTime to an absolute time.
-	var systemInit uint64
-	if version == 10 && options.TimestampSource == pb.RawFlow_TS_NETFLOW_FIRST_SWITCHED {
-		for _, field := range fields {
-			if v, ok := field.Value.([]byte); ok && !field.PenProvided && field.Type == netflow.IPFIX_FIELD_systemInitTimeMilliseconds {
-				systemInit = decodeUNumber(v)
-			}
-		}
-	}
 
 	for _, dir := range []direction{directionForward, directionReverse} {
 		var etype, dstPort, srcPort uint16
 		var proto, icmpType, icmpCode uint8
 		var foundIcmpTypeCode bool
 		var decapOK bool
+		// firstSwitched (flowStartSysUpTime in IPFIX) is converted after the
+		// loop, as IPFIX needs systemInitTimeMilliseconds, which may come later.
+		var firstSwitched, systemInit uint64
+		var hasFirstSwitched bool
 		mplsLabels := make([]uint32, 0, 5)
 		for _, field := range fields {
 			v, ok := field.Value.([]byte)
@@ -290,13 +284,9 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 				if options.TimestampSource == pb.RawFlow_TS_NETFLOW_FIRST_SWITCHED {
 					switch field.Type {
 					case netflow.NFV9_FIELD_FIRST_SWITCHED:
-						if version == 9 {
-							bf.TimeReceived = uptimeToUnix(ts, sysUptime, decodeUNumber(v))
-						} else if systemInit > 0 {
-							// IPFIX has no uptime in its header: flowStartSysUpTime is
-							// relative to systemInitTimeMilliseconds.
-							bf.TimeReceived = uint32((systemInit + decodeUNumber(v)) / 1000)
-						}
+						firstSwitched, hasFirstSwitched = decodeUNumber(v), true
+					case netflow.IPFIX_FIELD_systemInitTimeMilliseconds:
+						systemInit = decodeUNumber(v)
 					case netflow.IPFIX_FIELD_flowStartSeconds:
 						bf.TimeReceived = uint32(decodeUNumber(v))
 					case netflow.IPFIX_FIELD_flowStartMilliseconds:
@@ -391,6 +381,15 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 			} else {
 				bf.AppendUint(schema.ColumnICMPv6Type, uint64(icmpType))
 				bf.AppendUint(schema.ColumnICMPv6Code, uint64(icmpCode))
+			}
+		}
+		if hasFirstSwitched {
+			if version == 9 {
+				bf.TimeReceived = uptimeToUnix(ts, sysUptime, firstSwitched)
+			} else if systemInit > 0 {
+				// IPFIX has no uptime in its header: flowStartSysUpTime is
+				// relative to systemInitTimeMilliseconds.
+				bf.TimeReceived = uint32((systemInit + firstSwitched) / 1000)
 			}
 		}
 		bf.AppendUint(schema.ColumnEType, uint64(etype))

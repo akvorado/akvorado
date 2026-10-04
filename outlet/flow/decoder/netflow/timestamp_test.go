@@ -12,6 +12,8 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/pb"
 	"akvorado/outlet/flow/decoder"
+
+	"github.com/netsampler/goflow2/v3/decoders/netflow"
 )
 
 func TestUptimeToUnix(t *testing.T) {
@@ -79,6 +81,43 @@ func TestDecodeFlowStartCiscoIOSXE(t *testing.T) {
 			if gotMin != tc.min || gotMax != tc.max {
 				t.Errorf("Decode() TimeReceived in [%d, %d], expected [%d, %d]",
 					gotMin, gotMax, tc.min, tc.max)
+			}
+		})
+	}
+}
+
+// TestIPFIXFlowStartSysUpTime checks that flowStartSysUpTime is converted with
+// systemInitTimeMilliseconds whatever the order of the two fields.
+func TestIPFIXFlowStartSysUpTime(t *testing.T) {
+	be := func(v uint64, size int) []byte {
+		b := make([]byte, size)
+		for i := size - 1; i >= 0; i-- {
+			b[i] = byte(v)
+			v >>= 8
+		}
+		return b
+	}
+	start := netflow.DataField{Type: netflow.IPFIX_FIELD_flowStartSysUpTime, Value: be(5_000, 4)}
+	systemInit := netflow.DataField{Type: netflow.IPFIX_FIELD_systemInitTimeMilliseconds, Value: be(1_700_000_000_000, 8)}
+	for _, tc := range []struct {
+		description string
+		fields      []netflow.DataField
+		expected    uint32
+	}{
+		{"system init first", []netflow.DataField{systemInit, start}, 1_700_000_005},
+		{"system init last", []netflow.DataField{start, systemInit}, 1_700_000_005},
+		{"no system init", []netflow.DataField{start}, 0},
+	} {
+		t.Run(tc.description, func(t *testing.T) {
+			_, nfdecoder, bf, got, finalize := setup(t, false)
+			nd := nfdecoder.(*Decoder)
+			nd.decodeRecord(10, 1, nd.collection.Get("test"), tc.fields, 1_700_000_100, 0,
+				decoder.Options{TimestampSource: pb.RawFlow_TS_NETFLOW_FIRST_SWITCHED}, "test", bf, finalize)
+			if len(*got) != 1 {
+				t.Fatalf("decodeRecord() returned %d flows, expected 1", len(*got))
+			}
+			if (*got)[0].TimeReceived != tc.expected {
+				t.Errorf("decodeRecord() TimeReceived = %d, expected %d", (*got)[0].TimeReceived, tc.expected)
 			}
 		})
 	}
