@@ -6,6 +6,7 @@ package netflow
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 
 	"akvorado/common/schema"
@@ -141,7 +142,7 @@ func appendApplication(
 // (PANA-L7-PEN), the selector is preceded by an enterprise number.
 func formatApplicationID(id []byte) string {
 	if len(id) < 2 {
-		return fmt.Sprintf("%x", id)
+		return hex.EncodeToString(id)
 	}
 	engine, selector := id[0], id[1:]
 	if engine == 20 && len(selector) > 4 {
