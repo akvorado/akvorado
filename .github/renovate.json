@@ -168,6 +168,15 @@
       "matchManagers": [
         "gomod"
       ],
+      "groupName": "bun",
+      "matchPackageNames": [
+        "/^github\\.com/uptrace/bun/"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
       "matchPackageNames": [
         "github.com/twmb/franz-go/pkg/kmsg"
       ],
