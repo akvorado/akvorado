@@ -58,7 +58,7 @@ func (nd *Decoder) decodeNFv5(packet *netflowlegacy.PacketNetFlowV5, ts, sysUpti
 			bf.AppendUint(schema.ColumnTCPFlags, uint64(record.TCPFlags))
 		}
 		if options.TimestampSource == pb.RawFlow_TS_NETFLOW_FIRST_SWITCHED {
-			bf.TimeReceived = uint32(ts - sysUptime + uint64(record.First))
+			bf.TimeReceived = uptimeToUnix(ts, sysUptime, uint64(record.First))
 		}
 		if bf.SamplingRate == 0 {
 			bf.SamplingRate = 1
@@ -123,6 +123,10 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 		var proto, icmpType, icmpCode uint8
 		var foundIcmpTypeCode bool
 		var decapOK bool
+		// firstSwitched (flowStartSysUpTime in IPFIX) is converted after the
+		// loop, as IPFIX needs systemInitTimeMilliseconds, which may come later.
+		var firstSwitched, systemInit uint64
+		var hasFirstSwitched bool
 		mplsLabels := make([]uint32, 0, 5)
 		for _, field := range fields {
 			v, ok := field.Value.([]byte)
@@ -282,15 +286,15 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 				if options.TimestampSource == pb.RawFlow_TS_NETFLOW_FIRST_SWITCHED {
 					switch field.Type {
 					case netflow.NFV9_FIELD_FIRST_SWITCHED:
-						bf.TimeReceived = uint32(ts - sysUptime + decodeUNumber(v))
+						firstSwitched, hasFirstSwitched = decodeUNumber(v), true
+					case netflow.IPFIX_FIELD_systemInitTimeMilliseconds:
+						systemInit = decodeUNumber(v)
 					case netflow.IPFIX_FIELD_flowStartSeconds:
 						bf.TimeReceived = uint32(decodeUNumber(v))
 					case netflow.IPFIX_FIELD_flowStartMilliseconds:
 						bf.TimeReceived = uint32(decodeUNumber(v) / 1000)
-					case netflow.IPFIX_FIELD_flowStartMicroseconds:
-						bf.TimeReceived = uint32(decodeUNumber(v) / 1_000_000)
-					case netflow.IPFIX_FIELD_flowStartNanoseconds:
-						bf.TimeReceived = uint32(ts + decodeUNumber(v)/1_000_000_000)
+					case netflow.IPFIX_FIELD_flowStartMicroseconds, netflow.IPFIX_FIELD_flowStartNanoseconds:
+						bf.TimeReceived = ntpToUnix(decodeUNumber(v))
 					}
 				}
 
@@ -383,6 +387,15 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 				bf.AppendUint(schema.ColumnICMPv6Code, uint64(icmpCode))
 			}
 		}
+		if hasFirstSwitched {
+			if version == 9 {
+				bf.TimeReceived = uptimeToUnix(ts, sysUptime, firstSwitched)
+			} else if systemInit > 0 {
+				// IPFIX has no uptime in its header: flowStartSysUpTime is
+				// relative to systemInitTimeMilliseconds.
+				bf.TimeReceived = uint32((systemInit + firstSwitched) / 1000)
+			}
+		}
 		bf.AppendUint(schema.ColumnEType, uint64(etype))
 		if len(mplsLabels) > 0 {
 			bf.AppendArrayUInt32(schema.ColumnMPLSLabels, mplsLabels)
@@ -432,6 +445,26 @@ func decodeUNumber(b []byte) uint64 {
 		return binary.BigEndian.Uint64(b)
 	}
 	return 0
+}
+
+// uptimeToUnix converts a timestamp expressed as a system uptime in
+// milliseconds (like FIRST_SWITCHED) to a Unix timestamp in seconds, using the
+// export time in seconds and the system uptime in milliseconds from the packet
+// header. The uptime is a 32-bit counter which may wrap.
+func uptimeToUnix(exportSecs, sysUptime, uptime uint64) uint32 {
+	elapsed := uint64(uint32(sysUptime) - uint32(uptime))
+	return uint32((exportSecs*1000 - elapsed) / 1000)
+}
+
+// ntpEpochOffset is the number of seconds between the NTP epoch (1900) and the
+// Unix epoch (1970).
+const ntpEpochOffset = 2_208_988_800
+
+// ntpToUnix converts an IPFIX dateTimeMicroseconds or dateTimeNanoseconds,
+// encoded as an NTP timestamp (RFC 7011, section 6.1.9 and 6.1.10), to a Unix
+// timestamp in seconds.
+func ntpToUnix(ntp uint64) uint32 {
+	return uint32((ntp >> 32) - ntpEpochOffset)
 }
 
 var (
