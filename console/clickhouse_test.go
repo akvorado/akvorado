@@ -19,9 +19,8 @@ func TestRefreshFlowsTables(t *testing.T) {
 SELECT name
 FROM system.tables
 WHERE database=currentDatabase()
-AND table LIKE 'flows%'
+AND (table = 'flows' OR match(table, '^flows_[0-9]'))
 AND table NOT LIKE '%_local'
-AND table != 'flows_raw_errors'
 AND (engine LIKE '%MergeTree' OR engine = 'Distributed')
 `).
 		Return(nil).
