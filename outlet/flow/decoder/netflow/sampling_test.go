@@ -43,6 +43,30 @@ func TestSamplingRateCiscoIOSXE(t *testing.T) {
 	}
 }
 
+// TestSamplingRateTwoSamplersCiscoIOSXE decodes a capture from a Cisco C8000V
+// running IOS XE 26.01.01 with two random samplers on one exporter, 1 out of
+// 10 and 1 out of 100. Both sampler options come with source ID 6 and the
+// flows with source ID 256: each flow gets the rate of its own sampler ID.
+func TestSamplingRateTwoSamplersCiscoIOSXE(t *testing.T) {
+	_, nfdecoder, bf, got, finalize := setup(t, false)
+	for data := range helpers.ReadManyPcapL4(t, filepath.Join("testdata", "iosxe26-v9-samplers.pcap")) {
+		_, err := nfdecoder.Decode(decoder.RawFlow{
+			Payload: data,
+			Source:  netip.MustParseAddr("::ffff:127.0.0.1"),
+		}, decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}, bf, finalize)
+		if err != nil {
+			t.Fatalf("Decode() error:\n%+v", err)
+		}
+	}
+	rates := map[uint64]int{}
+	for _, flow := range *got {
+		rates[flow.SamplingRate]++
+	}
+	if diff := helpers.Diff(rates, map[uint64]int{10: 9, 100: 2}); diff != "" {
+		t.Fatalf("Decode() sampling rates (-got, +want):\n%s", diff)
+	}
+}
+
 func TestGetSamplingRateAcrossObservationDomains(t *testing.T) {
 	cases := []struct {
 		rates       map[samplingRateKey]uint32
