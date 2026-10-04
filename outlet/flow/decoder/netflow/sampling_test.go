@@ -46,6 +46,7 @@ func TestSamplingRateCiscoIOSXE(t *testing.T) {
 func TestGetSamplingRateAcrossObservationDomains(t *testing.T) {
 	cases := []struct {
 		rates       map[samplingRateKey]uint32
+		dataDomains []uint32
 		description string
 		expected    uint32
 	}{
@@ -73,11 +74,26 @@ func TestGetSamplingRateAcrossObservationDomains(t *testing.T) {
 			description: "another sampler",
 			rates:       map[samplingRateKey]uint32{{9, 6, 2}: 1000},
 			expected:    0,
+		}, {
+			// Another domain with its own data: its sampler options are not
+			// ours, ours may simply not be received yet.
+			description: "another observation domain sending data",
+			rates:       map[samplingRateKey]uint32{{9, 7, 1}: 1000},
+			dataDomains: []uint32{7, 256},
+			expected:    0,
+		}, {
+			description: "options-only domain next to a data domain",
+			rates:       map[samplingRateKey]uint32{{9, 6, 1}: 1000, {9, 7, 1}: 10000},
+			dataDomains: []uint32{7, 256},
+			expected:    1000,
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.description, func(t *testing.T) {
 			tao := templatesAndOptions{SamplingRates: tc.rates}
+			for _, domain := range tc.dataDomains {
+				tao.markDataDomain(9, domain)
+			}
 			if got := tao.GetSamplingRate(9, 256, 1); got != tc.expected {
 				t.Errorf("GetSamplingRate() = %d, expected %d", got, tc.expected)
 			}
