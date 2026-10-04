@@ -109,7 +109,8 @@ interface GigabitEthernet0/0/3
 The `collect flow sampler` line is needed for *Akvorado* to match flows with
 the sampler options. IOS-XE exports these options with a different source ID
 than the flows. *Akvorado* uses them anyway when they come from a source ID
-which sends no flows and there is only one sampling rate for a given sampler ID
+without flow template. If several of these source IDs use the same sampler ID,
+the last received sampling rate is used
 ([issue #89](https://github.com/akvorado/akvorado/issues/89)).
 Otherwise, set a default sampling rate in `akvorado.yaml`. See the
 [documentation](50-configuration.md#core) for more details.

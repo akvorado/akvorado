@@ -4,6 +4,7 @@
 package netflow
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/netip"
 	"path/filepath"
@@ -12,6 +13,8 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/pb"
 	"akvorado/outlet/flow/decoder"
+
+	"github.com/netsampler/goflow2/v3/decoders/netflow"
 )
 
 // TestSamplingRateCiscoIOSXE decodes captures from a Cisco C8000V running IOS
@@ -67,60 +70,128 @@ func TestSamplingRateTwoSamplersCiscoIOSXE(t *testing.T) {
 	}
 }
 
+// samplingEvent is a template or a sampler option received from an exporter.
+type samplingEvent struct {
+	obsDomainID  uint32
+	dataTemplate bool   // a data template, otherwise a sampler option
+	samplerID    uint64 // for a sampler option
+	rate         uint32 // for a sampler option
+}
+
+func applySamplingEvents(t *testing.T, tao *templatesAndOptions, events []samplingEvent) {
+	t.Helper()
+	for _, event := range events {
+		if event.dataTemplate {
+			if _, err := tao.AddTemplate(netflow.FlowContext{}, 9, event.obsDomainID, 256, netflow.TemplateRecord{TemplateId: 256}); err != nil {
+				t.Fatalf("AddTemplate() error:\n%+v", err)
+			}
+			continue
+		}
+		tao.SetSamplingRate(9, event.obsDomainID, event.samplerID, event.rate)
+	}
+}
+
 func TestGetSamplingRateAcrossObservationDomains(t *testing.T) {
 	cases := []struct {
-		rates       map[samplingRateKey]uint32
-		dataDomains []uint32
 		description string
+		events      []samplingEvent
+		obsDomainID uint32
 		expected    uint32
 	}{
 		{
 			description: "same observation domain",
-			rates:       map[samplingRateKey]uint32{{9, 256, 1}: 1000},
+			events:      []samplingEvent{{obsDomainID: 256, dataTemplate: true}, {obsDomainID: 256, samplerID: 1, rate: 100}},
+			obsDomainID: 256,
+			expected:    100,
+		}, {
+			description: "observation domain without data template",
+			events:      []samplingEvent{{obsDomainID: 6, samplerID: 1, rate: 1000}, {obsDomainID: 256, dataTemplate: true}},
+			obsDomainID: 256,
 			expected:    1000,
 		}, {
-			description: "another observation domain",
-			rates:       map[samplingRateKey]uint32{{9, 6, 1}: 1000},
-			expected:    1000,
-		}, {
-			description: "several observation domains with the same rate",
-			rates:       map[samplingRateKey]uint32{{9, 6, 1}: 1000, {9, 7, 1}: 1000},
-			expected:    1000,
-		}, {
-			description: "several observation domains with different rates",
-			rates:       map[samplingRateKey]uint32{{9, 6, 1}: 1000, {9, 7, 1}: 100},
+			description: "another sampler",
+			events:      []samplingEvent{{obsDomainID: 6, samplerID: 2, rate: 1000}},
+			obsDomainID: 256,
 			expected:    0,
 		}, {
 			description: "exact observation domain wins",
-			rates:       map[samplingRateKey]uint32{{9, 6, 1}: 1000, {9, 256, 1}: 100},
+			events: []samplingEvent{
+				{obsDomainID: 6, samplerID: 1, rate: 1000},
+				{obsDomainID: 256, dataTemplate: true},
+				{obsDomainID: 256, samplerID: 1, rate: 100},
+			},
+			obsDomainID: 256,
 			expected:    100,
 		}, {
-			description: "another sampler",
-			rates:       map[samplingRateKey]uint32{{9, 6, 2}: 1000},
+			// The sampling rate may change: the last one wins.
+			description: "sampling rate change",
+			events:      []samplingEvent{{obsDomainID: 6, samplerID: 1, rate: 1000}, {obsDomainID: 6, samplerID: 1, rate: 100}},
+			obsDomainID: 256,
+			expected:    100,
+		}, {
+			// Another domain with data has its own sampler: ours, at 1/10000,
+			// may come later.
+			description: "observation domain with data template",
+			events:      []samplingEvent{{obsDomainID: 7, dataTemplate: true}, {obsDomainID: 7, samplerID: 1, rate: 1000}},
+			obsDomainID: 256,
 			expected:    0,
 		}, {
-			// Another domain with its own data: its sampler options are not
-			// ours, ours may simply not be received yet.
-			description: "another observation domain sending data",
-			rates:       map[samplingRateKey]uint32{{9, 7, 1}: 1000},
-			dataDomains: []uint32{7, 256},
+			description: "data template after the sampler option",
+			events:      []samplingEvent{{obsDomainID: 7, samplerID: 1, rate: 1000}, {obsDomainID: 7, dataTemplate: true}},
+			obsDomainID: 256,
 			expected:    0,
 		}, {
-			description: "options-only domain next to a data domain",
-			rates:       map[samplingRateKey]uint32{{9, 6, 1}: 1000, {9, 7, 1}: 10000},
-			dataDomains: []uint32{7, 256},
-			expected:    1000,
+			description: "tombstone is kept",
+			events: []samplingEvent{
+				{obsDomainID: 7, dataTemplate: true},
+				{obsDomainID: 7, samplerID: 1, rate: 1000},
+				{obsDomainID: 6, samplerID: 1, rate: 1000},
+			},
+			obsDomainID: 256,
+			expected:    0,
+		}, {
+			description: "observation domain 0 with data and options",
+			events:      []samplingEvent{{obsDomainID: 0, dataTemplate: true}, {obsDomainID: 0, samplerID: 1, rate: 100}},
+			obsDomainID: 0,
+			expected:    100,
+		}, {
+			description: "observation domain 0 does not lend its rate",
+			events:      []samplingEvent{{obsDomainID: 0, dataTemplate: true}, {obsDomainID: 0, samplerID: 1, rate: 100}},
+			obsDomainID: 256,
+			expected:    0,
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.description, func(t *testing.T) {
-			tao := templatesAndOptions{SamplingRates: tc.rates}
-			for _, domain := range tc.dataDomains {
-				tao.markDataDomain(9, domain)
-			}
-			if got := tao.GetSamplingRate(9, 256, 1); got != tc.expected {
+			_, nfdecoder, _, _, _ := setup(t, false)
+			tao := nfdecoder.(*Decoder).collection.Get("::ffff:127.0.0.1")
+			applySamplingEvents(t, tao, tc.events)
+			if got := tao.GetSamplingRate(9, tc.obsDomainID, 1); got != tc.expected {
 				t.Errorf("GetSamplingRate() = %d, expected %d", got, tc.expected)
 			}
 		})
+	}
+}
+
+func TestGetSamplingRateAfterRestore(t *testing.T) {
+	_, nfdecoder, _, _, _ := setup(t, false)
+	applySamplingEvents(t, nfdecoder.(*Decoder).collection.Get("::ffff:127.0.0.1"), []samplingEvent{
+		{obsDomainID: 6, samplerID: 1, rate: 1000},
+		{obsDomainID: 7, dataTemplate: true},
+		{obsDomainID: 7, samplerID: 2, rate: 10},
+		{obsDomainID: 256, dataTemplate: true},
+	})
+	state, err := json.Marshal(nfdecoder)
+	if err != nil {
+		t.Fatalf("Marshal() error:\n%+v", err)
+	}
+	_, restored, _, _, _ := setup(t, false)
+	if err := json.Unmarshal(state, restored); err != nil {
+		t.Fatalf("Unmarshal() error:\n%+v", err)
+	}
+	tao := restored.(*Decoder).collection.Get("::ffff:127.0.0.1")
+	got := []uint32{tao.GetSamplingRate(9, 256, 1), tao.GetSamplingRate(9, 256, 2), tao.GetSamplingRate(9, 7, 2)}
+	if diff := helpers.Diff(got, []uint32{1000, 0, 10}); diff != "" {
+		t.Fatalf("GetSamplingRate() after restore (-got, +want):\n%s", diff)
 	}
 }

@@ -111,7 +111,6 @@ func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets 
 				}
 			}
 		case netflow.DataFlowSet:
-			tao.markDataDomain(version, obsDomainID)
 			for _, record := range tFlowSet.Records {
 				nd.decodeRecord(version, obsDomainID, tao, record.Values, ts, sysUptime, options, exporter, bf, finalize)
 			}
