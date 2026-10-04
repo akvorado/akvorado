@@ -4,6 +4,7 @@
 package netflow
 
 import (
+	"encoding/binary"
 	"fmt"
 	"net/netip"
 	"path/filepath"
@@ -29,8 +30,9 @@ func TestUptimeToUnix(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.description, func(t *testing.T) {
-			if got := uptimeToUnix(tc.export, tc.uptime, tc.ref); got != tc.expected {
-				t.Errorf("uptimeToUnix() = %d, expected %d", got, tc.expected)
+			got := uptimeToUnix(tc.export, tc.uptime, tc.ref)
+			if diff := helpers.Diff(got, tc.expected); diff != "" {
+				t.Errorf("uptimeToUnix() (-got, +want):\n%s", diff)
 			}
 		})
 	}
@@ -39,8 +41,8 @@ func TestUptimeToUnix(t *testing.T) {
 func TestNTPToUnix(t *testing.T) {
 	// RFC 7011, section 6.1.9 and 6.1.10: seconds since 1900, then a fraction.
 	ntp := uint64(1_700_000_000+ntpEpochOffset)<<32 | 1<<31
-	if got := ntpToUnix(ntp); got != 1_700_000_000 {
-		t.Errorf("ntpToUnix() = %d, expected 1700000000", got)
+	if diff := helpers.Diff(ntpToUnix(ntp), uint32(1_700_000_000)); diff != "" {
+		t.Errorf("ntpToUnix() (-got, +want):\n%s", diff)
 	}
 }
 
@@ -57,6 +59,8 @@ func TestDecodeFlowStartCiscoIOSXE(t *testing.T) {
 	}{
 		{"v9", 1790709870, 1790709915},
 		{"ipfix", 1790709884, 1790709917},
+		// For ipfix, we can get the values directly from tshark:
+		// tshark -r iosxe-ipfix-timestamps.pcap -d udp.port==2057,cflow -T fields -E aggregator=' ' -e cflow.abstimestart | xargs -n1 date +%s -d | sort -n
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -89,16 +93,14 @@ func TestDecodeFlowStartCiscoIOSXE(t *testing.T) {
 // TestIPFIXFlowStartSysUpTime checks that flowStartSysUpTime is converted with
 // systemInitTimeMilliseconds whatever the order of the two fields.
 func TestIPFIXFlowStartSysUpTime(t *testing.T) {
-	be := func(v uint64, size int) []byte {
-		b := make([]byte, size)
-		for i := size - 1; i >= 0; i-- {
-			b[i] = byte(v)
-			v >>= 8
-		}
-		return b
+	start := netflow.DataField{
+		Type:  netflow.IPFIX_FIELD_flowStartSysUpTime,
+		Value: binary.BigEndian.AppendUint32(nil, 5_000),
 	}
-	start := netflow.DataField{Type: netflow.IPFIX_FIELD_flowStartSysUpTime, Value: be(5_000, 4)}
-	systemInit := netflow.DataField{Type: netflow.IPFIX_FIELD_systemInitTimeMilliseconds, Value: be(1_700_000_000_000, 8)}
+	systemInit := netflow.DataField{
+		Type:  netflow.IPFIX_FIELD_systemInitTimeMilliseconds,
+		Value: binary.BigEndian.AppendUint64(nil, 1_700_000_000_000),
+	}
 	for _, tc := range []struct {
 		description string
 		fields      []netflow.DataField
@@ -116,8 +118,8 @@ func TestIPFIXFlowStartSysUpTime(t *testing.T) {
 			if len(*got) != 1 {
 				t.Fatalf("decodeRecord() returned %d flows, expected 1", len(*got))
 			}
-			if (*got)[0].TimeReceived != tc.expected {
-				t.Errorf("decodeRecord() TimeReceived = %d, expected %d", (*got)[0].TimeReceived, tc.expected)
+			if diff := helpers.Diff((*got)[0].TimeReceived, tc.expected); diff != "" {
+				t.Errorf("decodeRecord() TimeReceived (-got, +want):\n%s", diff)
 			}
 		})
 	}
