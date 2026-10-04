@@ -110,7 +110,8 @@ The `collect flow sampler` line is needed for *Akvorado* to match flows with
 the sampler options. IOS-XE exports these options with a different source ID
 than the flows. *Akvorado* uses them anyway when they come from a source ID
 without flow template. If several of these source IDs use the same sampler ID,
-the last received sampling rate is used
+the last received sampling rate is used (after a restart, the one from the
+highest source ID)
 ([issue #89](https://github.com/akvorado/akvorado/issues/89)).
 Otherwise, set a default sampling rate in `akvorado.yaml`. See the
 [documentation](50-configuration.md#core) for more details.
