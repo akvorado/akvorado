@@ -14,6 +14,8 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/pb"
 	"akvorado/outlet/flow/decoder"
+
+	"github.com/netsampler/goflow2/v3/decoders/netflow"
 )
 
 func TestFormatApplicationID(t *testing.T) {
@@ -26,6 +28,7 @@ func TestFormatApplicationID(t *testing.T) {
 		{"3:80", []byte{3, 0, 80}},
 		{"20:9:10000", []byte{20, 0, 0, 0, 9, 0x27, 0x10}},
 		{"0d", []byte{13}},
+		{"13:000102030405060708", []byte{13, 0, 1, 2, 3, 4, 5, 6, 7, 8}},
 	}
 	for _, tc := range cases {
 		if got := formatApplicationID(tc.id); got != tc.expected {
@@ -46,6 +49,33 @@ func TestApplicationKeyMarshalText(t *testing.T) {
 	}
 	if got != key {
 		t.Errorf("UnmarshalText(%q) = %+v, expected %+v", text, got, key)
+	}
+}
+
+func TestApplicationKeyUnmarshalTextInvalid(t *testing.T) {
+	var got applicationKey
+	if err := got.UnmarshalText([]byte("nine-0d")); err == nil {
+		t.Error("UnmarshalText(\"nine-0d\") error is nil, expected an error")
+	}
+}
+
+func TestApplicationAttributeIgnoresOtherEnterprises(t *testing.T) {
+	// Same type as an IANA attribute, but from another enterprise.
+	field := netflow.DataField{PenProvided: true, Pen: 2636, Type: netflow.IPFIX_FIELD_applicationName, Value: []byte("x")}
+	if _, ok := applicationAttribute(10, field); ok {
+		t.Error("applicationAttribute() accepted a field from another enterprise")
+	}
+}
+
+func TestDecodeApplicationOptionsSkipsNonBytes(t *testing.T) {
+	_, nfdecoder, _, _, _ := setup(t, false)
+	tao := nfdecoder.(*Decoder).collection.Get("test")
+	decodeApplicationOptions(10, tao, []netflow.DataField{
+		{Type: netflow.IPFIX_FIELD_applicationId, Value: uint64(1)},
+		{Type: netflow.IPFIX_FIELD_applicationName, Value: []byte("ssl")},
+	})
+	if len(tao.Applications) != 0 {
+		t.Errorf("decodeApplicationOptions() recorded %d applications without an ID, expected 0", len(tao.Applications))
 	}
 }
 
