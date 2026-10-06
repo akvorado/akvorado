@@ -12,6 +12,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- ✨ *outlet*: add `SetName()` to exporter classifiers to rename exporters
 - 🩹 *outlet*: fix NetFlow and IPFIX flow start timestamps (with `netflow-first-switched`)
 
 ## 2026.10.0 - 2026-10-03
