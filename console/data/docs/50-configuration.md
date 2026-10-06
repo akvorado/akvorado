@@ -754,8 +754,13 @@ make a decision:
 - `ClassifySite()` to classify the exporter to a site (`paris`, `berlin`, `newyork`)
 - `ClassifyRegion()` to classify the exporter to a region (`france`, `italy`, `caraibes`)
 - `ClassifyTenant()` to classify the exporter to a tenant (`team-a`, `team-b`)
+- `SetName()` to change the exporter name
 - `Reject()` to reject the flow
 - `Format()` to format a string: `Format("name: %s", Exporter.Name)`
+
+The name set by `SetName()` is not normalized, and `Exporter.Name` keeps the
+original name in every rule. Once an exporter is classified for all criteria,
+remaining rules are skipped, so put `SetName()` first.
 
 Here is an example, assuming routers are named `th2-ncs55a1-1.example.fr` or
 `milan-ncs5k8-2.example.it`:
