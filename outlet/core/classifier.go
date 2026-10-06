@@ -42,6 +42,7 @@ type exporterClassification struct {
 	Region string
 	Tenant string
 	Reject bool
+	Name   string
 }
 
 // exporterClassifierEnvironment defines the environment used by the exporter classifier
@@ -87,6 +88,17 @@ func (scr *ExporterClassifierRule) UnmarshalText(text []byte) error {
 				return false, nil
 			},
 			new(func(*exporterClassification) bool),
+		),
+		expr.Function(
+			"SetName",
+			func(params ...any) (any, error) {
+				ec := params[0].(*exporterClassification)
+				if ec.Name == "" {
+					ec.Name = params[1].(string)
+				}
+				return true, nil
+			},
+			new(func(*exporterClassification, string) bool),
 		),
 	}
 	options = addExporterClassifyStringFunction(options,
