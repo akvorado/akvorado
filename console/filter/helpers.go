@@ -51,6 +51,12 @@ func (c *current) reverseColumn(col schema.Column) schema.Column {
 	if !meta.ReverseDirection {
 		return col
 	}
+	return oppositeColumn(meta.Schema, col)
+}
+
+// oppositeColumn returns the column for the opposite direction. If there is
+// none, the column is returned as is.
+func oppositeColumn(sch *schema.Component, col schema.Column) schema.Column {
 	var candidate string
 	name := col.Name
 	switch {
@@ -63,7 +69,7 @@ func (c *current) reverseColumn(col schema.Column) schema.Column {
 	case strings.HasPrefix(name, "Out"):
 		candidate = "In" + name[3:]
 	}
-	if column, ok := meta.Schema.LookupColumnByName(candidate); ok {
+	if column, ok := sch.LookupColumnByName(candidate); ok && !column.Disabled {
 		return *column
 	}
 	return col
@@ -135,6 +141,9 @@ func (c *current) acceptColumn() (schema.Column, error) {
 	sch := c.meta().Schema
 	for _, column := range sch.Columns() {
 		if strings.EqualFold(name, column.Name) {
+			if positions, ok := c.globalStore["columns"].(map[int]columnPosition); ok {
+				positions[c.pos.offset] = columnPosition{len(c.text), column}
+			}
 			return column, nil
 		}
 	}

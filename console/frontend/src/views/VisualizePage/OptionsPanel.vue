@@ -131,14 +131,40 @@
           v-model="timeRange"
           @submit="submitOptions(true)"
         />
-        <SectionLabel>Dimensions</SectionLabel>
+        <SectionLabel>
+          <span class="flex items-center gap-1">
+            Dimensions
+            <button
+              type="button"
+              title="Reverse direction"
+              :disabled="!!dimensions?.errors"
+              class="cursor-pointer text-gray-400 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-gray-400 dark:hover:text-gray-200 dark:disabled:hover:text-gray-400"
+              @click="reverseDimensions()"
+            >
+              <SwitchHorizontalIcon class="h-4 w-4" aria-hidden="true" />
+            </button>
+          </span>
+        </SectionLabel>
         <InputDimensions
           v-model="dimensions"
           :min-dimensions="graphType.name === graphTypes.sankey ? 2 : 0"
           @submit="submitOptions()"
         />
         <SectionLabel>
-          <template #default>Filter</template>
+          <template #default>
+            <span class="flex items-center gap-1">
+              Filter
+              <button
+                type="button"
+                title="Reverse direction"
+                :disabled="!!filter?.errors"
+                class="cursor-pointer text-gray-400 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-gray-400 dark:hover:text-gray-200 dark:disabled:hover:text-gray-400"
+                @click="reverseFilter()"
+              >
+                <SwitchHorizontalIcon class="h-4 w-4" aria-hidden="true" />
+              </button>
+            </span>
+          </template>
           <template #hint>
             <kbd
               class="rounded border border-gray-300 bg-gray-200 px-1 dark:border-gray-600 dark:bg-gray-900"
@@ -160,6 +186,7 @@ import { Date as SugarDate } from "sugar-date";
 import {
   ChevronDownIcon,
   ChevronRightIcon,
+  SwitchHorizontalIcon,
   ZoomOutIcon,
 } from "@heroicons/vue/solid";
 import {
@@ -240,6 +267,31 @@ const submitOptions = (force?: boolean, auto?: boolean) => {
       );
     }
   }
+};
+
+const reverse = async (input: {
+  dimensions?: string[];
+  filter?: string;
+}): Promise<{ dimensions: string[]; filter: string } | null> => {
+  const response = await fetch("api/v0/console/graph/reverse", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) return null;
+  return response.json();
+};
+const reverseDimensions = async () => {
+  if (!dimensions.value) return;
+  const data = await reverse({ dimensions: dimensions.value.selected });
+  if (!data || !dimensions.value) return;
+  dimensions.value = { ...dimensions.value, selected: data.dimensions };
+};
+const reverseFilter = async () => {
+  if (!filter.value) return;
+  const data = await reverse({ filter: filter.value.expression });
+  if (!data) return;
+  filter.value = { expression: data.filter };
 };
 
 // Querying again only brings new data when the range follows the clock, so
