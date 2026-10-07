@@ -70,7 +70,8 @@ appearance.
   lines with “lines”, and displayed in a grid with “grid”. The grid
   representation is useful if you need to compare the volume of each dimension.
   For sankey graphs, dimensions are converted to nodes. In this case, you need
-  to select at least two dimensions.
+  to select at least two dimensions. The button next to the *dimensions* label
+  reverses their direction.
 
 - Akvorado only retrieves a limited number of series. The "limit"
   parameter defines how many. The remaining values are categorized as "Other".
@@ -86,7 +87,8 @@ appearance.
 - The filter box contains an SQL-like expression to limit the data that is
   graphed. It has an auto-completion system that you can trigger with
   `Ctrl-Space`. `Ctrl-Enter` executes the request. You can save filters by
-  providing a description. A filter can be shared with other users.
+  providing a description. A filter can be shared with other users. The button
+  next to the *filter* label reverses its direction.
 
 Below the graph, a data table displays per-series statistics including minimum,
 maximum, last, average, 95th percentile, and total values. For rate-based units

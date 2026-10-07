@@ -68,3 +68,47 @@ func TestSourceSelect(t *testing.T) {
 		}
 	}
 }
+
+func TestGraphReverseHandler(t *testing.T) {
+	_, h, _, _ := NewMock(t, DefaultConfiguration())
+	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
+		{
+			Description: "dimensions and filter",
+			URL:         "/api/v0/console/graph/reverse",
+			JSONInput: helpers.M{
+				"dimensions": []string{"SrcAS", "InIfProvider", "ExporterName"},
+				"filter":     `InIfBoundary = external AND srcas = AS65000`,
+			},
+			JSONOutput: helpers.M{
+				"dimensions": []string{"DstAS", "OutIfProvider", "ExporterName"},
+				"filter":     `OutIfBoundary = external AND DstAS = AS65000`,
+			},
+		}, {
+			Description: "empty",
+			URL:         "/api/v0/console/graph/reverse",
+			JSONInput:   helpers.M{"filter": ""},
+			JSONOutput: helpers.M{
+				"dimensions": []string{},
+				"filter":     "",
+			},
+		}, {
+			Description: "unknown dimension",
+			URL:         "/api/v0/console/graph/reverse",
+			JSONInput: helpers.M{
+				"dimensions": []string{"Nothing"},
+				"filter":     "",
+			},
+			StatusCode: 400,
+			JSONOutput: helpers.M{"message": "Unknown column name Nothing"},
+		}, {
+			Description: "invalid filter",
+			URL:         "/api/v0/console/graph/reverse",
+			JSONInput: helpers.M{
+				"dimensions": []string{"SrcAS"},
+				"filter":     `InIfName = "`,
+			},
+			StatusCode: 400,
+			JSONOutput: helpers.M{"message": "at line 1, position 12: string literal not terminated"},
+		},
+	})
+}
