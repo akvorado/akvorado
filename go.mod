@@ -48,10 +48,10 @@ require (
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20260927204940-b5a45ccfdf7e
 	github.com/twmb/franz-go/pkg/kmsg v1.14.0
 	github.com/twmb/franz-go/plugin/kprom v1.5.0
-	github.com/uptrace/bun v1.2.18
-	github.com/uptrace/bun/dialect/mysqldialect v1.2.18
-	github.com/uptrace/bun/dialect/pgdialect v1.2.18
-	github.com/uptrace/bun/dialect/sqlitedialect v1.2.18
+	github.com/uptrace/bun v1.3.0
+	github.com/uptrace/bun/dialect/mysqldialect v1.3.0
+	github.com/uptrace/bun/dialect/pgdialect v1.3.0
+	github.com/uptrace/bun/dialect/sqlitedialect v1.3.0
 	github.com/yuin/goldmark-highlighting/v3 v3.1.0
 	github.com/yuin/goldmark/v2 v2.1.6
 	go.uber.org/mock v0.6.0
