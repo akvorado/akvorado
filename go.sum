@@ -232,8 +232,8 @@ github.com/openconfig/gnmic/pkg/api v0.1.11 h1:Jrkz3ROyPQDGiXNm4oR52pYgKGApHxb5p
 github.com/openconfig/gnmic/pkg/api v0.1.11/go.mod h1:6PntONfjCMq3XzsDfWMkLeoVuBRbkm2foQO5m6PeYo0=
 github.com/openconfig/grpctunnel v0.1.0 h1:EN99qtlExZczgQgp5ANnHRC/Rs62cAG+Tz2BQ5m/maM=
 github.com/openconfig/grpctunnel v0.1.0/go.mod h1:G04Pdu0pml98tdvXrvLaU+EBo3PxYfI9MYqpvdaEHLo=
-github.com/oschwald/maxminddb-golang/v2 v2.6.0 h1:pRlHCdJmc+4uxMOSthmKDt5HOw3JTX8TJZlhyP5ew0w=
-github.com/oschwald/maxminddb-golang/v2 v2.6.0/go.mod h1:sjqpB3z2BZrMduDp9TAUTCkZDoT3nDhixUc4Dge2qRQ=
+github.com/oschwald/maxminddb-golang/v2 v2.7.0 h1:ZcAr3GYc2LYC8aec2mCMX9+QOF0EolH3jDFKRV/Z1+U=
+github.com/oschwald/maxminddb-golang/v2 v2.7.0/go.mod h1:DuKJLbbug6TXC0yJXgs1MWifvXHmudRWzMobMIUu04g=
 github.com/osrg/gobgp/v4 v4.9.0 h1:pKOw914kwQ4I/lWNVTfEDosEN3FuqPGytMEInXxpTyQ=
 github.com/osrg/gobgp/v4 v4.9.0/go.mod h1:bJbFm7T2nRANggShfl3I9h0UpPCzu4uAY5J/6dTdRvs=
 github.com/pascaldekloe/name v1.0.1 h1:9lnXOHeqeHHnWLbKfH6X98+4+ETVqFqxN09UXSjcMb0=
