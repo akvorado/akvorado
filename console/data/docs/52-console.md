@@ -46,7 +46,13 @@ appearance.
   flows in the opposite direction to the graph. They are displayed as negative
   values on the graph. For “sankey” graphs, the *bidirectional* option splits
   the diagram into two side-by-side parts: the left side shows the forward
-  direction, the right side shows the reverse direction.
+  direction, the right side shows the reverse direction. The reverse direction
+  swaps `Src` and `Dst`, and `In` and `Out`, in dimensions and filter. Columns
+  without an opposite, like `ExporterName` or `DstASPath`, stay the same.
+  Columns with an opposite that is disabled, like when you only enable `SrcMAC`,
+  also stay the same. This can lead to surprising results. In doubt, use the
+  “reverse” button next to the *dimensions* and *filter* labels to check the
+  dimensions and filters used for the reverse direction.
 
 - For “stacked” graphs, the *previous period* option adds a line for
   the traffic levels from the previous period. Depending on
