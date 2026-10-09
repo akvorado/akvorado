@@ -14,7 +14,8 @@ steps.
 *Akvorado* itself does not need much memory and disk space, but Kafka and
 ClickHouse do. The recommended configuration for the complete setup is:
 
-- 4 vCPUs (AMD64 or ARM64)
+- 4 vCPUs (AMD64 with x86-64-v3 support, or ARM64 with ARMv8.2-A and RCpc
+  support)
 - 8 GB of RAM, 32 GB or more is better
 - 100 GB of disk, 50 GB is the minimum
 
@@ -22,6 +23,18 @@ ClickHouse do. The recommended configuration for the complete setup is:
 > `demo.akvorado.net` currently runs on a bare-metal host with a quad-core Intel
 > Xeon E3-1231 v3, 1TB of disk, and 32 GB of RAM. But it was previously running
 > on a virtual machine matching the minimal specs.
+
+> [!IMPORTANT]
+> Since 26.6, ClickHouse requires x86-64-v3 (AVX2) on AMD64. Most CPUs since
+> 2015 support it, but some hypervisors hide it from virtual machines. Check
+> with `grep -w avx2 /proc/cpuinfo`. If ClickHouse fails with `Illegal
+> instruction`, expose the host CPU to the virtual machine (for example, the
+> `host` CPU type in Proxmox), or pin an older ClickHouse release in
+> `docker/docker-compose-local.yml`.
+>
+> On ARM64, ClickHouse requires ARMv8.2-A with RCpc. Check with `grep -w lrcpc
+> /proc/cpuinfo`. Graviton 2 and later and the Raspberry Pi 5 support it. The
+> Raspberry Pi 4 does not.
 
 ## Docker image
 

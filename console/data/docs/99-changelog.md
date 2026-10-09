@@ -26,6 +26,7 @@ BMP endpoints on an untrusted network, but if you do, be sure to upgrade!
 - 🔒 *outlet*: fix memory exhaustion when receiving BMP messages with an invalid
   length (reported by [Sobhan Hosseinpour](https://github.com/0xBlu3Guy))
 - 💥 *outlet*: do not store 0.0.0.0 as the nexthop
+- 💥 *docker*: update ClickHouse to 26.8 (not mandatory, requires x86-64-v3 on AMD64)
 - 🩹 *outlet*: keep decoding a NetFlow or IPFIX packet after a data set with an unknown template
 - 🩹 *outlet*: fix inverted BMP message queue full/not full metrics
 - 🩹 *console*: complete custom dictionary values like the other string columns
@@ -35,7 +36,6 @@ BMP endpoints on an untrusted network, but if you do, be sure to upgrade!
   `outlet.clickhouse.server-selection`: `sticky-random` (the default) or
   `round-robin`.
 - 🌱 *outlet*: faster network attribute lookups for IPv4 addresses
-- 🌱 *docker*: update ClickHouse to 26.8 (not mandatory)
 
 ## 2026.8.1 - 2026-08-29
 
