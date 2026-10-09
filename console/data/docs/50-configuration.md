@@ -168,7 +168,9 @@ The following keys are accepted:
   partition. This setting can be important if you have several outlets and IPFIX
   or NetFlow: each outlet needs to receive the templates before decoding flows
   and this is less likely when using `random`. It is also needed for an exact
-  [`rate-limit`](#flow).
+  [`rate-limit`](#flow) and for the counters of missing NetFlow v9 packets and
+  IPFIX records computed from sequence numbers
+  (`akvorado_outlet_flow_decoder_netflow_sequence_missing_total`).
 
 A version number is automatically added to the topic name. This is to prevent
 problems if the protobuf schema changes in a way that is not

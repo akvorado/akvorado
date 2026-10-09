@@ -9,6 +9,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/netsampler/goflow2/v3/decoders/netflow"
@@ -28,6 +29,7 @@ type Decoder struct {
 
 	// Templates and sampling systems
 	collection templateAndOptionCollection
+	sequences  sequenceTracker
 
 	metrics struct {
 		errors    *reporter.CounterVec
@@ -35,6 +37,9 @@ type Decoder struct {
 		records   *reporter.CounterVec
 		sets      *reporter.CounterVec
 		templates *reporter.CounterVec
+
+		sequenceMissing   *reporter.CounterVec
+		sequenceReordered *reporter.CounterVec
 	}
 }
 
@@ -84,6 +89,20 @@ func New(r *reporter.Reporter, dependencies decoder.Dependencies) decoder.Decode
 			Help: "Number of NetFlow templates received.",
 		},
 		[]string{"exporter", "version", "obs_domain_id", "template_id", "type"},
+	)
+	nd.metrics.sequenceMissing = nd.r.CounterVec(
+		reporter.CounterOpts{
+			Name: "sequence_missing_total",
+			Help: "Number of NetFlow v9 packets or IPFIX data records missing according to sequence numbers. Exact only with the by-exporter load-balancing of the inlet.",
+		},
+		[]string{"exporter", "version"},
+	)
+	nd.metrics.sequenceReordered = nd.r.CounterVec(
+		reporter.CounterOpts{
+			Name: "sequence_reordered_total",
+			Help: "Number of NetFlow v9 or IPFIX packets with a sequence number lower than expected (reordered packet or exporter restart).",
+		},
+		[]string{"exporter", "version"},
 	)
 
 	return nd
@@ -149,6 +168,7 @@ func (nd *Decoder) Decode(in decoder.RawFlow, options decoder.Options, bf *schem
 		versionStr = "9"
 		flowSets = packetNFv9.FlowSets
 		obsDomainID = packetNFv9.SourceId
+		nd.observeSequence(key, version, obsDomainID, packetNFv9.SequenceNumber, 1, true)
 		if options.TimestampSource == pb.RawFlow_TS_NETFLOW_PACKET || options.TimestampSource == pb.RawFlow_TS_NETFLOW_FIRST_SWITCHED {
 			ts = uint64(packetNFv9.UnixSeconds)
 			sysUptime = uint64(packetNFv9.SystemUptime)
@@ -156,7 +176,8 @@ func (nd *Decoder) Decode(in decoder.RawFlow, options decoder.Options, bf *schem
 		nd.decodeNFv9IPFIX(version, obsDomainID, flowSets, tao, ts, sysUptime, options, key, bf, finalize2)
 	case 10:
 		var packetIPFIX netflow.IPFIXPacket
-		if err := netflow.DecodeMessageIPFIX(buf, tao, netflow.FlowContext{}, &packetIPFIX); err != nil {
+		err := netflow.DecodeMessageIPFIX(buf, tao, netflow.FlowContext{}, &packetIPFIX)
+		if err != nil {
 			if !errors.Is(err, netflow.ErrorTemplateNotFound) {
 				nd.errLogger.Err(err).Str("exporter", key).Msg("error while decoding IPFIX")
 				nd.metrics.errors.WithLabelValues(key, "IPFIX decoding error").Inc()
@@ -168,6 +189,9 @@ func (nd *Decoder) Decode(in decoder.RawFlow, options decoder.Options, bf *schem
 		versionStr = "10"
 		flowSets = packetIPFIX.FlowSets
 		obsDomainID = packetIPFIX.ObservationDomainId
+		// Without all the templates, the number of data records is unknown.
+		nd.observeSequence(key, version, obsDomainID, packetIPFIX.SequenceNumber,
+			ipfixDataRecords(flowSets), err == nil)
 		if options.TimestampSource == pb.RawFlow_TS_NETFLOW_PACKET {
 			ts = uint64(packetIPFIX.ExportTime)
 		}
@@ -218,4 +242,36 @@ func (nd *Decoder) Decode(in decoder.RawFlow, options decoder.Options, bf *schem
 // Name returns the name of the decoder.
 func (nd *Decoder) Name() string {
 	return "netflow"
+}
+
+// observeSequence updates the sequence state of an observation domain and the
+// associated metrics.
+func (nd *Decoder) observeSequence(exporter string, version uint16, obsDomainID, seq, increment uint32, incrementKnown bool) {
+	missing, reordered := nd.sequences.observe(sequenceKey{
+		exporter:    exporter,
+		version:     version,
+		obsDomainID: obsDomainID,
+	}, seq, increment, incrementKnown)
+	versionStr := strconv.Itoa(int(version))
+	if missing > 0 {
+		nd.metrics.sequenceMissing.WithLabelValues(exporter, versionStr).Add(float64(missing))
+	}
+	if reordered {
+		nd.metrics.sequenceReordered.WithLabelValues(exporter, versionStr).Inc()
+	}
+}
+
+// ipfixDataRecords returns the number of data records of an IPFIX message,
+// including the ones described by options templates.
+func ipfixDataRecords(flowSets []any) uint32 {
+	var count uint32
+	for _, fs := range flowSets {
+		switch fsConv := fs.(type) {
+		case netflow.DataFlowSet:
+			count += uint32(len(fsConv.Records))
+		case netflow.OptionsDataFlowSet:
+			count += uint32(len(fsConv.Records))
+		}
+	}
+	return count
 }
