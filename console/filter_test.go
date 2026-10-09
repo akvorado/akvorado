@@ -694,3 +694,39 @@ LIMIT 20`)).
 		},
 	})
 }
+
+func TestFilterHandlersApplication(t *testing.T) {
+	c, h, mockConn, _ := NewMock(t, DefaultConfiguration())
+
+	mockConn.EXPECT().
+		Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
+SELECT DISTINCT Application AS attribute
+FROM flows
+WHERE TimeReceived > date_sub(minute, 10, now()) AND positionCaseInsensitive(attribute, 'ss') >= 1
+ORDER BY positionCaseInsensitive(attribute, 'ss'), Application
+LIMIT 20`)).
+		SetArg(1, []struct {
+			Attribute string `ch:"attribute"`
+		}{{"ssl"}, {"ssh"}}).
+		Return(nil)
+
+	config := schema.DefaultConfiguration()
+	config.Enabled = []schema.ColumnKey{schema.ColumnApplication}
+	s, err := schema.New(config)
+	if err != nil {
+		t.Fatalf("schema.New() error:\n%+v", err)
+	}
+	c.d.Schema = s
+
+	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
+		{
+			URL:        "/api/v0/console/filter/complete",
+			StatusCode: 200,
+			JSONInput:  helpers.M{"what": "value", "column": "application", "prefix": "ss"},
+			JSONOutput: helpers.M{"completions": []helpers.M{
+				{"label": "ssl", "quoted": true},
+				{"label": "ssh", "quoted": true},
+			}},
+		},
+	})
+}

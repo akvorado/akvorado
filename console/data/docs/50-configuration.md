@@ -958,6 +958,16 @@ For ICMP, you get `ICMPv4Type`, `ICMPv4Code`, `ICMPv6Type`, `ICMPv6Code`,
 `ICMPv4`, and `ICMPv6`. The two latest one are displayed as a string in the
 console (like `echo-reply` or `frag-needed`).
 
+For applications classified by the exporter (like Cisco NBAR2), you get
+`Application`, `ApplicationCategory`, `ApplicationSubCategory`,
+`ApplicationGroup`, `ApplicationTrafficClass`, `ApplicationBusinessRelevance`,
+`ApplicationFamily`, `ApplicationSet`, `ApplicationP2P`, `ApplicationTunnel`,
+and `ApplicationEncrypted`. The names and attributes come from the option
+records sent by the exporter. When they are not known yet, `Application`
+contains the application ID as `engine:selector` ([RFC 6759][]).
+
+[RFC 6759]: https://www.rfc-editor.org/rfc/rfc6759
+
 #### Data-skipping indexes
 
 ClickHouse [data-skipping indexes][] can be added to columns in the main flows

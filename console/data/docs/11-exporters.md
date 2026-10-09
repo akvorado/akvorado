@@ -115,6 +115,37 @@ inlet:
     default-sampling-rate: 100
 ```
 
+### NBAR2 applications
+
+To classify flows with NBAR2, add `match application name` to the flow record
+and export the application tables:
+
+```cisco
+flow record Akvorado-NBAR
+    match ipv4 protocol
+    match ipv4 source address
+    match ipv4 destination address
+    match transport source-port
+    match transport destination-port
+    match application name
+    collect interface input
+    collect interface output
+    collect counter bytes long
+    collect counter packets long
+    collect timestamp sys-uptime first
+    collect timestamp sys-uptime last
+!
+flow exporter AkvoradoExport
+    option application-table
+    option application-attributes
+!
+```
+
+Then, enable the `Application` column and, optionally, the attribute columns
+(see the [schema configuration](50-configuration.md#schema)). The application
+table is sent every 10 minutes by default: until it is received, flows show the
+application ID instead of its name.
+
 ## Cisco NCS 5500 and ASR 9000
 
 On each router, you can enable NetFlow with the following configuration. It is
