@@ -33,6 +33,15 @@ const (
 	directionReverse
 )
 
+// https://www.iana.org/assignments/psamp-parameters
+const (
+	psampReserved             = 0
+	psampSystematicCountBased = 1
+	psampSystematicTimeBased  = 2
+	psampRandomNOutOfN        = 3 // https://www.rfc-editor.org/info/rfc5476#section-6.5.2.3
+	psampUniformProbabilistic = 4
+)
+
 const juniperPEN = 2636
 
 func (nd *Decoder) decodeNFv5(packet *netflowlegacy.PacketNetFlowV5, ts, sysUptime uint64, options decoder.Options, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
@@ -77,6 +86,9 @@ func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets 
 					samplingRate                uint32
 					samplerID                   uint64
 					packetInterval, packetSpace uint32
+					selectorAlgorithm           uint16
+					samplingSize                uint32
+					samplingPopulation          uint32
 				)
 				for _, field := range record.OptionsValues {
 					v, ok := field.Value.([]byte)
@@ -92,10 +104,26 @@ func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets 
 						packetInterval = uint32(decodeUNumber(v))
 					case netflow.IPFIX_FIELD_samplingPacketSpace:
 						packetSpace = uint32(decodeUNumber(v))
+					case netflow.IPFIX_FIELD_selectorAlgorithm:
+						selectorAlgorithm = uint16(decodeUNumber(v))
+					case netflow.IPFIX_FIELD_samplingSize:
+						samplingSize = uint32(decodeUNumber(v))
+					case netflow.IPFIX_FIELD_samplingPopulation:
+						samplingPopulation = uint32(decodeUNumber(v))
 					}
 				}
-				if packetInterval > 0 {
-					samplingRate = (packetInterval + packetSpace) / packetInterval
+				switch selectorAlgorithm {
+				// In case the algorithm is not defined and packetInterval is present
+				case psampReserved, psampSystematicCountBased:
+					if packetInterval != 0 {
+						samplingRate = (packetInterval + packetSpace) / packetInterval
+					}
+				case psampRandomNOutOfN:
+					if samplingSize != 0 {
+						samplingRate = samplingPopulation / samplingSize
+					}
+				default:
+					nd.metrics.errors.WithLabelValues(exporter, "unsupported sampling algorithm").Inc()
 				}
 				if samplingRate > 0 {
 					tao.SetSamplingRate(version, obsDomainID, samplerID, samplingRate)

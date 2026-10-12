@@ -14,6 +14,7 @@ identified with a specific icon:
 
 - ✨ *outlet*: add `SetName()` to exporter classifiers to rename exporters
 - ✨ *console*: add buttons to reverse the direction of dimensions and filter
+- ✨ *outlet*: add support for random n-out-of-N sampling in IPFIX flows. Used by IOS-XR.
 - 🩹 *outlet*: fix NetFlow and IPFIX flow start timestamps (with `netflow-first-switched`)
 
 ## 2026.10.0 - 2026-10-03
