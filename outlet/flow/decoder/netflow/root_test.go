@@ -1063,6 +1063,53 @@ func TestDecodeSRv6(t *testing.T) {
 	}
 }
 
+func TestIPFIXRandomAlgorithm(t *testing.T) {
+	r, nfdecoder, bf, got, finalize := setup(t, true)
+	options := decoder.Options{
+		TimestampSource:       pb.RawFlow_TS_INPUT,
+		DecapsulationProtocol: pb.RawFlow_DECAP_SRV6,
+	}
+	for data := range helpers.ReadManyPcapL4(t, filepath.Join("testdata", "ipfix-iosxr-srv6.pcap")) {
+		_, err := nfdecoder.Decode(
+			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+			options, bf, finalize)
+		if err != nil {
+			t.Fatalf("Decode() error:\n%+v", err)
+		}
+	}
+
+	expectedFlows := []*schema.FlowMessage{
+		{
+			SamplingRate:    1000,
+			InIf:            61,
+			OutIf:           106,
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("::ffff:100.0.0.1"),
+			DstAddr:         netip.MustParseAddr("::ffff:100.0.2.1"),
+			OtherColumns: map[schema.ColumnKey]any{
+				schema.ColumnPackets:      uint64(1),
+				schema.ColumnBytes:        uint64(84),
+				schema.ColumnEType:        uint32(constants.ETypeIPv4),
+				schema.ColumnProto:        uint32(constants.ProtoICMPv4),
+				schema.ColumnIPTTL:        uint8(63),
+				schema.ColumnIPFragmentID: uint32(0x54d),
+				schema.ColumnICMPv4Type:   uint8(8),
+			},
+		},
+	}
+
+	if diff := helpers.Diff(*got, expectedFlows); diff != "" {
+		t.Fatalf("Decode() (-got, +want):\n%s", diff)
+	}
+
+	// Decapsulation succeeded, so the non-encapsulated error counter must
+	// stay at zero.
+	gotMetrics := r.GetMetrics("akvorado_outlet_flow_decoder_netflow_", "errors_total")
+	if diff := helpers.Diff(gotMetrics, map[string]string{}); diff != "" {
+		t.Fatalf("Decode() metrics (-got, +want):\n%s", diff)
+	}
+}
+
 func TestJuniperCPIDDrop(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
 	options := decoder.Options{
