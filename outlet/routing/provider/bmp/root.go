@@ -19,6 +19,7 @@ import (
 	"github.com/benbjohnson/clock"
 	"gopkg.in/tomb.v2"
 
+	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 	"akvorado/outlet/routing/provider"
 )
@@ -94,15 +95,18 @@ func (p *Provider) Start() error {
 	p.address = listener.Addr()
 
 	// Listener
+	ctx := p.t.Context(context.Background())
+	errLogger := p.r.Sample(reporter.BurstSampler(time.Minute, 1))
 	p.t.Go(func() error {
 		labels := pprof.Labels("goroutine", "bmp-listener")
 		pprof.SetGoroutineLabels(pprof.WithLabels(context.Background(), labels))
 		for {
-			conn, err := listener.Accept()
+			conn, err := helpers.Accept(ctx, listener, func(err error, delay time.Duration) {
+				errLogger.Err(err).
+					Str("listen", p.config.Listen).
+					Msgf("cannot accept new connection, retrying in %s", delay)
+			})
 			if err != nil {
-				if p.t.Alive() {
-					return fmt.Errorf("cannot accept new connection: %w", err)
-				}
 				return nil
 			}
 			tcpConn := conn.(*net.TCPConn)
@@ -144,7 +148,7 @@ func (p *Provider) Start() error {
 		}
 	})
 	p.t.Go(func() error {
-		<-p.t.Dying()
+		<-ctx.Done()
 		listener.Close()
 		return nil
 	})
