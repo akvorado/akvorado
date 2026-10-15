@@ -16,6 +16,7 @@ import (
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/daemon"
+	"akvorado/common/helpers"
 	"akvorado/common/pb"
 	"akvorado/common/reporter"
 	"akvorado/inlet/flow/decoder"
@@ -121,15 +122,18 @@ func (in *Input) Start() error {
 	in.address = listener.Addr()
 	in.r.Info().Str("listen", in.address.String()).Msg("TCP input listening")
 
+	ctx := in.t.Context(context.Background())
+	errLogger := in.r.Sample(reporter.BurstSampler(time.Minute, 1))
 	in.t.Go(func() error {
 		labels := pprof.Labels("goroutine", "tcp-listener")
 		pprof.SetGoroutineLabels(pprof.WithLabels(context.Background(), labels))
 		for {
-			conn, err := listener.Accept()
+			conn, err := helpers.Accept(ctx, listener, func(err error, delay time.Duration) {
+				errLogger.Err(err).
+					Str("listen", in.config.Listen).
+					Msgf("cannot accept new connection, retrying in %s", delay)
+			})
 			if err != nil {
-				if in.t.Alive() {
-					return fmt.Errorf("cannot accept new connection: %w", err)
-				}
 				return nil
 			}
 			in.t.Go(func() error {
@@ -139,7 +143,7 @@ func (in *Input) Start() error {
 		}
 	})
 	in.t.Go(func() error {
-		<-in.t.Dying()
+		<-ctx.Done()
 		listener.Close()
 		return nil
 	})
