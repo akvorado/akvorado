@@ -19,6 +19,7 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/pb"
 	"akvorado/common/reporter"
+	"akvorado/inlet/flow/decoder"
 	"akvorado/inlet/flow/input"
 )
 
@@ -48,7 +49,7 @@ var (
 )
 
 // New instantiate a new UDP listener from the provided configuration.
-func (configuration Configuration) New(r *reporter.Reporter, daemon daemon.Component, send input.SendFunc) (input.Input, error) {
+func (configuration Configuration) New(r *reporter.Reporter, daemon daemon.Component, _ decoder.Decoder, send input.SendFunc) (input.Input, error) {
 	input := &Input{
 		r:      r,
 		config: configuration,

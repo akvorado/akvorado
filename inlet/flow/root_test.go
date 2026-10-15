@@ -34,6 +34,7 @@ func TestFlow(t *testing.T) {
 
 	inputs := []InputConfiguration{
 		{
+			Decoder: pb.RawFlow_DECODER_NETFLOW,
 			Config: &file.Configuration{
 				Paths:    paths,
 				MaxFlows: 100,
