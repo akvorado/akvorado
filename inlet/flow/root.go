@@ -6,6 +6,7 @@ package flow
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"gopkg.in/tomb.v2"
@@ -15,6 +16,7 @@ import (
 	"akvorado/common/httpserver"
 	"akvorado/common/pb"
 	"akvorado/common/reporter"
+	"akvorado/inlet/flow/decoder"
 	"akvorado/inlet/flow/input"
 	"akvorado/inlet/kafka"
 )
@@ -63,10 +65,13 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 
 	// Initialize inputs
 	for idx, input := range c.config.Inputs {
-		var err error
-		c.inputs[idx], err = input.Config.New(r, c.d.Daemon, c.Send(input))
+		dec, err := decoder.Get(input.Decoder)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("input %d: %w", idx, err)
+		}
+		c.inputs[idx], err = input.Config.New(r, c.d.Daemon, dec, c.Send(input))
+		if err != nil {
+			return nil, fmt.Errorf("input %d: %w", idx, err)
 		}
 	}
 

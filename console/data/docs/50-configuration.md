@@ -124,6 +124,17 @@ flow:
       workers: 3
 ```
 
+For the TCP input, only `netflow` is supported and it only accepts the `listen`
+key:
+
+```yaml
+flow:
+  inputs:
+    - type: tcp
+      decoder: netflow
+      listen: :4739
+```
+
 Use the `file` input for testing only. It has a `paths` key to define the files
 to read. These files are continuously added to the processing pipeline. For
 example:

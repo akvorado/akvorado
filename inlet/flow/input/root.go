@@ -8,6 +8,7 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/pb"
 	"akvorado/common/reporter"
+	"akvorado/inlet/flow/decoder"
 )
 
 // Input is the interface any input should meet
@@ -23,6 +24,7 @@ type SendFunc func(exporter string, flow *pb.RawFlow)
 
 // Configuration defines the interface to instantiate an input module from its configuration.
 type Configuration interface {
-	// New instantiates a new input from its configuration.
-	New(r *reporter.Reporter, daemon daemon.Component, send SendFunc) (Input, error)
+	// New instantiates a new input from its configuration. It should return
+	// an error if the input does not work with the provided decoder.
+	New(r *reporter.Reporter, daemon daemon.Component, dec decoder.Decoder, send SendFunc) (Input, error)
 }

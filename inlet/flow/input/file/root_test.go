@@ -55,7 +55,7 @@ func TestFileInput(t *testing.T) {
 		mu.Unlock()
 	}
 
-	in, err := configuration.New(r, daemon.NewMock(t), send)
+	in, err := configuration.New(r, daemon.NewMock(t), nil, send)
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}

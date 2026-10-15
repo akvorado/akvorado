@@ -60,7 +60,7 @@ func TestUDPInput(t *testing.T) {
 		close(done)
 	}
 
-	in, err := configuration.New(r, daemon.NewMock(t), send)
+	in, err := configuration.New(r, daemon.NewMock(t), nil, send)
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
@@ -90,7 +90,7 @@ func TestUDPReceiveBuffer(t *testing.T) {
 	r := reporter.NewMock(t)
 	configuration := DefaultConfiguration().(*Configuration)
 	configuration.Listen = "127.0.0.1:0"
-	in, err := configuration.New(r, daemon.NewMock(t), func(string, *pb.RawFlow) {})
+	in, err := configuration.New(r, daemon.NewMock(t), nil, func(string, *pb.RawFlow) {})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
@@ -104,7 +104,7 @@ func TestUDPReceiveBuffer(t *testing.T) {
 	configuration = DefaultConfiguration().(*Configuration)
 	configuration.Listen = "127.0.0.1:0"
 	configuration.ReceiveBuffer = 100_000_000
-	in, err = configuration.New(r, daemon.NewMock(t), func(string, *pb.RawFlow) {})
+	in, err = configuration.New(r, daemon.NewMock(t), nil, func(string, *pb.RawFlow) {})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
@@ -131,7 +131,7 @@ func TestUDPWorkerBalancing(t *testing.T) {
 		wg.Wait()
 		close(done)
 	}()
-	in, err := configuration.New(r, daemon.NewMock(t), func(string, *pb.RawFlow) {
+	in, err := configuration.New(r, daemon.NewMock(t), nil, func(string, *pb.RawFlow) {
 		wg.Done()
 	})
 	if err != nil {
