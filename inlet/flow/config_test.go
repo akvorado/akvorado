@@ -11,6 +11,7 @@ import (
 	"akvorado/common/helpers/yaml"
 	"akvorado/common/pb"
 	"akvorado/inlet/flow/input/file"
+	"akvorado/inlet/flow/input/sctp"
 	"akvorado/inlet/flow/input/tcp"
 	"akvorado/inlet/flow/input/udp"
 )
@@ -100,6 +101,29 @@ func TestDecodeConfiguration(t *testing.T) {
 				Inputs: []InputConfiguration{{
 					Decoder: pb.RawFlow_DECODER_NETFLOW,
 					Config: &tcp.Configuration{
+						Listen: "192.0.2.1:4739",
+					},
+				}},
+			},
+		},
+		{
+			Description: "SCTP input",
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
+				return helpers.M{
+					"inputs": []helpers.M{
+						{
+							"type":    "sctp",
+							"decoder": "netflow",
+							"listen":  "192.0.2.1:4739",
+						},
+					},
+				}
+			},
+			Expected: Configuration{
+				Inputs: []InputConfiguration{{
+					Decoder: pb.RawFlow_DECODER_NETFLOW,
+					Config: &sctp.Configuration{
 						Listen: "192.0.2.1:4739",
 					},
 				}},
