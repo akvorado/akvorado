@@ -33,14 +33,7 @@ type Input struct {
 	config   Configuration
 	splitter decoder.Splitter
 
-	metrics struct {
-		bytes             *reporter.CounterVec
-		messages          *reporter.CounterVec
-		errors            *reporter.CounterVec
-		openedConnections *reporter.CounterVec
-		closedConnections *reporter.CounterVec
-		connections       *reporter.GaugeVec
-	}
+	metrics metrics
 
 	address net.Addr       // listening address, for testing purposes
 	send    input.SendFunc // function to send to kafka
@@ -64,49 +57,7 @@ func (configuration Configuration) New(r *reporter.Reporter, daemon daemon.Compo
 		send:     send,
 	}
 
-	input.metrics.bytes = r.CounterVec(
-		reporter.CounterOpts{
-			Name: "bytes_total",
-			Help: "Bytes received by the application.",
-		},
-		[]string{"listener", "exporter"},
-	)
-	input.metrics.messages = r.CounterVec(
-		reporter.CounterOpts{
-			Name: "messages_total",
-			Help: "Messages received by the application.",
-		},
-		[]string{"listener", "exporter"},
-	)
-	input.metrics.errors = r.CounterVec(
-		reporter.CounterOpts{
-			Name: "errors_total",
-			Help: "Errors while receiving messages.",
-		},
-		[]string{"listener", "exporter"},
-	)
-	input.metrics.openedConnections = r.CounterVec(
-		reporter.CounterOpts{
-			Name: "opened_connections_total",
-			Help: "Number of opened connections.",
-		},
-		[]string{"listener", "exporter"},
-	)
-	input.metrics.closedConnections = r.CounterVec(
-		reporter.CounterOpts{
-			Name: "closed_connections_total",
-			Help: "Number of closed connections.",
-		},
-		[]string{"listener", "exporter"},
-	)
-
-	input.metrics.connections = r.GaugeVec(
-		reporter.GaugeOpts{
-			Name: "connections",
-			Help: "Number of current connections.",
-		},
-		[]string{"listener", "exporter"},
-	)
+	input.initMetrics()
 
 	daemon.Track(&input.t, "inlet/flow/input/tcp")
 	return input, nil
