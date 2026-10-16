@@ -8,6 +8,7 @@ import (
 	"akvorado/common/pb"
 	"akvorado/inlet/flow/input"
 	"akvorado/inlet/flow/input/file"
+	"akvorado/inlet/flow/input/sctp"
 	"akvorado/inlet/flow/input/tcp"
 	"akvorado/inlet/flow/input/udp"
 )
@@ -58,6 +59,7 @@ func (ic InputConfiguration) MarshalYAML() (any, error) {
 var inputs = map[string](func() input.Configuration){
 	"udp":  udp.DefaultConfiguration,
 	"tcp":  tcp.DefaultConfiguration,
+	"sctp": sctp.DefaultConfiguration,
 	"file": file.DefaultConfiguration,
 }
 

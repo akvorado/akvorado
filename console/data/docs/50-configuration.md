@@ -135,6 +135,17 @@ flow:
       listen: :4739
 ```
 
+For the SCTP input, only the `listen` key is accepted. It is only available on
+Linux and supports PR-SCTP:
+
+```yaml
+flow:
+  inputs:
+    - type: sctp
+      decoder: netflow
+      listen: :4739
+```
+
 Use the `file` input for testing only. It has a `paths` key to define the files
 to read. These files are continuously added to the processing pipeline. For
 example:
