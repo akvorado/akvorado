@@ -41,7 +41,7 @@ require (
 	github.com/puzpuzpuz/xsync/v4 v4.5.0
 	github.com/redis/go-redis/v9 v9.23.0
 	github.com/rs/zerolog v1.35.1
-	github.com/scrapli/scrapligo v1.4.0
+	github.com/scrapli/scrapligo v1.4.2
 	github.com/slayercat/GoSNMPServer v0.5.2
 	github.com/spf13/cobra v1.10.2
 	github.com/twmb/franz-go v1.22.1
