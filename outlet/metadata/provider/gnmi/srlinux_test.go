@@ -106,7 +106,7 @@ func TestSRLinux(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetNetworkDriver() error:\n%+v", err)
 	}
-	for remaining := 3; remaining >= 0; remaining++ {
+	for remaining := 5; remaining >= 0; remaining-- {
 		err = driver.Open()
 		if err != nil {
 			if remaining == 0 {
