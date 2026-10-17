@@ -113,6 +113,9 @@ func (in *Input) serveConnection(conn *sctp.SCTPConn) {
 	if remote, ok := conn.RemoteAddr().(*sctp.SCTPAddr); ok && remote != nil && len(remote.IPAddrs) > 0 {
 		source = remote.IPAddrs[0].IP
 	} else {
+		// This may also happen if the connection was closed too fast. We may
+		// lost some data, but we don't expect short connections, so it should
+		// be OK (except for tests).
 		in.r.Error().Str("listen", listen).Msg("cannot get the address of the SCTP peer")
 		conn.Close()
 		return

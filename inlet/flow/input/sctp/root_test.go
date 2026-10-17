@@ -60,6 +60,16 @@ func TestSCTPInput(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Dial() error:\n%+v", err)
 	}
+	// Wait for the connection to be accepted. Otherwise, the remote address may
+	// not be available.
+	for range 100 {
+		if diff := helpers.Diff(r.GetMetrics("akvorado_inlet_flow_input_sctp_", "opened_connections_total"), map[string]string{
+			`opened_connections_total{exporter="127.0.0.1",listener="127.0.0.1:0"}`: "1",
+		}); diff == "" {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
 
 	// The capture contains a template message (124 bytes) and a data message
 	// (3730 bytes).
