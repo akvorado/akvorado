@@ -169,7 +169,7 @@ transforms:
         (?P<duration_ms>\d+)ms$')
       if err == null {
         .timestamp = parse_timestamp!(parsed.timestamp, "%d/%b/%Y:%H:%M:%S %z")
-        .message = join([parsed.method, parsed.path, parsed.protocol], " ")
+        .message = join!([parsed.method, parsed.path, parsed.protocol], " ")
         ._labels.status = to_int!(parsed.status)
         del(parsed.timestamp)
         del(parsed.method)
