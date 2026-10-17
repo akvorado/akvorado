@@ -39,7 +39,7 @@ require (
 	github.com/osrg/gobgp/v4 v4.9.0
 	github.com/prometheus/client_golang v1.25.0
 	github.com/puzpuzpuz/xsync/v4 v4.5.0
-	github.com/redis/go-redis/v9 v9.21.0
+	github.com/redis/go-redis/v9 v9.23.0
 	github.com/rs/zerolog v1.35.1
 	github.com/scrapli/scrapligo v1.4.0
 	github.com/slayercat/GoSNMPServer v0.5.2
@@ -161,7 +161,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go.starlark.net v0.0.0-20231101134539-556fd59b42f6 // indirect
-	go.uber.org/atomic v1.11.0 // indirect
+	go.uber.org/atomic v1.12.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.28.0 // indirect
 	golang.org/x/crypto v0.57.0 // indirect
