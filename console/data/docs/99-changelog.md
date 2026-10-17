@@ -20,7 +20,7 @@ identified with a specific icon:
 - 🩹 *config*: reject numbers for settings expecting a named value
 - 🩹 *orchestrator*: keep watching configuration files after an error
 - 🌱 *outlet*: add support for random n-out-of-N sampling in IPFIX flows
-- 🌱 *docker*: update Valkey to 9.2 (not mandatory)
+- 🌱 *docker*: update Valkey to 9.1 (not mandatory)
 
 ## 2026.10.0 - 2026-10-03
 
