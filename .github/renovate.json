@@ -123,6 +123,16 @@
       "enabled": false
     },
     {
+      "matchManagers": [
+        "npm"
+      ],
+      "description": "vue-tsc does not support TypeScript 7 yet",
+      "matchPackageNames": [
+        "typescript"
+      ],
+      "allowedVersions": "<7"
+    },
+    {
       "matchPackageNames": [
         "node"
       ],
@@ -177,6 +187,7 @@
       "matchManagers": [
         "gomod"
       ],
+      "description": "v2 was released by error",
       "matchPackageNames": [
         "github.com/twmb/franz-go/pkg/kmsg"
       ],
@@ -191,6 +202,16 @@
         "modernc.org/libc"
       ],
       "enabled": false
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "description": "scrapligo v2 downloads a native library at runtime",
+      "matchPackageNames": [
+        "github.com/scrapli/scrapligo"
+      ],
+      "allowedVersions": "<2"
     },
     {
       "matchManagers": [
@@ -229,6 +250,7 @@
       "matchManagers": [
         "docker-compose"
       ],
+      "description": "only use LTS versions",
       "groupName": "clickhouse",
       "matchPackageNames": [
         "clickhouse/clickhouse-server",
