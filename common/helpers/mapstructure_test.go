@@ -58,6 +58,54 @@ func TestStringToSliceHookFunc(t *testing.T) {
 	})
 }
 
+type testEnum int
+
+const (
+	testEnumFirst testEnum = iota
+	testEnumSecond
+)
+
+func (e *testEnum) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "first":
+		*e = testEnumFirst
+	case "second":
+		*e = testEnumSecond
+	default:
+		return errors.New("unknown value")
+	}
+	return nil
+}
+
+func TestNonStringToTextUnmarshallerHookFunc(t *testing.T) {
+	type Configuration struct {
+		A testEnum
+	}
+	TestConfigurationDecode(t, ConfigurationDecodeCases{
+		{
+			Description:   "string",
+			Initial:       func() any { return Configuration{} },
+			Configuration: func() any { return M{"a": "second"} },
+			Expected:      Configuration{A: testEnumSecond},
+		}, {
+			Description:   "integer",
+			Initial:       func() any { return Configuration{} },
+			Configuration: func() any { return M{"a": 42} },
+			Error:         true,
+		}, {
+			Description:   "integer in range",
+			Initial:       func() any { return Configuration{} },
+			Configuration: func() any { return M{"a": 1} },
+			Error:         true,
+		}, {
+			Description:   "unknown string",
+			Initial:       func() any { return Configuration{} },
+			Configuration: func() any { return M{"a": "third"} },
+			Error:         true,
+		},
+	})
+}
+
 func TestProtectedDecodeHook(t *testing.T) {
 	var configuration struct {
 		A string

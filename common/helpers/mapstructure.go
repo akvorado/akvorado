@@ -4,6 +4,7 @@
 package helpers
 
 import (
+	"encoding"
 	"errors"
 	"fmt"
 	"reflect"
@@ -87,10 +88,36 @@ func GetMapStructureDecoderConfig(config any, hooks ...mapstructure.DecodeHookFu
 				mapstructure.ComposeDecodeHookFunc(hooks...),
 				mapstructure.ComposeDecodeHookFunc(mapstructureUnmarshallerHookFuncs...),
 				mapstructure.TextUnmarshallerHookFunc(),
+				NonStringToTextUnmarshallerHookFunc(),
 				mapstructure.StringToTimeDurationHookFunc(),
 				StringToSliceHookFunc(","),
 			),
 		),
+	}
+}
+
+// NonStringToTextUnmarshallerHookFunc returns a DecodeHookFunc that rejects
+// non-string input for integer types implementing encoding.TextUnmarshaler.
+// Without it, a number would be stored as is, without any check.
+func NonStringToTextUnmarshallerHookFunc() mapstructure.DecodeHookFuncType {
+	textUnmarshalerType := reflect.TypeFor[encoding.TextUnmarshaler]()
+	return func(from, to reflect.Type, data any) (any, error) {
+		if from.Kind() == reflect.Pointer {
+			from = from.Elem()
+		}
+		if from == to || from.Kind() == reflect.String {
+			return data, nil
+		}
+		switch to.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		default:
+			return data, nil
+		}
+		if !reflect.PointerTo(to).Implements(textUnmarshalerType) {
+			return data, nil
+		}
+		return nil, fmt.Errorf("expected a string, got %v", data)
 	}
 }
 
