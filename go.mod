@@ -88,7 +88,7 @@ require (
 	github.com/creack/pty v1.1.24 // indirect
 	github.com/derekparker/trie/v3 v3.2.0 // indirect
 	github.com/dlclark/regexp2/v2 v2.2.2 // indirect
-	github.com/dmarkham/enumer v1.6.3 // indirect
+	github.com/dmarkham/enumer v1.7.2 // indirect
 	github.com/dnephin/pflag v1.0.7 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/emicklei/dot v0.15.0 // indirect

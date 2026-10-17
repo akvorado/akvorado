@@ -67,8 +67,8 @@ github.com/derekparker/trie/v3 v3.2.0 h1:fET3Qbp9xSB7yc7tz6Y2GKMNl0SycYFo3cmiRI3
 github.com/derekparker/trie/v3 v3.2.0/go.mod h1:P94lW0LPgiaMgKAEQD59IDZD2jMK9paKok8Nli/nQbE=
 github.com/dlclark/regexp2/v2 v2.2.2 h1:MYWvNYw8okuqNhwTYO587EZMiDruVa2vhV6fsGpfya0=
 github.com/dlclark/regexp2/v2 v2.2.2/go.mod h1:avUrQvPaLz2DrFNHJF0taWAFFX2C1GMSSoeiqFjcBmU=
-github.com/dmarkham/enumer v1.6.3 h1:B4aV4OsfzbrS5rvjILt4mMjiWBA//cKxJUMsvHZ8mEI=
-github.com/dmarkham/enumer v1.6.3/go.mod h1:DyjXaqCglj4GhELF73oWiparNkYkXvmOBLza/o4kO74=
+github.com/dmarkham/enumer v1.7.2 h1:GXIaiToJZa7oGALr6+eeEldthfK6Xip8SazmUmeYK9c=
+github.com/dmarkham/enumer v1.7.2/go.mod h1:eMZE0SngYz1tyRVe09xKxf5R1RE9uJAFO4XckaCiTfM=
 github.com/dnephin/pflag v1.0.7 h1:oxONGlWxhmUct0YzKTgrpQv9AUA1wtPBn7zuSjJqptk=
 github.com/dnephin/pflag v1.0.7/go.mod h1:uxE91IoWURlOiTUIA8Mq5ZZkAv3dPUfZNaT80Zm7OQE=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
