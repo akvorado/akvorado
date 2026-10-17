@@ -17,7 +17,7 @@ require (
 	github.com/cilium/ebpf v0.22.0
 	github.com/eapache/go-resiliency v1.7.0
 	github.com/expr-lang/expr v1.17.8
-	github.com/fsnotify/fsnotify v1.9.0
+	github.com/fsnotify/fsnotify v1.10.1
 	github.com/gaissmai/bart v0.30.0
 	github.com/georgeyanev/go-sctp v1.1.2
 	github.com/go-playground/validator/v10 v10.30.5
