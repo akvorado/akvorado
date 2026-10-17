@@ -506,7 +506,6 @@ func TestNonWorkingBioRIS(t *testing.T) {
 		`connection_up{ris="ris.invalid:1000"}`: "0",
 		`connection_up{ris="192.0.2.10:1000"}`:  "0",
 		`grpc_client_handled_total{grpc_code="Unavailable",grpc_method="GetRouters",grpc_service="bio.ris.RoutingInformationService",grpc_type="unary"}`: "2",
-		`grpc_client_msg_received_total{grpc_method="GetRouters",grpc_service="bio.ris.RoutingInformationService",grpc_type="unary"}`:                    "2",
 		`grpc_client_msg_sent_total{grpc_method="GetRouters",grpc_service="bio.ris.RoutingInformationService",grpc_type="unary"}`:                        "2",
 		`grpc_client_started_total{grpc_method="GetRouters",grpc_service="bio.ris.RoutingInformationService",grpc_type="unary"}`:                         "2",
 	}
