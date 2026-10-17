@@ -271,9 +271,9 @@ func orchestratorWatch(r *reporter.Reporter, daemonComponent daemon.Component, p
 			case err, ok := <-watcher.Errors:
 				if !ok {
 					r.Error().Msg("configuration file watcher died")
+					return
 				}
 				r.Err(err).Msg("error from configuration file watcher")
-				return
 			case event, ok := <-watcher.Events:
 				if !ok {
 					r.Error().Msg("configuration file watcher died")

@@ -18,6 +18,7 @@ identified with a specific icon:
 - 🩹 *outlet*: fix NetFlow and IPFIX flow start timestamps (with `netflow-first-switched`)
 - 🩹 *outlet*: decode 802.1ad (QinQ) VLAN tags in sampled headers
 - 🩹 *config*: reject numbers for settings expecting a named value
+- 🩹 *orchestrator*: keep watching configuration files after an error
 - 🌱 *outlet*: add support for random n-out-of-N sampling in IPFIX flows
 
 ## 2026.10.0 - 2026-10-03
