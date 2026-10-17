@@ -35,7 +35,7 @@ require (
 	github.com/netsampler/goflow2/v3 v3.0.0-20261012074934-c64027101c1d
 	github.com/openconfig/gnmi v0.14.1
 	github.com/openconfig/gnmic/pkg/api v0.1.11
-	github.com/oschwald/maxminddb-golang/v2 v2.7.0
+	github.com/oschwald/maxminddb-golang/v2 v2.8.0
 	github.com/osrg/gobgp/v4 v4.10.0
 	github.com/prometheus/client_golang v1.25.0
 	github.com/puzpuzpuz/xsync/v4 v4.5.0
@@ -62,7 +62,7 @@ require (
 	golang.org/x/sync v0.23.0
 	golang.org/x/sys v0.48.0
 	golang.org/x/text v0.42.0
-	golang.org/x/tools v0.50.0
+	golang.org/x/tools v0.51.0
 	google.golang.org/grpc v1.83.2
 	google.golang.org/protobuf v1.36.12
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
@@ -168,7 +168,7 @@ require (
 	golang.org/x/exp/typeparams v0.0.0-20260209203927-2842357ff358 // indirect
 	golang.org/x/mod v0.41.0 // indirect
 	golang.org/x/net v0.59.0 // indirect
-	golang.org/x/telemetry v0.0.0-20260908163034-4bcc4b2ee518 // indirect
+	golang.org/x/telemetry v0.0.0-20260924152758-ed294f943157 // indirect
 	golang.org/x/term v0.46.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
