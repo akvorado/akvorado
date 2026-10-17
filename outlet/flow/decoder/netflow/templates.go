@@ -24,10 +24,12 @@ type templatesAndOptions struct {
 	nd               *Decoder
 	templateLock     sync.RWMutex
 	samplingRateLock sync.RWMutex
+	applicationLock  sync.RWMutex
 
 	Key           string
 	Templates     templates
 	SamplingRates map[samplingRateKey]uint32
+	Applications  map[applicationKey]application
 }
 
 // templates is a mapping to one of netflow.TemplateRecord,
@@ -40,6 +42,20 @@ type templateKey struct {
 	obsDomainID uint32
 	templateID  uint16
 }
+
+// applicationKey is the key structure to access an application. The
+// application ID is unique per exporter (RFC 6759, section 4.3), so the
+// observation domain is not part of the key: Cisco IOS XE exports the
+// application tables and the flows with different source IDs.
+type applicationKey struct {
+	id      string
+	version uint16
+}
+
+// application contains the name and attributes of an application, as exported
+// in option records (Cisco NBAR2 application table and application
+// attributes).
+type application [applicationAttributeCount]string
 
 // samplingRateKey is the key structure to access a sampling rate.
 type samplingRateKey struct {
@@ -66,6 +82,7 @@ func (c *templateAndOptionCollection) Get(key string) *templatesAndOptions {
 		Key:           key,
 		Templates:     make(map[templateKey]any),
 		SamplingRates: make(map[samplingRateKey]uint32),
+		Applications:  make(map[applicationKey]application),
 	}
 	c.Collection[key] = t
 	return t
@@ -129,4 +146,29 @@ func (t *templatesAndOptions) SetSamplingRate(version uint16, obsDomainID uint32
 		obsDomainID: obsDomainID,
 		samplerID:   samplerID,
 	}] = samplingRate
+}
+
+// GetApplication returns the application matching the provided ID.
+func (t *templatesAndOptions) GetApplication(version uint16, id []byte) (application, bool) {
+	t.applicationLock.RLock()
+	defer t.applicationLock.RUnlock()
+	app, ok := t.Applications[applicationKey{version: version, id: string(id)}]
+	return app, ok
+}
+
+// UpdateApplication merges the non-empty attributes of an application.
+func (t *templatesAndOptions) UpdateApplication(version uint16, id []byte, update *application) {
+	t.applicationLock.Lock()
+	defer t.applicationLock.Unlock()
+	if t.Applications == nil {
+		t.Applications = make(map[applicationKey]application)
+	}
+	key := applicationKey{version: version, id: string(id)}
+	app := t.Applications[key]
+	for i, value := range update {
+		if value != "" {
+			app[i] = value
+		}
+	}
+	t.Applications[key] = app
 }

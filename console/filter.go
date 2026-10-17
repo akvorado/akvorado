@@ -536,40 +536,40 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 			input.Prefix = ""
 		}
 
-		// Custom columns are handled here
+		// Custom columns and application columns are handled here
 		for _, col := range c.d.Schema.Columns() {
-			// First filter out custom columns, iterate and try to match
-			if col.Key >= schema.ColumnLast {
-				if inputColumn != strings.ToLower(col.Name) || col.ParserType != "string" {
-					continue
-				}
-				results := []struct {
-					Attribute string `ch:"attribute"`
-				}{}
-				name := sb.Column(col.Name)
-				sqlQuery := sb.Select(sb.Alias(name, "attribute")).
-					Distinct().
-					From(sb.Table("flows")).
-					Where(sb.And(
-						recentFlows(10),
-						matchPrefix(sb.Column("attribute"), input.Prefix))).
-					OrderBy(
-						sb.Order(prefixPosition(sb.Column("attribute"), input.Prefix)),
-						sb.Order(name)).
-					Limit(input.Limit).
-					String()
-				if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery); err != nil {
-					c.r.Err(err).Msg("unable to query database")
-					break
-				}
-				for _, result := range results {
-					completions = append(completions, filterCompletion{
-						Label:  result.Attribute,
-						Quoted: true,
-					})
-				}
-				input.Prefix = "" // We have handled this internally
+			if col.Disabled || (col.Key < schema.ColumnLast && col.Group != schema.ColumnGroupApplication) {
+				continue
 			}
+			if inputColumn != strings.ToLower(col.Name) || col.ParserType != "string" {
+				continue
+			}
+			results := []struct {
+				Attribute string `ch:"attribute"`
+			}{}
+			name := sb.Column(col.Name)
+			sqlQuery := sb.Select(sb.Alias(name, "attribute")).
+				Distinct().
+				From(sb.Table("flows")).
+				Where(sb.And(
+					recentFlows(10),
+					matchPrefix(sb.Column("attribute"), input.Prefix))).
+				OrderBy(
+					sb.Order(prefixPosition(sb.Column("attribute"), input.Prefix)),
+					sb.Order(name)).
+				Limit(input.Limit).
+				String()
+			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery); err != nil {
+				c.r.Err(err).Msg("unable to query database")
+				break
+			}
+			for _, result := range results {
+				completions = append(completions, filterCompletion{
+					Label:  result.Attribute,
+					Quoted: true,
+				})
+			}
+			input.Prefix = "" // We have handled this internally
 		}
 
 		completions = append(completions, otherColumns...)
