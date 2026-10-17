@@ -204,6 +204,36 @@ func TestDecodeVLANAndIPv6(t *testing.T) {
 	}
 }
 
+func TestDecodeQinQ(t *testing.T) {
+	sch := schema.NewMock(t).EnableAllColumns()
+	pcap := helpers.ReadPcapL2(t, filepath.Join("testdata", "qinq-ipv4.pcap"))
+	bf := sch.NewFlowMessage()
+	l := ParseEthernet(sch, bf, pb.RawFlow_DECAP_NONE, pcap)
+	if diff := helpers.Diff(l, uint64(60)); diff != "" {
+		t.Errorf("ParseEthernet() (-got, +want):\n%s", diff)
+	}
+	expected := &schema.FlowMessage{
+		SrcVlan: 200,
+		DstVlan: 200,
+		SrcAddr: netip.MustParseAddr("::ffff:10.0.0.1"),
+		DstAddr: netip.MustParseAddr("::ffff:10.0.0.2"),
+		OtherColumns: map[schema.ColumnKey]any{
+			schema.ColumnEType:        uint32(constants.ETypeIPv4),
+			schema.ColumnProto:        uint32(constants.ProtoTCP),
+			schema.ColumnIPTTL:        uint8(64),
+			schema.ColumnIPFragmentID: uint32(21189),
+			schema.ColumnSrcMAC:       uint64(0x4caea3520ff6),
+			schema.ColumnDstMAC:       uint64(0x000110621493),
+			schema.ColumnTCPFlags:     uint16(0x02),
+			schema.ColumnSrcPort:      uint16(39378),
+			schema.ColumnDstPort:      uint16(443),
+		},
+	}
+	if diff := helpers.Diff(bf, expected); diff != "" {
+		t.Fatalf("ParseEthernet() (-got, +want):\n%s", diff)
+	}
+}
+
 func TestDecodeIPv4IPv4(t *testing.T) {
 	sch := schema.NewMock(t).EnableAllColumns()
 	pcap := helpers.ReadPcapL2(t, filepath.Join("testdata", "ipv4-ipv4.pcap"))

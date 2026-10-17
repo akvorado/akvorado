@@ -204,7 +204,7 @@ func ParseEthernet(sch *schema.Component, bf *schema.FlowMessage, decap pb.RawFl
 	etherType := binary.BigEndian.Uint16(data[12:14])
 	data = data[14:]
 	var vlan uint16
-	for etherType == constants.ETypeVLAN {
+	for etherType == constants.ETypeVLAN || etherType == constants.ETypeQinQ || etherType == constants.ETypeQinQLegacy {
 		if len(data) < 4 {
 			return 0
 		}
