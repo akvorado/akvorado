@@ -36,7 +36,7 @@ require (
 	github.com/openconfig/gnmi v0.14.1
 	github.com/openconfig/gnmic/pkg/api v0.1.11
 	github.com/oschwald/maxminddb-golang/v2 v2.7.0
-	github.com/osrg/gobgp/v4 v4.9.0
+	github.com/osrg/gobgp/v4 v4.10.0
 	github.com/prometheus/client_golang v1.25.0
 	github.com/puzpuzpuz/xsync/v4 v4.5.0
 	github.com/redis/go-redis/v9 v9.21.0
