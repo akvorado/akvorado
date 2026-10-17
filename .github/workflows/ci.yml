@@ -333,6 +333,8 @@ jobs:
   build-js:
     name: 🔬 Test only JS
     runs-on: ubuntu-latest
+    needs:
+      - pnpm-bootstrap
     permissions:
       contents: read
     strategy:
@@ -398,7 +400,6 @@ jobs:
     needs:
       - build-go
       - build-js
-      - pnpm-bootstrap
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref_type == 'tag'
     permissions:
