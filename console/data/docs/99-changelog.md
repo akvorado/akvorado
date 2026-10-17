@@ -20,6 +20,7 @@ identified with a specific icon:
 - 🩹 *config*: reject numbers for settings expecting a named value
 - 🩹 *orchestrator*: keep watching configuration files after an error
 - 🌱 *outlet*: add support for random n-out-of-N sampling in IPFIX flows
+- 🌱 *docker*: update Valkey to 9.2 (not mandatory)
 
 ## 2026.10.0 - 2026-10-03
 
@@ -389,7 +390,7 @@ tarball". This new tarball does not update the configuration files or the
 - 🌱 *console*: display TCP and UDP port names if known
 - 🌱 *orchestrator*: add ClickHouse version check for INTERPOLATE bug
 - 🌱 *docker*: add monitoring stack with Prometheus and Grafana (work in progress, not enabled by default, check `.env`)
-- 🌱 *docker*: update to Traefik 3.0 (not mandatory)
+- 🌱 *docker*: update Traefik to 3.0 (not mandatory)
 - 🌱 *docker*: update ClickHouse to 24.3 (not mandatory)
 - 🌱 *docker*: switch from Redis to Valkey (not mandatory)
 - 🌱 *docker*: build IPinfo updater image to make it available for non-x86
