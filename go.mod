@@ -21,7 +21,7 @@ require (
 	github.com/gaissmai/bart v0.30.0
 	github.com/georgeyanev/go-sctp v1.1.2
 	github.com/go-playground/validator/v10 v10.30.5
-	github.com/go-sql-driver/mysql v1.10.0
+	github.com/go-sql-driver/mysql v1.10.1
 	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/google/go-cmp v0.7.0
 	github.com/google/gopacket v1.1.19
