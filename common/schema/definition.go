@@ -222,6 +222,17 @@ const (
 	ColumnMPLS4thLabel
 	ColumnIngressVRFID
 	ColumnEgressVRFID
+	ColumnApplication
+	ColumnApplicationCategory
+	ColumnApplicationSubCategory
+	ColumnApplicationGroup
+	ColumnApplicationTrafficClass
+	ColumnApplicationBusinessRelevance
+	ColumnApplicationFamily
+	ColumnApplicationSet
+	ColumnApplicationP2P
+	ColumnApplicationTunnel
+	ColumnApplicationEncrypted
 
 	// ColumnLast points to after the last static column, custom dictionaries
 	// (dynamic columns) come after ColumnLast
@@ -232,6 +243,7 @@ const (
 	ColumnGroupL2 ColumnGroup = iota + 1
 	ColumnGroupNAT
 	ColumnGroupL3L4
+	ColumnGroupApplication
 
 	ColumnGroupLast
 )
@@ -534,6 +546,17 @@ END`,
 			},
 			{Key: ColumnIngressVRFID, Disabled: true, ParserType: "uint", ClickHouseType: "UInt32"},
 			{Key: ColumnEgressVRFID, Disabled: true, ParserType: "uint", ClickHouseType: "UInt32"},
+			{Key: ColumnApplication, Disabled: true, Group: ColumnGroupApplication, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
+			{Key: ColumnApplicationCategory, Disabled: true, Group: ColumnGroupApplication, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
+			{Key: ColumnApplicationSubCategory, Disabled: true, Group: ColumnGroupApplication, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
+			{Key: ColumnApplicationGroup, Disabled: true, Group: ColumnGroupApplication, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
+			{Key: ColumnApplicationTrafficClass, Disabled: true, Group: ColumnGroupApplication, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
+			{Key: ColumnApplicationBusinessRelevance, Disabled: true, Group: ColumnGroupApplication, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
+			{Key: ColumnApplicationFamily, Disabled: true, Group: ColumnGroupApplication, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
+			{Key: ColumnApplicationSet, Disabled: true, Group: ColumnGroupApplication, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
+			{Key: ColumnApplicationP2P, Disabled: true, Group: ColumnGroupApplication, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
+			{Key: ColumnApplicationTunnel, Disabled: true, Group: ColumnGroupApplication, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
+			{Key: ColumnApplicationEncrypted, Disabled: true, Group: ColumnGroupApplication, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
 		},
 	}.finalize()
 }
