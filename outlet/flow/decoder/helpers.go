@@ -37,6 +37,10 @@ func ParseIPv4(sch *schema.Component, bf *schema.FlowMessage, decap pb.RawFlow_D
 				uint64(fragoffset))
 		}
 		bf.AppendUint(schema.ColumnProto, uint64(proto))
+	} else {
+		bf.AppendIPv6(schema.ColumnOuterSrcAddr, DecodeIP(data[12:16]))
+		bf.AppendIPv6(schema.ColumnOuterDstAddr, DecodeIP(data[16:20]))
+		bf.AppendUint(schema.ColumnOuterIPTos, uint64(data[1]))
 	}
 	ihl := int((data[0] & 0xf) * 4)
 	if len(data) >= ihl {
@@ -80,6 +84,10 @@ func ParseIPv6(sch *schema.Component, bf *schema.FlowMessage, decap pb.RawFlow_D
 			bf.AppendUint(schema.ColumnProto, uint64(proto))
 			// TODO fragmentID/fragmentOffset are in a separate header
 		}
+	} else {
+		bf.AppendIPv6(schema.ColumnOuterSrcAddr, DecodeIP(data[8:24]))
+		bf.AppendIPv6(schema.ColumnOuterDstAddr, DecodeIP(data[24:40]))
+		bf.AppendUint(schema.ColumnOuterIPTos, uint64(binary.BigEndian.Uint16(data[0:2])&0xff0>>4))
 	}
 	data = data[40:]
 	innerL3Length := ParseL4(sch, bf, decap, data, proto)
