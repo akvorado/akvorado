@@ -625,8 +625,8 @@ func TestDecode(t *testing.T) {
 					schema.ColumnICMPv6Type:    uint8(128),
 					schema.ColumnIPv6FlowLabel: uint32(0x0a461c),
 					// schema.ColumnICMPv6Code:   0,
-					schema.ColumnOuterSrcAddr: netip.MustParseAddr("::ffff:192.168.108.40"),
-					schema.ColumnOuterDstAddr: netip.MustParseAddr("::ffff:192.168.15.14"),
+					schema.ColumnSrcOuterAddr: netip.MustParseAddr("::ffff:192.168.108.40"),
+					schema.ColumnDstOuterAddr: netip.MustParseAddr("::ffff:192.168.15.14"),
 				},
 			},
 		}

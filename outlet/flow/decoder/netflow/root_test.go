@@ -1048,8 +1048,8 @@ func TestDecodeSRv6(t *testing.T) {
 				schema.ColumnIPTTL:         uint8(63),
 				schema.ColumnIPFragmentID:  uint32(0xc96b),
 				// schema.ColumnICMPv4Type: uint8(0),
-				schema.ColumnOuterSrcAddr: netip.MustParseAddr("fc30:2200:1b::f"),
-				schema.ColumnOuterDstAddr: netip.MustParseAddr("fc30:2200:23:e009::"),
+				schema.ColumnSrcOuterAddr: netip.MustParseAddr("fc30:2200:1b::f"),
+				schema.ColumnDstOuterAddr: netip.MustParseAddr("fc30:2200:23:e009::"),
 			},
 		},
 	}
@@ -1096,8 +1096,8 @@ func TestIPFIXRandomAlgorithm(t *testing.T) {
 				schema.ColumnIPTTL:        uint8(63),
 				schema.ColumnIPFragmentID: uint32(0x54d),
 				schema.ColumnICMPv4Type:   uint8(8),
-				schema.ColumnOuterSrcAddr: netip.MustParseAddr("fc30:2200:4::f"),
-				schema.ColumnOuterDstAddr: netip.MustParseAddr("fc30:2200:7:e000::"),
+				schema.ColumnSrcOuterAddr: netip.MustParseAddr("fc30:2200:4::f"),
+				schema.ColumnDstOuterAddr: netip.MustParseAddr("fc30:2200:7:e000::"),
 			},
 		},
 	}

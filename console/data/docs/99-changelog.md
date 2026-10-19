@@ -15,7 +15,7 @@ identified with a specific icon:
 - ✨ *inlet*: add support for IPFIX over TCP and SCTP
 - ✨ *outlet*: add `SetName()` to exporter classifiers to rename exporters
 - ✨ *console*: add buttons to reverse the direction of dimensions and filter
-- ✨ *outlet*: add support for OuterSrcAddr, OuterDstAddr and OuterIPTos when decapsulating
+- ✨ *outlet*: add support for SrcOuterAddr, DstOuterAddr and IPOuterTos when decapsulating
 - 🩹 *outlet*: fix NetFlow and IPFIX flow start timestamps (with `netflow-first-switched`)
 - 🩹 *outlet*: decode 802.1ad (QinQ) VLAN tags in sampled headers
 - 🩹 *config*: reject numbers for settings expecting a named value
