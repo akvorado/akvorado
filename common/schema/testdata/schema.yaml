@@ -491,3 +491,19 @@
   name: EgressVRFID
   parsertype: uint
   clickhousetype: UInt32
+- key: OuterSrcAddr
+  name: OuterSrcAddr
+  parsertype: ip
+  clickhousetype: IPv6
+  clickhousecodec: ZSTD(1)
+  clickhousemainonly: true
+- key: OuterDstAddr
+  name: OuterDstAddr
+  parsertype: ip
+  clickhousetype: IPv6
+  clickhousecodec: ZSTD(1)
+  clickhousemainonly: true
+- key: OuterIPTos
+  name: OuterIPTos
+  parsertype: uint
+  clickhousetype: UInt8
