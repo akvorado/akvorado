@@ -20,6 +20,7 @@ identified with a specific icon:
 - 🩹 *outlet*: decode 802.1ad (QinQ) VLAN tags in sampled headers
 - 🩹 *config*: reject numbers for settings expecting a named value
 - 🩹 *orchestrator*: keep watching configuration files after an error
+- 🩹 *outlet*: fix SNMPv3 polling of Cisco NX-OS when the engine ID is cached
 - 🌱 *outlet*: add support for random n-out-of-N sampling in IPFIX flows
 - 🌱 *docker*: update Valkey to 9.1 (not mandatory)
 

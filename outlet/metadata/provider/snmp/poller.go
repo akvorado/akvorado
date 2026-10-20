@@ -57,6 +57,7 @@ func (p *Provider) newSNMPSession(ctx context.Context, exporter, agent netip.Add
 	}
 	if p.applyV3Cache(usm, exporter) {
 		p.metrics.v3CacheHits.WithLabelValues(exporterStr).Inc()
+		g.ContextEngineID = usm.AuthoritativeEngineID
 	} else {
 		p.metrics.v3CacheMisses.WithLabelValues(exporterStr).Inc()
 	}
