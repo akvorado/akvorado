@@ -428,6 +428,13 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 									"PRIMARY KEY toStartOfFiveMinutes(TimeReceived) ORDER BY ", 1)
 							}
 						}
+						if table[idx].Table == ch.localTable("flows_1h0m0s") {
+							// Partition size from the 360-day TTL. It cannot be changed.
+							table[idx].Schema = strings.Replace(
+								table[idx].Schema,
+								"toIntervalSecond(622080)",
+								"toIntervalSecond(630720)", 1)
+						}
 						table[idx].Schema = sb.Normalize(t, table[idx].Schema)
 					}
 				}
@@ -637,7 +644,7 @@ func TestNoTTL(t *testing.T) {
 	t.Run("add TTL", func(t *testing.T) {
 		r := reporter.NewMock(t)
 		startTestComponent(t, r, chComponent, nil)
-		checkTTL(t, "TimeReceived + toIntervalSecond(31104000)")
+		checkTTL(t, "TimeReceived + toIntervalSecond(31536000)")
 		checkApplied(t, r, "1")
 	})
 

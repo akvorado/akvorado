@@ -67,7 +67,7 @@ func DefaultConfiguration() Configuration {
 			{Interval: 0, TTL: 15 * 24 * time.Hour},                   // 15 days
 			{Interval: time.Minute, TTL: 7 * 24 * time.Hour},          // 7 days
 			{Interval: 5 * time.Minute, TTL: 3 * 30 * 24 * time.Hour}, // 90 days
-			{Interval: time.Hour, TTL: 12 * 30 * 24 * time.Hour},      // 1 year
+			{Interval: time.Hour, TTL: 365 * 24 * time.Hour},          // 1 year
 		},
 		MaxPartitions: 50,
 	}
