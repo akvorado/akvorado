@@ -16,6 +16,7 @@ identified with a specific icon:
 - ✨ *outlet*: add `SetName()` to exporter classifiers to rename exporters
 - ✨ *console*: add buttons to reverse the direction of dimensions and filter
 - ✨ *outlet*: add support for SrcOuterAddr, DstOuterAddr and IPOuterTos when decapsulating
+- ✨ *orchestrator*: keep data forever when the TTL of a resolution is 0
 - 🩹 *outlet*: fix NetFlow and IPFIX flow start timestamps (with `netflow-first-switched`)
 - 🩹 *outlet*: decode 802.1ad (QinQ) VLAN tags in sampled headers
 - 🩹 *config*: reject numbers for settings expecting a named value
