@@ -1310,6 +1310,14 @@ the [operational documentation](13-operating.md#space-usage) for information on
 how to check disk usage. If you remove an existing interval, it is not removed
 from the ClickHouse database and will continue to be populated.
 
+> [!WARNING]
+> The size of the partitions of a table is computed from its TTL when
+> the table is created and cannot be changed later. Changing the TTL of an
+> existing table keeps the old partition size. With a much longer TTL, the table
+> gets many small partitions, which slows down ClickHouse. With a much shorter
+> TTL, data is kept longer than the TTL, as a partition is only removed once all
+> its data has expired.
+
 It is mandatory to specify a configuration for `interval: 0`.
 
 When specifying a cluster name with `cluster`, the orchestrator will manage a
