@@ -211,6 +211,15 @@ func TestAlterTableTTL(t *testing.T) {
 	sb.CheckStatement(t, got)
 }
 
+func TestAlterTableRemoveTTL(t *testing.T) {
+	got := sb.AlterTable(sb.Table("flows")).RemoveTTL().String()
+	expected := "ALTER TABLE flows REMOVE TTL"
+	if diff := helpers.Diff(got, sb.Normalize(t, expected)); diff != "" {
+		t.Errorf("AlterTable() (-got, +want):\n%s", diff)
+	}
+	sb.CheckStatement(t, got)
+}
+
 func TestAlterTableAddFirstColumn(t *testing.T) {
 	def, err := sb.ParseColumnDef("`TimeReceived` DateTime")
 	if err != nil {

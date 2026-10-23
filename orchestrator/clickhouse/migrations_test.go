@@ -586,6 +586,69 @@ func TestTableSettings(t *testing.T) {
 	})
 }
 
+func TestNoTTL(t *testing.T) {
+	r := reporter.NewMock(t)
+	chComponent := clickhousedb.SetupClickHouse(t, r, false)
+	dropAllTables(t, chComponent)
+	noTTL := func(cfg *Configuration) {
+		cfg.Resolutions[3].TTL = 0
+	}
+
+	checkTTL := func(t *testing.T, expected string) {
+		t.Helper()
+		row := chComponent.QueryRow(t.Context(),
+			"SELECT engine_full FROM system.tables WHERE name = $1 AND database = $2",
+			"flows_1h0m0s", chComponent.DatabaseName())
+		var engineFull string
+		if err := row.Scan(&engineFull); err != nil {
+			t.Fatalf("Scan() error:\n%+v", err)
+		}
+		engine, err := sb.ParseEngine(engineFull)
+		if err != nil {
+			t.Fatalf("ParseEngine(%q) error:\n%+v", engineFull, err)
+		}
+		got := ""
+		if ttl := engine.TTL(); !ttl.IsZero() {
+			got = ttl.String()
+		}
+		if diff := helpers.Diff(got, expected); diff != "" {
+			t.Fatalf("TTL of flows_1h0m0s (-got, +want):\n%s", diff)
+		}
+	}
+	checkApplied := func(t *testing.T, r *reporter.Reporter, expected string) {
+		t.Helper()
+		gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps_total")
+		if diff := helpers.Diff(gotMetrics, map[string]string{"applied_steps_total": expected}); diff != "" {
+			t.Fatalf("Metrics (-got, +want):\n%s", diff)
+		}
+	}
+
+	t.Run("create without TTL", func(t *testing.T) {
+		startTestComponentWithConfig(t, r, chComponent, nil, noTTL)
+		checkTTL(t, "")
+	})
+
+	t.Run("idempotent", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		startTestComponentWithConfig(t, r, chComponent, nil, noTTL)
+		checkApplied(t, r, "0")
+	})
+
+	t.Run("add TTL", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		startTestComponent(t, r, chComponent, nil)
+		checkTTL(t, "TimeReceived + toIntervalSecond(31104000)")
+		checkApplied(t, r, "1")
+	})
+
+	t.Run("remove TTL", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		startTestComponentWithConfig(t, r, chComponent, nil, noTTL)
+		checkTTL(t, "")
+		checkApplied(t, r, "1")
+	})
+}
+
 // newSchemaWithOnlyIndexes creates a schema with exactly the given indexes,
 // clearing all defaults first via NoIndexes.
 func newSchemaWithOnlyIndexes(t *testing.T, indexes map[schema.ColumnKey]schema.SkipIndexType) *schema.Component {

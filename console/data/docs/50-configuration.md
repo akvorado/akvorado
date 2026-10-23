@@ -1255,7 +1255,7 @@ default ClickHouse table settings (`index_granularity = 8192` and
 `ttl_only_drop_parts = 1`). This is useful for configuring a custom
 `storage_policy`, for example.
 
-Here is the default configuration:
+Here is the default configuration, featuring a 1-year retention of data:
 
 ```yaml
 resolutions:
@@ -1287,6 +1287,20 @@ resolutions:
     ttl: 8760h
     table-settings:
       storage_policy: cold_hdd
+```
+
+A `ttl` of 0 keeps the data forever. To never expire the 1-hour resolution:
+
+```yaml
+resolutions:
+  - interval: 0
+    ttl: 360h
+  - interval: 1m
+    ttl: 168h
+  - interval: 5m
+    ttl: 2160h
+  - interval: 1h
+    ttl: 0
 ```
 
 If you want to tweak the values, start from the default configuration. Most of

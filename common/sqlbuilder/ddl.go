@@ -579,6 +579,11 @@ func (s *AlterTableStatement) ModifyTTL(expr Expr) *AlterTableStatement {
 	})
 }
 
+// RemoveTTL removes the TTL of the table. Rows are then kept forever.
+func (s *AlterTableStatement) RemoveTTL() *AlterTableStatement {
+	return s.add(&parser.AlterTableRemoveTTL{})
+}
+
 // ModifySetting changes one setting of the table. All the settings end up in a
 // single clause.
 func (s *AlterTableStatement) ModifySetting(name string, value Expr) *AlterTableStatement {
