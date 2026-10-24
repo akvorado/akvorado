@@ -1365,6 +1365,15 @@ func TestBMP(t *testing.T) {
 		conn2 := dial(t, p)
 		send(t, conn2, "bmp-init.pcap")
 		send(t, conn2, "bmp-l3vpn.pcap")
+		for tries := 200; ; tries-- {
+			gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "prefixes_updated_total")
+			if gotMetrics[`prefixes_updated_total{exporter="127.0.0.1"}`] == "2" {
+				break
+			} else if tries == 0 {
+				t.Fatal("routes from second connection were not processed in time")
+			}
+			time.Sleep(5 * time.Millisecond)
+		}
 		conn1.Close()
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration", "-buffer_size", "-message_queue")
