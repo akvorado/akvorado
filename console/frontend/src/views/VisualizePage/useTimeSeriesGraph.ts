@@ -37,7 +37,7 @@ import {
 } from "echarts/components";
 import type { default as BrushModel } from "echarts/types/src/component/brush/BrushModel.d.ts";
 import VChart from "vue-echarts";
-import { selectedTimezone } from "@/composables/useTimezone";
+import { selectedTimezone } from "@/utils/timezone";
 
 // Register all eCharts components (idempotent)
 use([

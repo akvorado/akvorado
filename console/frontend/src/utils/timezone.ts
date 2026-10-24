@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { computed } from "vue";
 import { useLocalStorage } from "@vueuse/core";
 
 export interface TimezoneOption {
@@ -32,14 +31,6 @@ const buildTimezoneList = (): TimezoneOption[] => {
 
 export const timezones: TimezoneOption[] = buildTimezoneList();
 export const selectedTimezone = useLocalStorage("timezone", "browser");
-
-export const selectedTimezoneItem = computed({
-  get: () =>
-    timezones.find((t) => t.code === selectedTimezone.value) || timezones[0],
-  set: (val: TimezoneOption) => {
-    selectedTimezone.value = val.code;
-  },
-});
 
 // Patch global Date so libraries that rely on local Date methods (ECharts,
 // SugarDate) transparently operate in the user-selected timezone.

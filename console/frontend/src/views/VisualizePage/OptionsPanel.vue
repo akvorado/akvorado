@@ -202,7 +202,11 @@ import {
   default as InputTimeRange,
   type ModelType as InputTimeRangeModelType,
 } from "@/components/InputTimeRange.vue";
-import { timezones, selectedTimezoneItem } from "@/composables/useTimezone";
+import {
+  timezones,
+  selectedTimezone,
+  type TimezoneOption,
+} from "@/utils/timezone";
 import {
   default as InputDimensions,
   type ModelType as InputDimensionsModelType,
@@ -260,6 +264,13 @@ const filter = ref<InputFilterModelType>(null);
 const units = ref<Units>("l3bps");
 const bidirectional = ref(false);
 const previousPeriod = ref(false);
+const selectedTimezoneItem = computed({
+  get: () =>
+    timezones.find((t) => t.code === selectedTimezone.value) || timezones[0],
+  set: (val: TimezoneOption) => {
+    selectedTimezone.value = val.code;
+  },
+});
 
 const submitOptions = (force?: boolean, auto?: boolean) => {
   if (!force && props.loading) {

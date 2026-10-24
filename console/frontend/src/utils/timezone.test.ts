@@ -4,13 +4,9 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { Date as SugarDate } from "sugar-date";
 import { time, number } from "echarts/core";
-import {
-  selectedTimezone,
-  timezones,
-  selectedTimezoneItem,
-} from "./useTimezone";
+import { selectedTimezone, timezones } from "./timezone";
 
-describe("useTimezone composable", () => {
+describe("timezone", () => {
   beforeEach(() => {
     selectedTimezone.value = "browser";
   });
@@ -21,17 +17,6 @@ describe("useTimezone composable", () => {
     expect(timezones[0].code).toBe("browser");
     expect(timezones[0].name).toBe("Browser time");
     expect(timezones[1].code).toBe("UTC");
-  });
-
-  it("updates reactive state when timezone changes", () => {
-    selectedTimezone.value = "UTC";
-    expect(selectedTimezoneItem.value.code).toBe("UTC");
-
-    const nyItem = timezones.find((t) => t.code === "America/New_York");
-    if (nyItem) {
-      selectedTimezoneItem.value = nyItem;
-      expect(selectedTimezone.value).toBe("America/New_York");
-    }
   });
 
   it("patches Date getters, setters, and constructor for UTC and IANA timezones", () => {
