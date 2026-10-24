@@ -37,6 +37,7 @@ import {
 } from "echarts/components";
 import type { default as BrushModel } from "echarts/types/src/component/brush/BrushModel.d.ts";
 import VChart from "vue-echarts";
+import { selectedTimezone } from "@/utils/timezone";
 
 // Register all eCharts components (idempotent)
 use([
@@ -88,7 +89,10 @@ export function useTimeSeriesGraph(
 ) {
   const chartComponent = ref<typeof VChart | null>(null);
 
-  const option = computed((): ECOption => ({ ...commonGraph, ...graph.value }));
+  const option = computed((): ECOption => {
+    void selectedTimezone.value;
+    return { ...commonGraph, ...graph.value };
+  });
 
   // Enable and handle brush
   const isTouchScreen = useMediaQuery("(pointer: coarse)");
