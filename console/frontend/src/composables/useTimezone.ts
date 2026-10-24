@@ -1,116 +1,86 @@
 // SPDX-FileCopyrightText: 2026 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { useStorage } from "@vueuse/core";
 import { computed } from "vue";
-import { Date as SugarDate } from "sugar-date";
+import { useLocalStorage } from "@vueuse/core";
 
-export type TimezoneItem = {
+export interface TimezoneOption {
   id: number;
-  code: string;
   name: string;
+  code: string;
+}
+
+const buildTimezoneList = (): TimezoneOption[] => {
+  const options: TimezoneOption[] = [
+    { id: 1, name: "Browser time", code: "browser" },
+    { id: 2, name: "UTC", code: "UTC" },
+  ];
+
+  try {
+    const supported = Intl.supportedValuesOf("timeZone");
+    let id = 3;
+    for (const tz of supported) {
+      if (tz === "UTC") continue;
+      options.push({ id: id++, name: tz, code: tz });
+    }
+  } catch {
+    // Fallback if supportedValuesOf is unavailable
+  }
+
+  return options;
 };
 
-// User's browser timezone (e.g. "Europe/Paris", "America/New_York")
-export const browserTimezone =
-  typeof Intl !== "undefined" && typeof Intl.DateTimeFormat === "function"
-    ? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
-    : "UTC";
+export const timezones: TimezoneOption[] = buildTimezoneList();
+export const selectedTimezone = useLocalStorage("timezone", "browser");
 
-// Persistent storage for selected timezone (default: "browser")
-export const selectedTimezone = useStorage<string>(
-  "akvorado-timezone",
-  "browser",
-);
-
-export const isBrowser = computed(() => selectedTimezone.value === "browser");
-export const isUTC = computed(() => selectedTimezone.value === "UTC");
-
-// Pre-computed list of timezone options
-export const timezones: TimezoneItem[] = [
-  { id: 1, code: "browser", name: "Browser time" },
-  { id: 2, code: "UTC", name: "UTC" },
-  ...(typeof Intl !== "undefined" &&
-  typeof Intl.supportedValuesOf === "function"
-    ? Intl.supportedValuesOf("timeZone")
-        .filter((tz) => tz !== "UTC")
-        .map((tz, idx) => ({ id: idx + 3, code: tz, name: tz }))
-    : []),
-];
-
-export const selectedTimezoneItem = computed<TimezoneItem>({
+export const selectedTimezoneItem = computed({
   get: () =>
-    timezones.find((tz) => tz.code === selectedTimezone.value) ?? timezones[0],
-  set: (item) => {
-    if (item && item.code) {
-      selectedTimezone.value = item.code;
-    }
+    timezones.find((t) => t.code === selectedTimezone.value) || timezones[0],
+  set: (val: TimezoneOption) => {
+    selectedTimezone.value = val.code;
   },
 });
 
-export const formatTimezoneDateTime = (
-  val: string | number | Date,
-  timeZone?: string,
-): string => {
-  const d = new Date(val);
-  if (isNaN(d.getTime())) return String(val);
+// Patch global Date so libraries that rely on local Date methods (ECharts,
+// SugarDate) transparently operate in the user-selected timezone.
+const OrigDate = globalThis.Date;
+const proto = OrigDate.prototype;
 
-  const tz =
-    timeZone !== undefined
-      ? timeZone === "browser"
-        ? undefined
-        : timeZone
-      : isBrowser.value
-        ? undefined
-        : selectedTimezone.value;
+function getOrigMethod<T>(key: keyof Date): T {
+  return Object.getOwnPropertyDescriptor(proto, key)!.value as T;
+}
 
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: tz,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  }).formatToParts(d);
+const origGetTimezoneOffset =
+  getOrigMethod<(this: Date) => number>("getTimezoneOffset");
+const origToDateString = getOrigMethod<(this: Date) => string>("toDateString");
+const origToTimeString = getOrigMethod<(this: Date) => string>("toTimeString");
+const origToString = getOrigMethod<(this: Date) => string>("toString");
 
-  const map: Record<string, string> = {};
-  for (const p of parts) map[p.type] = p.value;
-  return `${map.year}-${map.month}-${map.day} ${map.hour}:${map.minute}:${map.second}`;
-};
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 
-export const parseTimezoneDate = (str: string, timeZone?: string): Date => {
-  if (!str) return new Date();
-  const trimmed = str.trim();
+const dtfCache = new Map<string, Intl.DateTimeFormat>();
+const offsetCache = new Map<string, number>();
+const scratchDate = new OrigDate(0);
+const calcDate = new OrigDate(0);
 
-  // If already ends with Z or has timezone offset (+/-HH:MM), native Date handles it
-  if (/[zZ]|[+-]\d{2}(:?\d{2})?$/.test(trimmed)) {
-    const d = new Date(trimmed);
-    if (!isNaN(d.getTime())) return d;
-  }
-
-  const m = trimmed.match(
-    /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/,
-  );
-  if (m) {
-    const [, y, mo, d, h = "00", mi = "00", s = "00"] = m;
-    const tz =
-      timeZone !== undefined
-        ? timeZone
-        : isBrowser.value
-          ? "browser"
-          : selectedTimezone.value;
-
-    if (tz === "browser") {
-      return new Date(+y, +mo - 1, +d, +h, +mi, +s);
-    }
-    if (tz === "UTC") {
-      return new Date(Date.UTC(+y, +mo - 1, +d, +h, +mi, +s));
-    }
-
-    const utcGuess = Date.UTC(+y, +mo - 1, +d, +h, +mi, +s);
-    const dtf = new Intl.DateTimeFormat("en-US", {
+function getFormatter(tz: string): Intl.DateTimeFormat {
+  let dtf = dtfCache.get(tz);
+  if (!dtf) {
+    dtf = new Intl.DateTimeFormat("en-US", {
       timeZone: tz,
       year: "numeric",
       month: "numeric",
@@ -120,225 +90,206 @@ export const parseTimezoneDate = (str: string, timeZone?: string): Date => {
       second: "numeric",
       hour12: false,
     });
-    const parts = dtf.formatToParts(new Date(utcGuess));
-    const p: Record<string, string> = {};
-    for (const part of parts) p[part.type] = part.value;
-    const tzAsUtc = Date.UTC(
-      +p.year,
-      +p.month - 1,
-      +p.day,
-      +p.hour === 24 ? 0 : +p.hour,
-      +p.minute,
-      +p.second,
-    );
-    const offset = tzAsUtc - utcGuess;
-    return new Date(utcGuess - offset);
+    dtfCache.set(tz, dtf);
   }
+  return dtf;
+}
 
-  return SugarDate.create(trimmed);
-};
+function getOffsetMs(utcMs: number, tz: string): number {
+  if (tz === "UTC") return 0;
+  // IANA timezone transitions since 1970 occur on 15-minute (900_000 ms) boundaries.
+  const bucket = Math.floor(utcMs / 900_000);
+  const key = `${tz}:${bucket}`;
+  let offset = offsetCache.get(key);
+  if (offset !== undefined) return offset;
 
-export const convertTimezoneString = (
-  str: string,
-  oldTz: string,
-  newTz: string,
-): string => {
-  if (!str) return str;
-  const trimmed = str.trim();
-  if (
-    /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/.test(
-      trimmed,
-    ) ||
-    /[zZ]|[+-]\d{2}(:?\d{2})?$/.test(trimmed)
-  ) {
-    const parsedUtc = parseTimezoneDate(trimmed, oldTz);
-    if (!isNaN(parsedUtc.getTime())) {
-      return formatTimezoneDateTime(parsedUtc, newTz);
-    }
-  }
-  return str; // Keep relative strings like "1 hour ago", "now"
-};
-
-export const formatTimezoneTooltip = (val: string | number): string => {
-  const date = new Date(val);
-  if (isNaN(date.getTime())) return String(val);
-
-  const tz = isBrowser.value ? undefined : selectedTimezone.value;
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: tz,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-    timeZoneName: "short",
-  })
-    .format(date)
-    .replace(",", "");
-};
-
-export const formatTimezoneAxisPointer = (val: string | number): string => {
-  return formatTimezoneDateTime(val);
-};
-
-export const timezoneAxisFormatter = (
-  val: number,
-  _idx?: number,
-  extra?: {
-    time?: {
-      lowerTimeUnit?: string;
-      upperTimeUnit?: string;
-      level?: number;
-    };
-  },
-): string => {
-  if (isBrowser.value || isUTC.value) {
-    return "";
-  }
-  const date = new Date(val);
-  const tz = selectedTimezone.value;
-  const time = extra?.time;
-  if (!time) {
-    return new Intl.DateTimeFormat("en-GB", {
-      timeZone: tz,
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).format(date);
-  }
-
-  const { lowerTimeUnit, upperTimeUnit, level = 0 } = time;
-
-  if (lowerTimeUnit === "millisecond" || lowerTimeUnit === "second") {
-    return new Intl.DateTimeFormat("en-GB", {
-      timeZone: tz,
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    }).format(date);
-  }
-
-  if (lowerTimeUnit === "minute") {
-    const timeParts = new Intl.DateTimeFormat("en-GB", {
-      timeZone: tz,
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).formatToParts(date);
-    const hour = timeParts.find((p) => p.type === "hour")?.value;
-    const minute = timeParts.find((p) => p.type === "minute")?.value;
-    if (
-      (hour === "00" && minute === "00") ||
-      (level > 0 && upperTimeUnit !== "minute")
-    ) {
-      return new Intl.DateTimeFormat("en-GB", {
-        timeZone: tz,
-        month: "short",
-        day: "numeric",
-      }).format(date);
-    }
-    return `${hour}:${minute}`;
-  }
-
-  if (lowerTimeUnit === "hour") {
-    const timeParts = new Intl.DateTimeFormat("en-GB", {
-      timeZone: tz,
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).formatToParts(date);
-    const hour = timeParts.find((p) => p.type === "hour")?.value;
-    const minute = timeParts.find((p) => p.type === "minute")?.value;
-    if (
-      (hour === "00" && minute === "00") ||
-      (level > 0 && upperTimeUnit !== "hour")
-    ) {
-      return new Intl.DateTimeFormat("en-GB", {
-        timeZone: tz,
-        month: "short",
-        day: "numeric",
-      }).format(date);
-    }
-    return `${hour}:${minute}`;
-  }
-
-  if (lowerTimeUnit === "day") {
-    if (level > 0 && upperTimeUnit !== "day") {
-      return new Intl.DateTimeFormat("en-GB", {
-        timeZone: tz,
-        month: "short",
-      }).format(date);
-    }
-    return new Intl.DateTimeFormat("en-GB", {
-      timeZone: tz,
-      day: "numeric",
-    }).format(date);
-  }
-
-  if (lowerTimeUnit === "month") {
-    if (level > 0 && upperTimeUnit !== "month") {
-      return new Intl.DateTimeFormat("en-GB", {
-        timeZone: tz,
-        year: "numeric",
-      }).format(date);
-    }
-    return new Intl.DateTimeFormat("en-GB", {
-      timeZone: tz,
-      month: "short",
-    }).format(date);
-  }
-
-  return new Intl.DateTimeFormat("en-GB", {
-    timeZone: tz,
-    year: "numeric",
-  }).format(date);
-};
-
-export const formatTimezoneSummary = (val: string, refVal?: string): string => {
-  const d = new Date(val);
-  if (isNaN(d.getTime())) return val;
-
-  const tz = isBrowser.value ? undefined : selectedTimezone.value;
-
-  if (refVal) {
-    const refDate = new Date(refVal);
-    if (!isNaN(refDate.getTime())) {
-      const dDay = new Intl.DateTimeFormat("en-GB", {
-        timeZone: tz,
-        year: "numeric",
-        month: "numeric",
-        day: "numeric",
-      }).format(d);
-      const refDay = new Intl.DateTimeFormat("en-GB", {
-        timeZone: tz,
-        year: "numeric",
-        month: "numeric",
-        day: "numeric",
-      }).format(refDate);
-
-      if (dDay === refDay) {
-        return new Intl.DateTimeFormat(undefined, {
-          timeZone: tz,
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hour12: false,
-        }).format(d);
+  const sampleMs = bucket * 900_000;
+  try {
+    const parts = getFormatter(tz).formatToParts(new OrigDate(sampleMs));
+    let y = 0,
+      m = 0,
+      d = 0,
+      h = 0,
+      min = 0,
+      s = 0;
+    for (const p of parts) {
+      switch (p.type) {
+        case "year":
+          y = +p.value;
+          break;
+        case "month":
+          m = +p.value;
+          break;
+        case "day":
+          d = +p.value;
+          break;
+        case "hour":
+          h = +p.value % 24;
+          break;
+        case "minute":
+          min = +p.value;
+          break;
+        case "second":
+          s = +p.value;
+          break;
       }
     }
+    calcDate.setUTCFullYear(y, m - 1, d);
+    calcDate.setUTCHours(h, min, s, 0);
+    offset = calcDate.getTime() - sampleMs;
+  } catch {
+    return 0;
   }
+  if (offsetCache.size > 4096) offsetCache.clear();
+  offsetCache.set(key, offset);
+  return offset;
+}
 
-  return new Intl.DateTimeFormat(undefined, {
-    timeZone: tz,
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  }).format(d);
+function localToUtcMs(localMs: number, tz: string, refUtcMs?: number): number {
+  if (tz === "UTC") return localMs;
+  const offset0 = getOffsetMs(
+    refUtcMs !== undefined && !Number.isNaN(refUtcMs) ? refUtcMs : localMs,
+    tz,
+  );
+  const guess1 = localMs - offset0;
+  const offset1 = getOffsetMs(guess1, tz);
+  if (offset1 === offset0) return guess1;
+  const guess2 = localMs - offset1;
+  const offset2 = getOffsetMs(guess2, tz);
+  if (offset2 === offset1) return guess2;
+  return localMs - Math.min(offset1, offset2);
+}
+
+type UTCGetterKey =
+  | "getUTCFullYear"
+  | "getUTCMonth"
+  | "getUTCDate"
+  | "getUTCDay"
+  | "getUTCHours"
+  | "getUTCMinutes"
+  | "getUTCSeconds"
+  | "getUTCMilliseconds";
+
+function makeGetter(localKey: keyof Date, utcKey: UTCGetterKey) {
+  const origLocal = getOrigMethod<(this: Date) => number>(localKey);
+  return function (this: Date): number {
+    const tz = selectedTimezone.value;
+    if (tz === "browser") return origLocal.call(this);
+    if (tz === "UTC") return this[utcKey]();
+    const ms = this.getTime();
+    if (Number.isNaN(ms)) return Number.NaN;
+    scratchDate.setTime(ms + getOffsetMs(ms, tz));
+    return scratchDate[utcKey]();
+  };
+}
+
+function makeSetter(
+  localKey: keyof Date,
+  utcKey: keyof Date,
+  nanFallbackZero = false,
+) {
+  const origLocal =
+    getOrigMethod<(this: Date, ...args: number[]) => number>(localKey);
+  const origUTC =
+    getOrigMethod<(this: Date, ...args: number[]) => number>(utcKey);
+  return function (this: Date, ...args: number[]): number {
+    const tz = selectedTimezone.value;
+    if (tz === "browser") return origLocal.apply(this, args);
+    if (tz === "UTC") return origUTC.apply(this, args);
+    const ms = this.getTime();
+    if (Number.isNaN(ms)) {
+      if (!nanFallbackZero) return Number.NaN;
+      scratchDate.setTime(0);
+    } else {
+      scratchDate.setTime(ms + getOffsetMs(ms, tz));
+    }
+    const newLocalMs = origUTC.apply(scratchDate, args);
+    if (Number.isNaN(newLocalMs)) {
+      return this.setTime(Number.NaN);
+    }
+    return this.setTime(localToUtcMs(newLocalMs, tz, ms));
+  };
+}
+
+proto.getFullYear = makeGetter("getFullYear", "getUTCFullYear");
+proto.getMonth = makeGetter("getMonth", "getUTCMonth");
+proto.getDate = makeGetter("getDate", "getUTCDate");
+proto.getDay = makeGetter("getDay", "getUTCDay");
+proto.getHours = makeGetter("getHours", "getUTCHours");
+proto.getMinutes = makeGetter("getMinutes", "getUTCMinutes");
+proto.getSeconds = makeGetter("getSeconds", "getUTCSeconds");
+proto.getMilliseconds = makeGetter("getMilliseconds", "getUTCMilliseconds");
+
+proto.getTimezoneOffset = function (this: Date): number {
+  const tz = selectedTimezone.value;
+  if (tz === "browser") return origGetTimezoneOffset.call(this);
+  const ms = this.getTime();
+  if (Number.isNaN(ms)) return Number.NaN;
+  const offsetMin = -getOffsetMs(ms, tz) / 60_000;
+  return offsetMin === 0 ? 0 : offsetMin;
 };
+
+proto.setFullYear = makeSetter("setFullYear", "setUTCFullYear", true);
+proto.setMonth = makeSetter("setMonth", "setUTCMonth");
+proto.setDate = makeSetter("setDate", "setUTCDate");
+proto.setHours = makeSetter("setHours", "setUTCHours");
+proto.setMinutes = makeSetter("setMinutes", "setUTCMinutes");
+proto.setSeconds = makeSetter("setSeconds", "setUTCSeconds");
+proto.setMilliseconds = makeSetter("setMilliseconds", "setUTCMilliseconds");
+
+proto.toDateString = function (this: Date): string {
+  const tz = selectedTimezone.value;
+  if (tz === "browser") return origToDateString.call(this);
+  const ms = this.getTime();
+  if (Number.isNaN(ms)) return "Invalid Date";
+  scratchDate.setTime(ms + getOffsetMs(ms, tz));
+  const dayName = DAYS[scratchDate.getUTCDay()];
+  const monthName = MONTHS[scratchDate.getUTCMonth()];
+  const dateStr = String(scratchDate.getUTCDate()).padStart(2, "0");
+  const yearStr = String(scratchDate.getUTCFullYear()).padStart(4, "0");
+  return `${dayName} ${monthName} ${dateStr} ${yearStr}`;
+};
+
+proto.toTimeString = function (this: Date): string {
+  const tz = selectedTimezone.value;
+  if (tz === "browser") return origToTimeString.call(this);
+  const ms = this.getTime();
+  if (Number.isNaN(ms)) return "Invalid Date";
+  const offsetMs = getOffsetMs(ms, tz);
+  scratchDate.setTime(ms + offsetMs);
+  const hh = String(scratchDate.getUTCHours()).padStart(2, "0");
+  const mm = String(scratchDate.getUTCMinutes()).padStart(2, "0");
+  const ss = String(scratchDate.getUTCSeconds()).padStart(2, "0");
+  const offsetMin = Math.round(offsetMs / 60_000);
+  const sign = offsetMin >= 0 ? "+" : "-";
+  const absMin = Math.abs(offsetMin);
+  const offH = String(Math.floor(absMin / 60)).padStart(2, "0");
+  const offM = String(absMin % 60).padStart(2, "0");
+  return `${hh}:${mm}:${ss} GMT${sign}${offH}${offM}`;
+};
+
+proto.toString = function (this: Date): string {
+  const tz = selectedTimezone.value;
+  if (tz === "browser") return origToString.call(this);
+  const ms = this.getTime();
+  if (Number.isNaN(ms)) return "Invalid Date";
+  return `${this.toDateString()} ${this.toTimeString()}`;
+};
+
+globalThis.Date = new Proxy(OrigDate, {
+  construct(target, args: unknown[], newTarget) {
+    const tz = selectedTimezone.value;
+    if (tz !== "browser" && args.length >= 2) {
+      const [y, m, ...rest] = args as [number, number, ...number[]];
+      const localMs = OrigDate.UTC(y, m, ...rest);
+      const utcMs = Number.isNaN(localMs)
+        ? Number.NaN
+        : localToUtcMs(localMs, tz);
+      return Reflect.construct(target, [utcMs], newTarget);
+    }
+    return Reflect.construct(target, args, newTarget);
+  },
+  apply() {
+    return new OrigDate().toString();
+  },
+});

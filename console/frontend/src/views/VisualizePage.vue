@@ -67,7 +67,6 @@ import type {
   GraphLineHandlerResult,
 } from "./VisualizePage";
 import { isEqual, omit, pick } from "lodash-es";
-import { formatTimezoneDateTime } from "@/composables/useTimezone";
 
 const props = defineProps<{ routeState?: string }>();
 
@@ -81,8 +80,8 @@ const updateTimeRange = ([start, end]: [Date, Date]) => {
     ...state.value,
     start: start.toISOString(),
     end: end.toISOString(),
-    humanStart: formatTimezoneDateTime(start),
-    humanEnd: formatTimezoneDateTime(end),
+    humanStart: start.toISOString(),
+    humanEnd: end.toISOString(),
   };
 };
 

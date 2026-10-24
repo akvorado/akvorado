@@ -58,12 +58,6 @@ import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/vue/solid";
 import InputString from "@/components/InputString.vue";
 import InputListBox from "@/components/InputListBox.vue";
 import { isEqual } from "lodash-es";
-import {
-  selectedTimezone,
-  formatTimezoneDateTime,
-  parseTimezoneDate,
-  convertTimezoneString,
-} from "@/composables/useTimezone";
 
 const props = defineProps<{
   modelValue: ModelType;
@@ -76,8 +70,8 @@ const emit = defineEmits<{
 const startTime = ref("");
 const endTime = ref("");
 const parsedTimes = computed(() => ({
-  start: parseTimezoneDate(startTime.value),
-  end: parseTimezoneDate(endTime.value),
+  start: SugarDate.create(startTime.value),
+  end: SugarDate.create(endTime.value),
 }));
 const startTimeError = computed(() =>
   isNaN(parsedTimes.value.start.valueOf()) ? "Invalid date" : "",
@@ -97,7 +91,8 @@ const hasErrors = computed(
 const shiftButtonClass =
   "cursor-pointer text-gray-400 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-gray-400 dark:hover:text-gray-200 dark:disabled:hover:text-gray-400";
 
-const formatDate = (date: Date) => formatTimezoneDateTime(date);
+const formatDate = (date: Date) =>
+  SugarDate(date).format("{yyyy}-{MM}-{dd} {HH}:{mm}:{ss}").raw;
 
 // Move both ends of the time range by its own duration. A negative direction
 // moves to the past, a positive one to the future.
@@ -192,26 +187,12 @@ watch(selectedPreset, (preset) => {
   }
 });
 
-const normalizeTimeString = (str: string) => {
-  const trimmed = str.trim();
-  if (
-    /[zZ]|[+-]\d{2}(:?\d{2})?$/.test(trimmed) ||
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(trimmed)
-  ) {
-    const d = parseTimezoneDate(trimmed);
-    if (!isNaN(d.getTime())) {
-      return formatTimezoneDateTime(d);
-    }
-  }
-  return str;
-};
-
 watch(
   () => props.modelValue,
   (m) => {
     if (m) {
-      startTime.value = normalizeTimeString(m.start);
-      endTime.value = normalizeTimeString(m.end);
+      startTime.value = m.start;
+      endTime.value = m.end;
     }
   },
   { immediate: true, deep: true },
@@ -238,16 +219,6 @@ watch(
   },
   { immediate: true },
 );
-
-watch(selectedTimezone, (newTz, oldTz) => {
-  if (!oldTz || oldTz === newTz) return;
-  const newStart = convertTimezoneString(startTime.value, oldTz, newTz);
-  const newEnd = convertTimezoneString(endTime.value, oldTz, newTz);
-  if (newStart !== startTime.value || newEnd !== endTime.value) {
-    startTime.value = newStart;
-    endTime.value = newEnd;
-  }
-});
 </script>
 
 <script lang="ts">
