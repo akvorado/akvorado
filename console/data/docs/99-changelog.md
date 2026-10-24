@@ -12,13 +12,39 @@ identified with a specific icon:
 
 ## Unreleased
 
+- ✨ *inlet*: add support for IPFIX over TCP and SCTP
+- ✨ *outlet*: add `SetName()` to exporter classifiers to rename exporters
+- ✨ *console*: add buttons to reverse the direction of dimensions and filter
+- ✨ *outlet*: add support for SrcOuterAddr, DstOuterAddr and IPOuterTos when decapsulating
+- ✨ *orchestrator*: keep data forever when the TTL of a resolution is 0
+- 🩹 *outlet*: fix NetFlow and IPFIX flow start timestamps (with `netflow-first-switched`)
+- 🩹 *outlet*: decode 802.1ad (QinQ) VLAN tags in sampled headers
+- 🩹 *config*: reject numbers for settings expecting a named value
+- 🩹 *orchestrator*: keep watching configuration files after an error
+- 🩹 *outlet*: fix SNMPv3 polling of Cisco NX-OS when the engine ID is cached
+- 🌱 *outlet*: add support for random n-out-of-N sampling in IPFIX flows
+- 🌱 *docker*: update Valkey to 9.1 (not mandatory)
+
+## 2026.10.0 - 2026-10-03
+
+This release contains two security fixes. Most users don't expose the IPFIX or
+BMP endpoints on an untrusted network, but if you do, be sure to upgrade!
+
+- 🔒 *outlet*: fix memory exhaustion when decoding NetFlow or IPFIX records of
+  zero size (reported by [Pavel Lavrukhin](https://github.com/dantte-lp))
+- 🔒 *outlet*: fix memory exhaustion when receiving BMP messages with an invalid
+  length (reported by [Sobhan Hosseinpour](https://github.com/0xBlu3Guy))
+- 💥 *outlet*: do not store 0.0.0.0 as the nexthop
+- 💥 *docker*: update ClickHouse to 26.8 (not mandatory, requires x86-64-v3 on AMD64)
+- 🩹 *outlet*: keep decoding a NetFlow or IPFIX packet after a data set with an unknown template
+- 🩹 *outlet*: fix inverted BMP message queue full/not full metrics
 - 🩹 *console*: complete custom dictionary values like the other string columns
 - 🌱 *console*: apply a filter with Ctrl-Enter even when its validation is still running
-- 🌱 *console*: remove the trailing when closing a list of values
+- 🌱 *console*: remove the trailing comma when closing a list of values
 - 🌱 *outlet*: ClickHouse server selection strategy is configurable through
   `outlet.clickhouse.server-selection`: `sticky-random` (the default) or
   `round-robin`.
-- 🌱 *docker*: update ClickHouse to 26.8 (not mandatory)
+- 🌱 *outlet*: faster network attribute lookups for IPv4 addresses
 
 ## 2026.8.1 - 2026-08-29
 
@@ -367,7 +393,7 @@ tarball". This new tarball does not update the configuration files or the
 - 🌱 *console*: display TCP and UDP port names if known
 - 🌱 *orchestrator*: add ClickHouse version check for INTERPOLATE bug
 - 🌱 *docker*: add monitoring stack with Prometheus and Grafana (work in progress, not enabled by default, check `.env`)
-- 🌱 *docker*: update to Traefik 3.0 (not mandatory)
+- 🌱 *docker*: update Traefik to 3.0 (not mandatory)
 - 🌱 *docker*: update ClickHouse to 24.3 (not mandatory)
 - 🌱 *docker*: switch from Redis to Valkey (not mandatory)
 - 🌱 *docker*: build IPinfo updater image to make it available for non-x86

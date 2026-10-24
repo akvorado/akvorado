@@ -92,6 +92,25 @@ Classify("europe")`,
 			ExporterInfo:           exporterInfo{"127.0.0.1", "exporter"},
 			ExpectedClassification: exporterClassification{},
 		}, {
+			Description:            "set name",
+			Program:                `SetName(Format("%s-x", Exporter.Name))`,
+			ExporterInfo:           exporterInfo{"127.0.0.1", "FRA_core1"},
+			ExpectedClassification: exporterClassification{Name: "FRA_core1-x"},
+		}, {
+			Description:            "set name only once",
+			Program:                `SetName("first") && SetName("second")`,
+			ExpectedClassification: exporterClassification{Name: "first"},
+		}, {
+			Description:            "set name with stripped suffix",
+			Program:                `Exporter.Name matches "_RE\\d+$" && SetName(Exporter.Name[:lastIndexOf(Exporter.Name, "_RE")])`,
+			ExporterInfo:           exporterInfo{"127.0.0.1", "FRA-core1_RE1"},
+			ExpectedClassification: exporterClassification{Name: "FRA-core1"},
+		}, {
+			Description:            "set name with stripped suffix, no suffix",
+			Program:                `Exporter.Name matches "_RE\\d+$" && SetName(Exporter.Name[:lastIndexOf(Exporter.Name, "_RE")])`,
+			ExporterInfo:           exporterInfo{"127.0.0.1", "FRA-core1"},
+			ExpectedClassification: exporterClassification{},
+		}, {
 			Description:  "faulty regex",
 			Program:      `ClassifyRegex(Exporter.Name, "^(ebp+.r", "europe-$1")`,
 			ExporterInfo: exporterInfo{"127.0.0.1", "exporter"},

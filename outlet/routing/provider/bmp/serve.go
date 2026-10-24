@@ -15,6 +15,10 @@ import (
 	"github.com/osrg/gobgp/v4/pkg/packet/bmp"
 )
 
+// maxBMPMessageSize is the maximum accepted size for a BMP message. The
+// largest BMP messages hold two BGP messages of at most 65535 bytes each.
+const maxBMPMessageSize = 1 << 20
+
 // bmpMessage is a parsed BMP message header with its raw body bytes,
 // passed from the IO goroutine to the processing goroutine.
 type bmpMessage struct {
@@ -109,6 +113,11 @@ func (p *Provider) serveConnection(conn *net.TCPConn, exporter netip.AddrPort, e
 			p.metrics.errors.WithLabelValues(exporterStr, "cannot decode BMP header").Inc()
 			return nil
 		}
+		if msg.Header.Length < bmp.BMP_HEADER_SIZE || msg.Header.Length > maxBMPMessageSize {
+			logger.Error().Uint32("length", msg.Header.Length).Msg("invalid BMP message length")
+			p.metrics.errors.WithLabelValues(exporterStr, "invalid BMP message length").Inc()
+			return nil
+		}
 		switch msg.Header.Type {
 		case bmp.BMP_MSG_ROUTE_MONITORING:
 			msg.Body = &bmp.BMPRouteMonitoring{}
@@ -161,14 +170,14 @@ func (p *Provider) serveConnection(conn *net.TCPConn, exporter netip.AddrPort, e
 
 		select {
 		case ch <- bmpMessage{msg: msg, body: body}:
-			metricsFull.Inc()
+			metricsNotFull.Inc()
 		case <-processingDone:
 			// Processsing of messages has exited unexpectedly.
 			return nil
 		case <-p.t.Dying():
 			return nil
 		default:
-			metricsNotFull.Inc()
+			metricsFull.Inc()
 			select {
 			case ch <- bmpMessage{msg: msg, body: body}:
 			case <-processingDone:

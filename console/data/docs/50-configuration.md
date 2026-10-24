@@ -124,6 +124,28 @@ flow:
       workers: 3
 ```
 
+For the TCP input, only `netflow` is supported and it only accepts the `listen`
+key:
+
+```yaml
+flow:
+  inputs:
+    - type: tcp
+      decoder: netflow
+      listen: :4739
+```
+
+For the SCTP input, only the `listen` key is accepted. It is only available on
+Linux and supports PR-SCTP:
+
+```yaml
+flow:
+  inputs:
+    - type: sctp
+      decoder: netflow
+      listen: :4739
+```
+
 Use the `file` input for testing only. It has a `paths` key to define the files
 to read. These files are continuously added to the processing pipeline. For
 example:
@@ -754,8 +776,13 @@ make a decision:
 - `ClassifySite()` to classify the exporter to a site (`paris`, `berlin`, `newyork`)
 - `ClassifyRegion()` to classify the exporter to a region (`france`, `italy`, `caraibes`)
 - `ClassifyTenant()` to classify the exporter to a tenant (`team-a`, `team-b`)
+- `SetName()` to change the exporter name
 - `Reject()` to reject the flow
 - `Format()` to format a string: `Format("name: %s", Exporter.Name)`
+
+The name set by `SetName()` is not normalized, and `Exporter.Name` keeps the
+original name in every rule. Once an exporter is classified for all criteria,
+remaining rules are skipped, so put `SetName()` first.
 
 Here is an example, assuming routers are named `th2-ncs55a1-1.example.fr` or
 `milan-ncs5k8-2.example.it`:
@@ -1228,7 +1255,7 @@ default ClickHouse table settings (`index_granularity = 8192` and
 `ttl_only_drop_parts = 1`). This is useful for configuring a custom
 `storage_policy`, for example.
 
-Here is the default configuration:
+Here is the default configuration, featuring a 1-year retention of data:
 
 ```yaml
 resolutions:
@@ -1262,12 +1289,34 @@ resolutions:
       storage_policy: cold_hdd
 ```
 
+A `ttl` of 0 keeps the data forever. To never expire the 1-hour resolution:
+
+```yaml
+resolutions:
+  - interval: 0
+    ttl: 360h
+  - interval: 1m
+    ttl: 168h
+  - interval: 5m
+    ttl: 2160h
+  - interval: 1h
+    ttl: 0
+```
+
 If you want to tweak the values, start from the default configuration. Most of
 the disk space is taken by the main table (`interval: 0`) and you can reduce its
 TTL if it's too big for your usage. The data is not expired immediately. Check
 the [operational documentation](13-operating.md#space-usage) for information on
 how to check disk usage. If you remove an existing interval, it is not removed
 from the ClickHouse database and will continue to be populated.
+
+> [!WARNING]
+> The size of the partitions of a table is computed from its TTL when
+> the table is created and cannot be changed later. Changing the TTL of an
+> existing table keeps the old partition size. With a much longer TTL, the table
+> gets many small partitions, which slows down ClickHouse. With a much shorter
+> TTL, data is kept longer than the TTL, as a partition is only removed once all
+> its data has expired.
 
 It is mandatory to specify a configuration for `interval: 0`.
 

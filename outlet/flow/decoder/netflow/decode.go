@@ -33,6 +33,15 @@ const (
 	directionReverse
 )
 
+// https://www.iana.org/assignments/psamp-parameters
+const (
+	psampReserved             = 0
+	psampSystematicCountBased = 1
+	psampSystematicTimeBased  = 2
+	psampRandomNOutOfN        = 3 // https://www.rfc-editor.org/info/rfc5476#section-6.5.2.3
+	psampUniformProbabilistic = 4
+)
+
 const juniperPEN = 2636
 
 func (nd *Decoder) decodeNFv5(packet *netflowlegacy.PacketNetFlowV5, ts, sysUptime uint64, options decoder.Options, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
@@ -58,7 +67,7 @@ func (nd *Decoder) decodeNFv5(packet *netflowlegacy.PacketNetFlowV5, ts, sysUpti
 			bf.AppendUint(schema.ColumnTCPFlags, uint64(record.TCPFlags))
 		}
 		if options.TimestampSource == pb.RawFlow_TS_NETFLOW_FIRST_SWITCHED {
-			bf.TimeReceived = uint32(ts - sysUptime + uint64(record.First))
+			bf.TimeReceived = uptimeToUnix(ts, sysUptime, uint64(record.First))
 		}
 		if bf.SamplingRate == 0 {
 			bf.SamplingRate = 1
@@ -77,6 +86,9 @@ func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets 
 					samplingRate                uint32
 					samplerID                   uint64
 					packetInterval, packetSpace uint32
+					selectorAlgorithm           uint16
+					samplingSize                uint32
+					samplingPopulation          uint32
 				)
 				for _, field := range record.OptionsValues {
 					v, ok := field.Value.([]byte)
@@ -92,10 +104,26 @@ func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets 
 						packetInterval = uint32(decodeUNumber(v))
 					case netflow.IPFIX_FIELD_samplingPacketSpace:
 						packetSpace = uint32(decodeUNumber(v))
+					case netflow.IPFIX_FIELD_selectorAlgorithm:
+						selectorAlgorithm = uint16(decodeUNumber(v))
+					case netflow.IPFIX_FIELD_samplingSize:
+						samplingSize = uint32(decodeUNumber(v))
+					case netflow.IPFIX_FIELD_samplingPopulation:
+						samplingPopulation = uint32(decodeUNumber(v))
 					}
 				}
-				if packetInterval > 0 {
-					samplingRate = (packetInterval + packetSpace) / packetInterval
+				switch selectorAlgorithm {
+				// In case the algorithm is not defined and packetInterval is present
+				case psampReserved, psampSystematicCountBased:
+					if packetInterval != 0 {
+						samplingRate = (packetInterval + packetSpace) / packetInterval
+					}
+				case psampRandomNOutOfN:
+					if samplingSize != 0 {
+						samplingRate = samplingPopulation / samplingSize
+					}
+				default:
+					nd.metrics.errors.WithLabelValues(exporter, "unsupported sampling algorithm").Inc()
 				}
 				if samplingRate > 0 {
 					tao.SetSamplingRate(version, obsDomainID, samplerID, samplingRate)
@@ -123,6 +151,10 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 		var proto, icmpType, icmpCode uint8
 		var foundIcmpTypeCode bool
 		var decapOK bool
+		// firstSwitched (flowStartSysUpTime in IPFIX) is converted after the
+		// loop, as IPFIX needs systemInitTimeMilliseconds, which may come later.
+		var firstSwitched, systemInit uint64
+		var hasFirstSwitched bool
 		mplsLabels := make([]uint32, 0, 5)
 		for _, field := range fields {
 			v, ok := field.Value.([]byte)
@@ -212,7 +244,9 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 			case netflow.IPFIX_FIELD_destinationIPv4PrefixLength, netflow.IPFIX_FIELD_destinationIPv6PrefixLength:
 				bf.DstNetMask = uint8(decodeUNumber(v))
 			case netflow.IPFIX_FIELD_ipNextHopIPv4Address, netflow.IPFIX_FIELD_bgpNextHopIPv4Address, netflow.IPFIX_FIELD_ipNextHopIPv6Address, netflow.IPFIX_FIELD_bgpNextHopIPv6Address:
-				bf.NextHop = decoder.DecodeIP(v)
+				if !isAllZeroIP(v) {
+					bf.NextHop = decoder.DecodeIP(v)
+				}
 
 			// L4
 			case netflow.IPFIX_FIELD_sourceTransportPort:
@@ -280,15 +314,15 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 				if options.TimestampSource == pb.RawFlow_TS_NETFLOW_FIRST_SWITCHED {
 					switch field.Type {
 					case netflow.NFV9_FIELD_FIRST_SWITCHED:
-						bf.TimeReceived = uint32(ts - sysUptime + decodeUNumber(v))
+						firstSwitched, hasFirstSwitched = decodeUNumber(v), true
+					case netflow.IPFIX_FIELD_systemInitTimeMilliseconds:
+						systemInit = decodeUNumber(v)
 					case netflow.IPFIX_FIELD_flowStartSeconds:
 						bf.TimeReceived = uint32(decodeUNumber(v))
 					case netflow.IPFIX_FIELD_flowStartMilliseconds:
 						bf.TimeReceived = uint32(decodeUNumber(v) / 1000)
-					case netflow.IPFIX_FIELD_flowStartMicroseconds:
-						bf.TimeReceived = uint32(decodeUNumber(v) / 1_000_000)
-					case netflow.IPFIX_FIELD_flowStartNanoseconds:
-						bf.TimeReceived = uint32(ts + decodeUNumber(v)/1_000_000_000)
+					case netflow.IPFIX_FIELD_flowStartMicroseconds, netflow.IPFIX_FIELD_flowStartNanoseconds:
+						bf.TimeReceived = ntpToUnix(decodeUNumber(v))
 					}
 				}
 
@@ -334,7 +368,9 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 					case netflow.IPFIX_FIELD_flowLabelIPv6:
 						bf.AppendUint(schema.ColumnIPv6FlowLabel, decodeUNumber(v))
 					case netflow.IPFIX_FIELD_tcpControlBits:
-						bf.AppendUint(schema.ColumnTCPFlags, decodeUNumber(v))
+						// The 4 most significant bits encode the TCP data
+						// offset and must be ignored (RFC 9565).
+						bf.AppendUint(schema.ColumnTCPFlags, decodeUNumber(v)&0x0fff)
 					case netflow.IPFIX_FIELD_fragmentIdentification:
 						bf.AppendUint(schema.ColumnIPFragmentID, decodeUNumber(v))
 					case netflow.IPFIX_FIELD_fragmentOffset:
@@ -377,6 +413,15 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 			} else {
 				bf.AppendUint(schema.ColumnICMPv6Type, uint64(icmpType))
 				bf.AppendUint(schema.ColumnICMPv6Code, uint64(icmpCode))
+			}
+		}
+		if hasFirstSwitched {
+			if version == 9 {
+				bf.TimeReceived = uptimeToUnix(ts, sysUptime, firstSwitched)
+			} else if systemInit > 0 {
+				// IPFIX has no uptime in its header: flowStartSysUpTime is
+				// relative to systemInitTimeMilliseconds.
+				bf.TimeReceived = uint32((systemInit + firstSwitched) / 1000)
 			}
 		}
 		bf.AppendUint(schema.ColumnEType, uint64(etype))
@@ -428,6 +473,26 @@ func decodeUNumber(b []byte) uint64 {
 		return binary.BigEndian.Uint64(b)
 	}
 	return 0
+}
+
+// uptimeToUnix converts a timestamp expressed as a system uptime in
+// milliseconds (like FIRST_SWITCHED) to a Unix timestamp in seconds, using the
+// export time in seconds and the system uptime in milliseconds from the packet
+// header. The uptime is a 32-bit counter which may wrap.
+func uptimeToUnix(exportSecs, sysUptime, uptime uint64) uint32 {
+	elapsed := uint64(uint32(sysUptime) - uint32(uptime))
+	return uint32((exportSecs*1000 - elapsed) / 1000)
+}
+
+// ntpEpochOffset is the number of seconds between the NTP epoch (1900) and the
+// Unix epoch (1970).
+const ntpEpochOffset = 2_208_988_800
+
+// ntpToUnix converts an IPFIX dateTimeMicroseconds or dateTimeNanoseconds,
+// encoded as an NTP timestamp (RFC 7011, section 6.1.9 and 6.1.10), to a Unix
+// timestamp in seconds.
+func ntpToUnix(ntp uint64) uint32 {
+	return uint32((ntp >> 32) - ntpEpochOffset)
 }
 
 var (

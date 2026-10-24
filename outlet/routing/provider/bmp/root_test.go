@@ -4,9 +4,12 @@
 package bmp
 
 import (
+	"encoding/binary"
+	"errors"
 	"fmt"
 	"net"
 	"net/netip"
+	"os"
 	"path"
 	"slices"
 	"strconv"
@@ -18,6 +21,7 @@ import (
 	"akvorado/outlet/routing/provider"
 
 	"github.com/osrg/gobgp/v4/pkg/packet/bgp"
+	"github.com/osrg/gobgp/v4/pkg/packet/bmp"
 )
 
 func TestBMP(t *testing.T) {
@@ -176,6 +180,38 @@ func TestBMP(t *testing.T) {
 			break
 		}
 	})
+
+	for _, length := range []uint32{0, 5, maxBMPMessageSize + 1, 0xffffffff} {
+		t.Run(fmt.Sprintf("invalid length %d", length), func(t *testing.T) {
+			r := reporter.NewMock(t)
+			p, _ := NewMock(t, r, DefaultConfiguration())
+			helpers.StartStop(t, p)
+			conn := dial(t, p)
+
+			header := []byte{3, 0, 0, 0, 0, bmp.BMP_MSG_INITIATION}
+			binary.BigEndian.PutUint32(header[1:5], length)
+			if _, err := conn.Write(header); err != nil {
+				t.Fatalf("Write() error:\n%+v", err)
+			}
+
+			// The server should close the connection.
+			conn.SetReadDeadline(time.Now().Add(time.Second))
+			_, err := conn.Read(make([]byte, 1))
+			if err == nil {
+				t.Fatal("Read() did not error while connection should be closed")
+			} else if errors.Is(err, os.ErrDeadlineExceeded) {
+				t.Fatalf("Read() error:\n%+v", err)
+			}
+
+			gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "errors_total")
+			expectedMetrics := map[string]string{
+				`errors_total{error="invalid BMP message length",exporter="127.0.0.1"}`: "1",
+			}
+			if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+				t.Errorf("Metrics (-got, +want):\n%s", diff)
+			}
+		})
+	}
 
 	t.Run("init, peers up, eor", func(t *testing.T) {
 		r := reporter.NewMock(t)
@@ -781,6 +817,70 @@ func TestBMP(t *testing.T) {
 			netip.MustParseAddr("192.0.2.9"): {
 				"[ipv4-unicast] 192.0.2.8/31 via 192.0.2.9 65500:108/0 65019 [65019] [] []",
 				"[ipv4-unicast] 198.51.100.0/29 via 192.0.2.9 65500:108/0 64476 [65019 65019 64476] [] []",
+			},
+		}
+		gotRIB := dumpRIB(t, p)
+		if diff := helpers.Diff(gotRIB, expectedRIB); diff != "" {
+			t.Errorf("RIB (-got, +want):\n%s", diff)
+		}
+	})
+
+	t.Run("init, loc-rib peer", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		config := DefaultConfiguration()
+		p, _ := NewMock(t, r, config)
+		helpers.StartStop(t, p)
+		conn := dial(t, p)
+
+		send(t, conn, "bmp-locrib.pcap")
+		time.Sleep(20 * time.Millisecond)
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_",
+			"-locked_duration", "-buffer_size", "-message_queue")
+		expectedMetrics := map[string]string{
+			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:             "1",
+			`received_messages_total{exporter="127.0.0.1",type="peer-down-notification"}`: "0",
+			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`:   "1",
+			`received_messages_total{exporter="127.0.0.1",type="route-mirroring"}`:        "0",
+			`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`:       "5",
+			`received_messages_total{exporter="127.0.0.1",type="statistics-report"}`:      "0",
+			`received_messages_total{exporter="127.0.0.1",type="termination"}`:            "0",
+			`received_messages_total{exporter="127.0.0.1",type="unknown"}`:                "0",
+			`closed_connections_total{exporter="127.0.0.1"}`:                              "0",
+			`opened_connections_total{exporter="127.0.0.1"}`:                              "1",
+			`peers{exporter="127.0.0.1"}`:                                                 "1",
+			`routes{exporter="127.0.0.1"}`:                                                "5",
+			`prefixes_added_total{exporter="127.0.0.1"}`:                                  "4",
+			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "0",
+			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "1",
+		}
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+			t.Errorf("Metrics (-got, +want):\n%s", diff)
+		}
+
+		// LOC RIB always use ADD-PATH. The pcap is from GoBGP using these paths
+		// inserted into the global RIB (v4Path is a small helper that also adds
+		// a constant set of communities):
+		//
+		// return []*apiutil.Path{
+		// 	v4Path("198.51.100.0/25", "192.0.2.1", "192.0.2.1", 65011,
+		// 		[]uint32{65011, 174, 64476}),
+		// 	v4Path("198.51.100.0/25", "192.0.2.5", "192.0.2.5", 65015,
+		// 		[]uint32{65015, 3356, 64476}),
+		// 	v4Path("198.51.100.128/25", "192.0.2.1", "192.0.2.1", 65011,
+		// 		[]uint32{65011, 174, 29447, 396919}),
+		// 	v6Path("2001:db8:1::/64", "2001:db8::3", "2001:db8::3", 65013,
+		// 		[]uint32{65013, 174, 174, 174}),
+		// 	v6Path("2001:db8:2::/64", "2001:db8::3", "2001:db8::3", 65013,
+		// 		[]uint32{65013, 1299, 12322}),
+		// }
+
+		expectedRIB := map[netip.Addr][]string{
+			{}: {
+				"[ipv4-unicast] 198.51.100.0/25 via 192.0.2.1 0:0/1 64476 [65011 174 64476] [4245356545 4245356546] [{65000 300 4}]",
+				"[ipv4-unicast] 198.51.100.0/25 via 192.0.2.5 0:0/2 64476 [65015 3356 64476] [4245356545 4245356546] [{65000 300 4}]",
+				"[ipv4-unicast] 198.51.100.128/25 via 192.0.2.1 0:0/1 396919 [65011 174 29447 396919] [4245356545 4245356546] [{65000 300 4}]",
+				"[ipv6-unicast] 2001:db8:1::/64 via 2001:db8::3 0:0/1 174 [65013 174 174 174] [4245356545 4245356546] [{65000 300 4}]",
+				"[ipv6-unicast] 2001:db8:2::/64 via 2001:db8::3 0:0/1 12322 [65013 1299 12322] [4245356545 4245356546] [{65000 300 4}]",
 			},
 		}
 		gotRIB := dumpRIB(t, p)

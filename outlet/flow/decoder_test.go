@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"testing"
 	"time"
 
@@ -46,81 +47,19 @@ func TestFlowDecode(t *testing.T) {
 
 	// Test NetFlow decoding
 	t.Run("netflow", func(t *testing.T) {
-		// Load template first
-		templateData := helpers.ReadPcapL4(t, path.Join(base, "options-template.pcap"))
-		templateRawFlow := &pb.RawFlow{
-			TimeReceived:     uint64(time.Now().UnixNano()),
-			Payload:          templateData,
-			SourceAddress:    net.ParseIP("127.0.0.1").To16(),
-			UseSourceAddress: false,
-			Decoder:          pb.RawFlow_DECODER_NETFLOW,
-			TimestampSource:  pb.RawFlow_TS_INPUT,
-		}
-
-		// Decode template (should return empty slice for templates)
-		err := c.Decode(templateRawFlow, bf, finalize)
-		if err != nil {
-			t.Fatalf("Decode() template error:\n%+v", err)
-		}
-		if len(got) != 0 {
-			t.Logf("Template decode returned %d flows (expected 0)", len(got))
-		}
-
-		// Load options data
-		optionsData := helpers.ReadPcapL4(t, path.Join(base, "options-data.pcap"))
-		optionsRawFlow := &pb.RawFlow{
-			TimeReceived:     uint64(time.Now().UnixNano()),
-			Payload:          optionsData,
-			SourceAddress:    net.ParseIP("127.0.0.1").To16(),
-			UseSourceAddress: false,
-			Decoder:          pb.RawFlow_DECODER_NETFLOW,
-			TimestampSource:  pb.RawFlow_TS_INPUT,
-		}
-
-		// Decode options data
-		err = c.Decode(optionsRawFlow, bf, finalize)
-		if err != nil {
-			t.Fatalf("Decode() options data error:\n%+v", err)
-		}
-		if len(got) != 0 {
-			t.Logf("Options data decode returned %d flows (expected 0)", len(got))
-		}
-
-		// Load template for actual data
-		dataTemplateData := helpers.ReadPcapL4(t, path.Join(base, "template.pcap"))
-		dataTemplateRawFlow := &pb.RawFlow{
-			TimeReceived:     uint64(time.Now().UnixNano()),
-			Payload:          dataTemplateData,
-			SourceAddress:    net.ParseIP("127.0.0.1").To16(),
-			UseSourceAddress: false,
-			Decoder:          pb.RawFlow_DECODER_NETFLOW,
-			TimestampSource:  pb.RawFlow_TS_INPUT,
-		}
-
-		// Decode data template
-		err = c.Decode(dataTemplateRawFlow, bf, finalize)
-		if err != nil {
-			t.Fatalf("Decode() data template error:\n%+v", err)
-		}
-		if len(got) != 0 {
-			t.Logf("Data template decode returned %d flows (expected 0)", len(got))
-		}
-
-		// Load actual flow data
-		flowData := helpers.ReadPcapL4(t, path.Join(base, "data.pcap"))
-		flowRawFlow := &pb.RawFlow{
-			TimeReceived:     uint64(time.Now().UnixNano()),
-			Payload:          flowData,
-			SourceAddress:    net.ParseIP("127.0.0.1").To16(),
-			UseSourceAddress: false,
-			Decoder:          pb.RawFlow_DECODER_NETFLOW,
-			TimestampSource:  pb.RawFlow_TS_INPUT,
-		}
-
-		// Decode actual flow data
-		err = c.Decode(flowRawFlow, bf, finalize)
-		if err != nil {
-			t.Fatalf("Decode() flow data error:\n%+v", err)
+		var flowRawFlow *pb.RawFlow
+		for data := range helpers.ReadManyPcapL4(t, path.Join(base, "nfv9.pcap")) {
+			flowRawFlow = &pb.RawFlow{
+				TimeReceived:     uint64(time.Now().UnixNano()),
+				Payload:          data,
+				SourceAddress:    net.ParseIP("127.0.0.1").To16(),
+				UseSourceAddress: false,
+				Decoder:          pb.RawFlow_DECODER_NETFLOW,
+				TimestampSource:  pb.RawFlow_TS_INPUT,
+			}
+			if err := c.Decode(flowRawFlow, bf, finalize); err != nil {
+				t.Fatalf("Decode() error:\n%+v", err)
+			}
 		}
 		if len(got) == 0 {
 			t.Fatalf("Decode() returned no flows")
@@ -131,7 +70,7 @@ func TestFlowDecode(t *testing.T) {
 		// Test with UseSourceAddress = true
 		got = got[:0]
 		flowRawFlow.UseSourceAddress = true
-		err = c.Decode(flowRawFlow, bf, finalize)
+		err := c.Decode(flowRawFlow, bf, finalize)
 		if err != nil {
 			t.Fatalf("Decode() with UseSourceAddress error:\n%+v", err)
 		}
@@ -287,28 +226,16 @@ func BenchmarkDecodeNetFlow(b *testing.B) {
 	nfdecoder := netflow.New(r, decoder.Dependencies{Schema: sch})
 	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
-	template := helpers.ReadPcapL4(b, filepath.Join("decoder", "netflow", "testdata", "options-template.pcap"))
-	_, err := nfdecoder.Decode(
-		decoder.RawFlow{Payload: template, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		b.Fatalf("Decode() error on options template:\n%+v", err)
+	packets := slices.Collect(helpers.ReadManyPcapL4(b, filepath.Join("decoder", "netflow", "testdata", "nfv9.pcap")))
+	for _, data := range packets[:len(packets)-1] {
+		_, err := nfdecoder.Decode(
+			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+			options, bf, finalize)
+		if err != nil {
+			b.Fatalf("Decode() error:\n%+v", err)
+		}
 	}
-	data := helpers.ReadPcapL4(b, filepath.Join("decoder", "netflow", "testdata", "options-data.pcap"))
-	_, err = nfdecoder.Decode(
-		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		b.Fatalf("Decode() error on options data:\n%+v", err)
-	}
-	template = helpers.ReadPcapL4(b, filepath.Join("decoder", "netflow", "testdata", "template.pcap"))
-	_, err = nfdecoder.Decode(
-		decoder.RawFlow{Payload: template, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		b.Fatalf("Decode() error on template:\n%+v", err)
-	}
-	data = helpers.ReadPcapL4(b, filepath.Join("decoder", "netflow", "testdata", "data.pcap"))
+	data := packets[len(packets)-1]
 
 	for b.Loop() {
 		nfdecoder.Decode(
@@ -326,15 +253,14 @@ func BenchmarkDecodeBidirNetFlow(b *testing.B) {
 	nfdecoder := netflow.New(r, decoder.Dependencies{Schema: sch})
 	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
-	template := helpers.ReadPcapL4(b,
-		filepath.Join("decoder", "netflow", "testdata", "ipfixprobe-templates.pcap"))
+	packets := slices.Collect(helpers.ReadManyPcapL4(b, filepath.Join("decoder", "netflow", "testdata", "ipfixprobe.pcap")))
 	_, err := nfdecoder.Decode(
-		decoder.RawFlow{Payload: template, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+		decoder.RawFlow{Payload: packets[0], Source: netip.MustParseAddr("::ffff:127.0.0.1")},
 		options, bf, finalize)
 	if err != nil {
-		b.Fatalf("Decode() error on options template:\n%+v", err)
+		b.Fatalf("Decode() error on template:\n%+v", err)
 	}
-	data := helpers.ReadPcapL4(b, filepath.Join("decoder", "netflow", "testdata", "ipfixprobe-data.pcap"))
+	data := packets[1]
 
 	for b.Loop() {
 		nfdecoder.Decode(

@@ -30,6 +30,10 @@ with other tips.
 > To connect to the ClickHouse database in the Docker Compose setup, use `docker
 > compose exec clickhouse clickhouse-client`.
 
+> [!WARNING]
+> Do not create your own tables with a name starting with `flows`. *Akvorado*
+> uses this prefix for its own tables.
+
 ### Memory usage
 
 The `networks` dictionary can use a lot of memory. You can check with these queries:

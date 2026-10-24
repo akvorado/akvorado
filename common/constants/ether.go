@@ -12,4 +12,8 @@ const (
 	ETypeMPLS = 0x8847
 	// ETypeVLAN is the ether type for Dot1Q
 	ETypeVLAN = 0x8100
+	// ETypeQinQ is the ether type for Dot1ad
+	ETypeQinQ = 0x88a8
+	// ETypeQinQLegacy is the ether type for pre-standard QinQ
+	ETypeQinQLegacy = 0x9100
 )

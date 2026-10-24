@@ -127,7 +127,7 @@ func TestSource(t *testing.T) {
 			Headers: map[string]string{
 				"X-Foo": "hello",
 			},
-			Timeout:   40 * time.Millisecond,
+			Timeout:   time.Second,
 			Interval:  20 * time.Millisecond,
 			Transform: MustParseTransformQuery(".results[]"),
 		},
@@ -149,7 +149,11 @@ func TestSource(t *testing.T) {
 	handler.dataLock.RUnlock()
 
 	close(ready)
-	time.Sleep(50 * time.Millisecond)
+	select {
+	case <-handler.fetcher.DataSourcesReady:
+	case <-time.After(5 * time.Second):
+		t.Fatal("data sources not ready")
+	}
 
 	// When ready
 	expected = []remoteData{
@@ -179,14 +183,26 @@ func TestSource(t *testing.T) {
 	}
 
 	// Let's add errors
+	waitForError := func(name string, previous int) {
+		t.Helper()
+		key := fmt.Sprintf(`errors_total{error=%q,source="local",type="test"}`, name)
+		for deadline := time.Now().Add(5 * time.Second); time.Now().Before(deadline); {
+			got, _ := strconv.Atoi(r.GetMetrics("akvorado_common_remotedatasource_")[key])
+			if got > previous {
+				return
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+		t.Fatalf("no new %q error", name)
+	}
 	triggerErrors.Add(1)
-	time.Sleep(50 * time.Millisecond)
+	waitForError("cannot validate checks", 0)
 	triggerErrors.Add(1)
-	time.Sleep(50 * time.Millisecond)
+	waitForError("cannot map result", 0)
 	triggerErrors.Add(1)
-	time.Sleep(50 * time.Millisecond)
+	waitForError("cannot decode JSON", 0)
 	triggerErrors.Add(1)
-	time.Sleep(50 * time.Millisecond)
+	waitForError("unexpected HTTP status code", errorsHTTP)
 
 	gotMetrics = r.GetMetrics("akvorado_common_remotedatasource_")
 	updates2, _ := strconv.Atoi(gotMetrics[`updates_total{source="local",type="test"}`])

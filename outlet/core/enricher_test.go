@@ -191,6 +191,70 @@ func TestEnrich(t *testing.T) {
 			},
 		},
 		{
+			Name: "exporter rule setting name",
+			Configuration: helpers.M{
+				"exporterclassifiers": []string{
+					`Exporter.Name startsWith "192_" && SetName("router-192")`,
+					`Exporter.Name startsWith "192_" && ClassifyRegion("asia")`,
+				},
+			},
+			InputFlow: func() *schema.FlowMessage {
+				return &schema.FlowMessage{
+					SamplingRate:    1000,
+					ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+					InIf:            100,
+					OutIf:           200,
+				}
+			},
+			OutputFlow: &schema.FlowMessage{
+				SamplingRate:    1000,
+				InIf:            100,
+				OutIf:           200,
+				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+				OtherColumns: map[schema.ColumnKey]any{
+					schema.ColumnExporterName:     "router-192",
+					schema.ColumnExporterRegion:   "asia",
+					schema.ColumnInIfName:         "Gi0/0/100",
+					schema.ColumnOutIfName:        "Gi0/0/200",
+					schema.ColumnInIfDescription:  "Interface 100",
+					schema.ColumnOutIfDescription: "Interface 200",
+					schema.ColumnInIfSpeed:        uint32(1000),
+					schema.ColumnOutIfSpeed:       uint32(1000),
+				},
+			},
+		},
+		{
+			Name: "exporter rule not setting name",
+			Configuration: helpers.M{
+				"exporterclassifiers": []string{
+					`Exporter.Name startsWith "nothing" && SetName("router-192")`,
+				},
+			},
+			InputFlow: func() *schema.FlowMessage {
+				return &schema.FlowMessage{
+					SamplingRate:    1000,
+					ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+					InIf:            100,
+					OutIf:           200,
+				}
+			},
+			OutputFlow: &schema.FlowMessage{
+				SamplingRate:    1000,
+				InIf:            100,
+				OutIf:           200,
+				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+				OtherColumns: map[schema.ColumnKey]any{
+					schema.ColumnExporterName:     "192_0_2_142",
+					schema.ColumnInIfName:         "Gi0/0/100",
+					schema.ColumnOutIfName:        "Gi0/0/200",
+					schema.ColumnInIfDescription:  "Interface 100",
+					schema.ColumnOutIfDescription: "Interface 200",
+					schema.ColumnInIfSpeed:        uint32(1000),
+					schema.ColumnOutIfSpeed:       uint32(1000),
+				},
+			},
+		},
+		{
 			Name: "exporter rule with an error",
 			Configuration: helpers.M{
 				"exporterclassifiers": []string{

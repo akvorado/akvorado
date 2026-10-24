@@ -63,7 +63,7 @@ func (c *Component) Start() error {
 	default:
 		return fmt.Errorf("%q is not a supporter driver", c.config.Driver)
 	}
-	c.db.AddQueryHook(newQueryHook(c.r))
+	c.db = c.db.WithQueryHook(newQueryHook(c.r))
 
 	ctx := context.Background()
 	if _, err := c.db.NewCreateTable().

@@ -293,7 +293,7 @@ func TestPoller(t *testing.T) {
 				},
 			}
 			server := GoSNMPServer.NewSNMPServer(master)
-			if err := server.ListenUDP("udp", "127.0.0.1:0"); err != nil {
+			if err := server.ListenUDP("udp", ":0"); err != nil {
 				t.Fatalf("ListenUDP() err:\n%+v", err)
 			}
 			_, portStr, err := net.SplitHostPort(server.Address().String())
@@ -305,7 +305,6 @@ func TestPoller(t *testing.T) {
 				panic(err)
 			}
 			r.Debug().Int("port", port).Msg("SNMP server listening")
-			helpers.ReserveUDPPort(t, port)
 			go server.ServeForever()
 			defer server.Shutdown()
 

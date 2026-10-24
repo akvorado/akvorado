@@ -20,11 +20,10 @@ func TestSNMPServer(t *testing.T) {
 			1: "transit: cogent",
 			2: "pni: netflix",
 		},
-		Listen: "127.0.0.1:0",
+		Listen: ":0",
 	}
 	r := reporter.NewMock(t)
 	c := NewMock(t, r, config)
-	helpers.ReserveUDPPort(t, c.snmpPort)
 
 	g := &gosnmp.GoSNMP{
 		Target:                  "127.0.0.1",

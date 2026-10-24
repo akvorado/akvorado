@@ -4,10 +4,14 @@
 package console
 
 import (
+	"net/http"
 	"time"
 
+	"akvorado/common/helpers"
+	"akvorado/common/httpserver"
 	"akvorado/common/schema"
 	sb "akvorado/common/sqlbuilder"
+	"akvorado/console/filter"
 	"akvorado/console/query"
 )
 
@@ -85,4 +89,43 @@ func (input graphCommonHandlerInput) sourceSelect(table string) *sb.Query {
 	}
 	return source.From(sb.Table(table)).
 		Setting("asterisk_include_alias_columns", sb.Uint(1))
+}
+
+// graphReverseHandlerInput describes the input of the /graph/reverse endpoint.
+type graphReverseHandlerInput struct {
+	Dimensions []query.Column `json:"dimensions"`
+	Filter     string         `json:"filter"`
+}
+
+// graphReverseHandlerOutput describes the output of the /graph/reverse endpoint.
+type graphReverseHandlerOutput struct {
+	Dimensions []query.Column `json:"dimensions"`
+	Filter     string         `json:"filter"`
+}
+
+// graphReverseHandlerFunc returns the dimensions and the filter for the
+// opposite direction.
+func (c *Component) graphReverseHandlerFunc(w http.ResponseWriter, req *http.Request) {
+	var input graphReverseHandlerInput
+	if err := httpserver.BindJSON(req, &input); err != nil {
+		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
+		return
+	}
+	if input.Dimensions == nil {
+		input.Dimensions = []query.Column{}
+	}
+	if err := query.Columns(input.Dimensions).Validate(c.d.Schema); err != nil {
+		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
+		return
+	}
+	reversed, err := filter.Reverse(input.Filter, c.d.Schema)
+	if err != nil {
+		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": filter.HumanError(err)})
+		return
+	}
+	query.Columns(input.Dimensions).Reverse(c.d.Schema)
+	httpserver.WriteJSON(w, http.StatusOK, graphReverseHandlerOutput{
+		Dimensions: input.Dimensions,
+		Filter:     reversed,
+	})
 }

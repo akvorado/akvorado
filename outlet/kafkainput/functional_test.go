@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"strconv"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -79,12 +78,22 @@ func TestFakeKafka(t *testing.T) {
 		t.Fatalf("Start() error:\n%+v", err)
 	}
 	shutdownCalled := false
+	fetchFault := cluster.Fault(kfake.Fault{
+		Keys:    []kmsg.Key{kmsg.Fetch},
+		Observe: true,
+		Count:   -1,
+	})
 	c.StartWorkers(func(int, chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
 		return callback, func() { shutdownCalled = true }
 	})
 
-	// Send messages
-	time.Sleep(100 * time.Millisecond)
+	// Send messages once the consumer is fetching
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+	defer cancel()
+	if err := fetchFault.Wait(ctx, 1); err != nil {
+		t.Fatalf("Wait() error:\n%+v", err)
+	}
+	fetchFault.Remove()
 	t.Log("producing values")
 	for _, value := range expected {
 		record := &kgo.Record{
@@ -341,6 +350,11 @@ func TestWorkerScaling(t *testing.T) {
 		t.Errorf("Start() max workers should have been capped to 4 instead of %d", maxWorkers)
 	}
 	msg := atomic.Uint32{}
+	fetchFault := cluster.Fault(kfake.Fault{
+		Keys:    []kmsg.Key{kmsg.Fetch},
+		Observe: true,
+		Count:   -1,
+	})
 	c.StartWorkers(func(_ int, ch chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
 		return func(context.Context, []byte) error {
 			c := msg.Add(1)
@@ -355,8 +369,13 @@ func TestWorkerScaling(t *testing.T) {
 		}, func() {}
 	})
 
-	// 1 worker
-	time.Sleep(10 * time.Millisecond)
+	// 1 worker, wait for it to fetch
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+	defer cancel()
+	if err := fetchFault.Wait(ctx, 1); err != nil {
+		t.Fatalf("Wait() error:\n%+v", err)
+	}
+	fetchFault.Remove()
 	gotMetrics := r.GetMetrics("akvorado_outlet_kafkainput_", "worker", "max", "min")
 	expected := map[string]string{
 		"worker_decrease_total": "0",
@@ -440,23 +459,10 @@ func TestKafkaLagMetric(t *testing.T) {
 	}
 	defer cluster.Close()
 
-	// Watch for autocommits to avoid relying on time
-	clusterCommitNotification := make(chan any)
-	firstFetch := make(chan any)
-	var firstFetchOnce sync.Once
-	cluster.Control(func(request kmsg.Request) (kmsg.Response, error, bool) {
-		switch k := kmsg.Key(request.Key()); k {
-		case kmsg.OffsetCommit:
-			t.Log("offset commit message")
-			clusterCommitNotification <- nil
-		case kmsg.Fetch:
-			firstFetchOnce.Do(func() {
-				close(firstFetch)
-				t.Log("fetch request")
-			})
-		}
-		cluster.KeepControl()
-		return nil, nil, false
+	fetchFault := cluster.Fault(kfake.Fault{
+		Keys:    []kmsg.Key{kmsg.Fetch},
+		Observe: true,
+		Count:   -1,
 	})
 
 	// Create a producer client
@@ -514,12 +520,31 @@ func TestKafkaLagMetric(t *testing.T) {
 			t.Fatal("worker did not process the message")
 		}
 	}
-	t.Log("wait first fetch")
-	select {
-	case <-firstFetch:
-	case <-time.After(time.Second):
-		t.Fatal("no initial fetch")
+	waitCommitted := func(expected int64) {
+		t.Helper()
+		ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+		defer cancel()
+		if _, err := cluster.WaitGroupInfo(ctx, configuration.ConsumerGroup, func(g *kfake.GroupInfo) bool {
+			if g == nil {
+				return false
+			}
+			var committed int64
+			for _, commit := range g.Commits[expectedTopicName] {
+				committed += commit.Offset
+			}
+			return committed == expected
+		}); err != nil {
+			t.Fatalf("WaitGroupInfo() error:\n%+v", err)
+		}
 	}
+
+	t.Log("wait first fetch")
+	fetchCtx, fetchCancel := context.WithTimeout(t.Context(), time.Second)
+	defer fetchCancel()
+	if err := fetchFault.Wait(fetchCtx, 1); err != nil {
+		t.Fatalf("Wait() error:\n%+v", err)
+	}
+	fetchFault.Remove()
 
 	// No messages yet, no lag
 	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
@@ -555,11 +580,7 @@ func TestKafkaLagMetric(t *testing.T) {
 	releaseReceive()
 
 	t.Log("wait for autocommit")
-	select {
-	case <-time.After(2 * time.Second):
-		t.Fatal("Timed out waiting for autocommit")
-	case <-clusterCommitNotification:
-	}
+	waitCommitted(1)
 
 	// The message was processed, there's no lag
 	gotMetrics := r.GetMetrics("akvorado_outlet_kafkainput_", "consumergroup", "received_messages_total")
@@ -603,11 +624,7 @@ func TestKafkaLagMetric(t *testing.T) {
 		waitReceive()
 		releaseReceive()
 	}
-	select {
-	case <-time.After(2 * time.Second):
-		t.Fatal("Timed out waiting for autocommit")
-	case <-clusterCommitNotification:
-	}
+	waitCommitted(6)
 	gotMetrics = r.GetMetrics("akvorado_outlet_kafkainput_", "consumergroup", "received_messages_total")
 	expected = map[string]string{
 		"consumergroup_lag_messages":          "0",

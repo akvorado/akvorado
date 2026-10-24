@@ -37,8 +37,8 @@ func TestSaveAndRestore(t *testing.T) {
 	_, src, _, _ := runtime.Caller(0)
 	base := path.Join(path.Dir(src), "decoder", "netflow", "testdata")
 
-	for _, pcap := range []string{"options-template.pcap", "options-data.pcap", "template.pcap"} {
-		data := helpers.ReadPcapL4(t, path.Join(base, pcap))
+	packets := slices.Collect(helpers.ReadManyPcapL4(t, path.Join(base, "nfv9.pcap")))
+	for _, data := range packets[:len(packets)-1] {
 		rawFlow := &pb.RawFlow{
 			TimeReceived:     uint64(time.Now().UnixNano()),
 			Payload:          data,
@@ -67,24 +67,21 @@ func TestSaveAndRestore(t *testing.T) {
 		t.Fatalf("Start() error:\n%+v", err)
 	}
 	got := []*schema.FlowMessage{}
-	for _, pcap := range []string{"data.pcap"} {
-		data := helpers.ReadPcapL4(t, path.Join(base, pcap))
-		rawFlow := &pb.RawFlow{
-			TimeReceived:     uint64(time.Now().UnixNano()),
-			Payload:          data,
-			SourceAddress:    net.ParseIP("127.0.0.1").To16(),
-			UseSourceAddress: false,
-			Decoder:          pb.RawFlow_DECODER_NETFLOW,
-			TimestampSource:  pb.RawFlow_TS_INPUT,
-		}
-		err := c2.Decode(rawFlow, bf, func() {
-			clone := *bf
-			got = append(got, &clone)
-			bf.Finalize()
-		})
-		if err != nil {
-			t.Fatalf("Decode() error:\n%+v", err)
-		}
+	rawFlow := &pb.RawFlow{
+		TimeReceived:     uint64(time.Now().UnixNano()),
+		Payload:          packets[len(packets)-1],
+		SourceAddress:    net.ParseIP("127.0.0.1").To16(),
+		UseSourceAddress: false,
+		Decoder:          pb.RawFlow_DECODER_NETFLOW,
+		TimestampSource:  pb.RawFlow_TS_INPUT,
+	}
+	err = c2.Decode(rawFlow, bf, func() {
+		clone := *bf
+		got = append(got, &clone)
+		bf.Finalize()
+	})
+	if err != nil {
+		t.Fatalf("Decode() error:\n%+v", err)
 	}
 	if len(got) == 0 {
 		t.Fatalf("Decode() returned no flows")

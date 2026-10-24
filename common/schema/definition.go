@@ -222,6 +222,9 @@ const (
 	ColumnMPLS4thLabel
 	ColumnIngressVRFID
 	ColumnEgressVRFID
+	ColumnSrcOuterAddr
+	ColumnDstOuterAddr
+	ColumnIPOuterTos
 
 	// ColumnLast points to after the last static column, custom dictionaries
 	// (dynamic columns) come after ColumnLast
@@ -232,6 +235,7 @@ const (
 	ColumnGroupL2 ColumnGroup = iota + 1
 	ColumnGroupNAT
 	ColumnGroupL3L4
+	ColumnGroupOuter
 
 	ColumnGroupLast
 )
@@ -534,6 +538,25 @@ END`,
 			},
 			{Key: ColumnIngressVRFID, Disabled: true, ParserType: "uint", ClickHouseType: "UInt32"},
 			{Key: ColumnEgressVRFID, Disabled: true, ParserType: "uint", ClickHouseType: "UInt32"},
+			{
+				Key:                ColumnSrcOuterAddr,
+				Disabled:           true,
+				Group:              ColumnGroupOuter,
+				ParserType:         "ip",
+				ClickHouseMainOnly: true,
+				ClickHouseType:     "IPv6",
+				ClickHouseCodec:    "ZSTD(1)",
+			},
+			{
+				Key:                ColumnDstOuterAddr,
+				Disabled:           true,
+				Group:              ColumnGroupOuter,
+				ParserType:         "ip",
+				ClickHouseMainOnly: true,
+				ClickHouseType:     "IPv6",
+				ClickHouseCodec:    "ZSTD(1)",
+			},
+			{Key: ColumnIPOuterTos, Disabled: true, Group: ColumnGroupOuter, ParserType: "uint", ClickHouseType: "UInt8"},
 		},
 	}.finalize()
 }

@@ -7,6 +7,7 @@ import (
 	"math"
 	"reflect"
 	"runtime"
+	"strings"
 )
 
 // measureMemory returns an estimation of the memory taken by the published tree
@@ -53,7 +54,12 @@ func measureMemory() int64 {
 		frames := runtime.CallersFrames(record.Stack())
 		for {
 			frame, more := frames.Next()
-			if frame.Function == rebuildFunction {
+			// The stack only keeps the innermost frames. When the tree is
+			// filled from a deep walk of another tree, rebuild itself can be
+			// missing, but the body of its loops (rebuild-range1) and its
+			// closures (rebuild.func1) are still there. So, we look for them.
+			suffix, ok := strings.CutPrefix(frame.Function, rebuildFunction)
+			if ok && (suffix == "" || suffix[0] == '-' || suffix[0] == '.') {
 				total += unsample(record.InUseObjects(), record.InUseBytes(), rate)
 				break
 			}

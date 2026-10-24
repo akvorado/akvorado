@@ -117,6 +117,13 @@
 #     cap_add:
 #       - BPF # or SYS_ADMIN if you don't have Linux 5.8+
 
+# Since 26.6, ClickHouse requires a CPU with x86-64-v3 (AVX2) on AMD64. If your
+# CPU does not support it, you can pin an older release:
+
+# services:
+#   clickhouse:
+#     image: clickhouse/clickhouse-server:26.3
+
 # If you want to deploy a multi-node deployment, you can keep using this Docker
 # Compose setup by disabling the elements you don't want. For example, on nodes
 # where you only want the inlet service, assuming 192.168.1.16 is the IP address

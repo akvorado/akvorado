@@ -1,0 +1,3 @@
+---
+<<: !include 1.yaml
+other: value

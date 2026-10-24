@@ -409,10 +409,15 @@ func (c *Component) createOrUpdateFlowsTable(ctx context.Context, resolution Res
 		tableName = fmt.Sprintf("flows_%s", resolution.Interval)
 	}
 	tableName = c.localTable(tableName)
-	partitionInterval := uint64((resolution.TTL / time.Duration(c.config.MaxPartitions)).Seconds())
-	ttl := uint64(resolution.TTL.Seconds())
-	ttlExpr := sb.Op(sb.Column("TimeReceived"), "+",
-		sb.Function("toIntervalSecond", sb.Uint(ttl)))
+	// Without a TTL, data is kept forever and partitions are 30 days long (60
+	// partitions for 5 year).
+	partitionInterval := uint64((30 * 24 * time.Hour).Seconds())
+	var ttlExpr sb.Expr
+	if resolution.TTL > 0 {
+		partitionInterval = uint64((resolution.TTL / time.Duration(c.config.MaxPartitions)).Seconds())
+		ttlExpr = sb.Op(sb.Column("TimeReceived"), "+",
+			sb.Function("toIntervalSecond", sb.Uint(uint64(resolution.TTL.Seconds()))))
+	}
 	settings := tableSettings(resolution.TableSettings)
 
 	// Create table if it does not exist
@@ -431,8 +436,10 @@ func (c *Component) createOrUpdateFlowsTable(ctx context.Context, resolution Res
 			Columns(columns...).
 			PartitionBy(sb.Function("toYYYYMMDDhhmmss",
 				sb.Function("toStartOfInterval", sb.Column("TimeReceived"),
-					sb.Interval(sb.Uint(partitionInterval), "second")))).
-			TTL(ttlExpr)
+					sb.Interval(sb.Uint(partitionInterval), "second"))))
+		if !ttlExpr.IsZero() {
+			createQuery.TTL(ttlExpr)
+		}
 		if resolution.Interval == 0 {
 			fiveMinutes := sb.Function("toStartOfFiveMinutes", sb.Column("TimeReceived"))
 			createQuery.
@@ -594,11 +601,17 @@ outer:
 	// Check if we need to update the TTL
 	if !engine.TTL().Matches(ttlExpr) {
 		c.r.Info().Msgf("updating TTL of %s with interval %s", tableName, resolution.Interval)
+		alterTTL := sb.AlterTable(sb.Table(tableName))
+		if ttlExpr.IsZero() {
+			alterTTL.RemoveTTL()
+		} else {
+			alterTTL.ModifyTTL(ttlExpr)
+		}
 		err := c.d.ClickHouse.ExecOnCluster(
 			clickhouse.Context(ctx, clickhouse.WithSettings(clickhouse.Settings{
 				"materialize_ttl_after_modify": 0,
 			})),
-			sb.AlterTable(sb.Table(tableName)).ModifyTTL(ttlExpr))
+			alterTTL)
 		if err != nil {
 			return fmt.Errorf("cannot modify TTL for table %s: %w", tableName, err)
 		}

@@ -4,11 +4,15 @@
 package netflow
 
 import (
+	"encoding/binary"
+	"errors"
 	"fmt"
 	"net/netip"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"akvorado/common/constants"
 	"akvorado/common/helpers"
@@ -18,6 +22,7 @@ import (
 	"akvorado/outlet/flow/decoder"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/netsampler/goflow2/v3/decoders/netflow"
 )
 
 func setup(t *testing.T, clearTS bool) (*reporter.Reporter, decoder.Decoder, *schema.FlowMessage, *[]*schema.FlowMessage, decoder.FinalizeFlowFunc) {
@@ -44,93 +49,15 @@ func TestDecode(t *testing.T) {
 	r, nfdecoder, bf, got, finalize := setup(t, true)
 	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
-	// Send an option template
-	template := helpers.ReadPcapL4(t, filepath.Join("testdata", "options-template.pcap"))
-	_, err := nfdecoder.Decode(
-		decoder.RawFlow{Payload: template, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error on options template:\n%+v", err)
-	}
-	if len(*got) != 0 {
-		t.Fatalf("Decode() on options template got flows:\n%+v", *got)
+	for data := range helpers.ReadManyPcapL4(t, filepath.Join("testdata", "nfv9.pcap")) {
+		_, err := nfdecoder.Decode(
+			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+			options, bf, finalize)
+		if err != nil {
+			t.Fatalf("Decode() error:\n%+v", err)
+		}
 	}
 
-	// Check metrics
-	gotMetrics := r.GetMetrics("akvorado_outlet_flow_decoder_netflow_")
-	expectedMetrics := map[string]string{
-		`packets_total{exporter="::ffff:127.0.0.1",version="9"}`:                                                               "1",
-		`records_total{exporter="::ffff:127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                 "1",
-		`sets_total{exporter="::ffff:127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                    "1",
-		`templates_total{exporter="::ffff:127.0.0.1",obs_domain_id="0",template_id="257",type="options_template",version="9"}`: "1",
-	}
-	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
-		t.Fatalf("Metrics after template (-got, +want):\n%s", diff)
-	}
-
-	// Send option data
-	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "options-data.pcap"))
-	_, err = nfdecoder.Decode(
-		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error on options data:\n%+v", err)
-	}
-	if len(*got) != 0 {
-		t.Fatalf("Decode() on options data got flows")
-	}
-
-	// Check metrics
-	gotMetrics = r.GetMetrics("akvorado_outlet_flow_decoder_netflow_")
-	expectedMetrics = map[string]string{
-		`packets_total{exporter="::ffff:127.0.0.1",version="9"}`:                                                               "2",
-		`records_total{exporter="::ffff:127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                 "1",
-		`records_total{exporter="::ffff:127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                                     "4",
-		`sets_total{exporter="::ffff:127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                    "1",
-		`sets_total{exporter="::ffff:127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                                        "1",
-		`templates_total{exporter="::ffff:127.0.0.1",obs_domain_id="0",template_id="257",type="options_template",version="9"}`: "1",
-	}
-	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
-		t.Fatalf("Metrics after template (-got, +want):\n%s", diff)
-	}
-
-	// Send a regular template
-	template = helpers.ReadPcapL4(t, filepath.Join("testdata", "template.pcap"))
-	_, err = nfdecoder.Decode(
-		decoder.RawFlow{Payload: template, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error on template:\n%+v", err)
-	}
-	if len(*got) != 0 {
-		t.Fatalf("Decode() on template got flows")
-	}
-
-	// Check metrics
-	gotMetrics = r.GetMetrics("akvorado_outlet_flow_decoder_netflow_")
-	expectedMetrics = map[string]string{
-		`packets_total{exporter="::ffff:127.0.0.1",version="9"}`:                                                               "3",
-		`records_total{exporter="::ffff:127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                 "1",
-		`records_total{exporter="::ffff:127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                                     "4",
-		`records_total{exporter="::ffff:127.0.0.1",type="TemplateFlowSet",version="9"}`:                                        "1",
-		`sets_total{exporter="::ffff:127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                    "1",
-		`sets_total{exporter="::ffff:127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                                        "1",
-		`sets_total{exporter="::ffff:127.0.0.1",type="TemplateFlowSet",version="9"}`:                                           "1",
-		`templates_total{exporter="::ffff:127.0.0.1",obs_domain_id="0",template_id="257",type="options_template",version="9"}`: "1",
-		`templates_total{exporter="::ffff:127.0.0.1",obs_domain_id="0",template_id="260",type="template",version="9"}`:         "1",
-	}
-	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
-		t.Fatalf("Metrics after template (-got, +want):\n%s", diff)
-	}
-
-	// Send data
-	data = helpers.ReadPcapL4(t, filepath.Join("testdata", "data.pcap"))
-	_, err = nfdecoder.Decode(
-		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error on data:\n%+v", err)
-	}
 	expectedFlows := []*schema.FlowMessage{
 		{
 			SamplingRate:    30000,
@@ -230,14 +157,14 @@ func TestDecode(t *testing.T) {
 	if diff := helpers.Diff(got, &expectedFlows); diff != "" {
 		t.Fatalf("Decode() (-got, +want):\n%s", diff)
 	}
-	gotMetrics = r.GetMetrics(
+	gotMetrics := r.GetMetrics(
 		"akvorado_outlet_flow_decoder_netflow_",
 		"packets_",
 		"sets_",
 		"records_",
 		"templates_",
 	)
-	expectedMetrics = map[string]string{
+	expectedMetrics := map[string]string{
 		`packets_total{exporter="::ffff:127.0.0.1",version="9"}`:                                                               "4",
 		`records_total{exporter="::ffff:127.0.0.1",type="DataFlowSet",version="9"}`:                                            "4",
 		`records_total{exporter="::ffff:127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                                     "4",
@@ -251,12 +178,12 @@ func TestDecode(t *testing.T) {
 		`templates_total{exporter="::ffff:127.0.0.1",obs_domain_id="0",template_id="260",type="template",version="9"}`:         "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
-		t.Fatalf("Metrics after data (-got, +want):\n%s", diff)
+		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
 }
 
 func TestTemplatesMixedWithData(t *testing.T) {
-	r, nfdecoder, bf, _, finalize := setup(t, true)
+	r, nfdecoder, bf, got, finalize := setup(t, true)
 	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	// Send packet with both data and templates
@@ -265,8 +192,14 @@ func TestTemplatesMixedWithData(t *testing.T) {
 		decoder.RawFlow{Payload: template, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
 		options, bf, finalize)
 
-	// We don't really care about the data, but we should have accepted the
-	// templates. Check the stats.
+	// The first data set precedes its template and is dropped. The second
+	// one follows it and should be decoded, despite the missing template for
+	// the first one.
+	if len(*got) != 10 {
+		t.Errorf("Decode() returned %d flows, expected 10", len(*got))
+	}
+
+	// We should have accepted the templates. Check the stats.
 	gotMetrics := r.GetMetrics(
 		"akvorado_outlet_flow_decoder_netflow_",
 		"templates_",
@@ -284,20 +217,13 @@ func TestDecodeSamplingRate(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
 	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
-	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "samplingrate-template.pcap"))
-	_, err := nfdecoder.Decode(
-		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error:\n%+v", err)
-	}
-
-	data = helpers.ReadPcapL4(t, filepath.Join("testdata", "samplingrate-data.pcap"))
-	_, err = nfdecoder.Decode(
-		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error:\n%+v", err)
+	for data := range helpers.ReadManyPcapL4(t, filepath.Join("testdata", "samplingrate.pcap")) {
+		_, err := nfdecoder.Decode(
+			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+			options, bf, finalize)
+		if err != nil {
+			t.Fatalf("Decode() error:\n%+v", err)
+		}
 	}
 
 	expectedFlows := []*schema.FlowMessage{
@@ -308,7 +234,6 @@ func TestDecodeSamplingRate(t *testing.T) {
 			DstAddr:         netip.MustParseAddr("::ffff:142.183.180.65"),
 			InIf:            13,
 			SrcVlan:         701,
-			NextHop:         netip.MustParseAddr("::ffff:0.0.0.0"),
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnPackets:       uint64(1),
 				schema.ColumnBytes:         uint64(160),
@@ -330,33 +255,13 @@ func TestDecodeMultipleSamplingRates(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
 	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
-	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "multiplesamplingrates-options-template.pcap"))
-	_, err := nfdecoder.Decode(
-		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error:\n%+v", err)
-	}
-	data = helpers.ReadPcapL4(t, filepath.Join("testdata", "multiplesamplingrates-options-data.pcap"))
-	_, err = nfdecoder.Decode(
-		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error:\n%+v", err)
-	}
-	data = helpers.ReadPcapL4(t, filepath.Join("testdata", "multiplesamplingrates-template.pcap"))
-	_, err = nfdecoder.Decode(
-		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error:\n%+v", err)
-	}
-	data = helpers.ReadPcapL4(t, filepath.Join("testdata", "multiplesamplingrates-data.pcap"))
-	_, err = nfdecoder.Decode(
-		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error:\n%+v", err)
+	for data := range helpers.ReadManyPcapL4(t, filepath.Join("testdata", "multiplesamplingrates.pcap")) {
+		_, err := nfdecoder.Decode(
+			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+			options, bf, finalize)
+		if err != nil {
+			t.Fatalf("Decode() error:\n%+v", err)
+		}
 	}
 
 	expectedFlows := []*schema.FlowMessage{
@@ -424,19 +329,13 @@ func TestDecodeICMP(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
 	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
-	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "icmp-template.pcap"))
-	_, err := nfdecoder.Decode(
-		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error:\n%+v", err)
-	}
-	data = helpers.ReadPcapL4(t, filepath.Join("testdata", "icmp-data.pcap"))
-	_, err = nfdecoder.Decode(
-		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error:\n%+v", err)
+	for data := range helpers.ReadManyPcapL4(t, filepath.Join("testdata", "icmp.pcap")) {
+		_, err := nfdecoder.Decode(
+			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+			options, bf, finalize)
+		if err != nil {
+			t.Fatalf("Decode() error:\n%+v", err)
+		}
 	}
 
 	expectedFlows := []*schema.FlowMessage{
@@ -506,19 +405,13 @@ func TestDecodeDataLink(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
 	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
-	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "datalink-template.pcap"))
-	_, err := nfdecoder.Decode(
-		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error:\n%+v", err)
-	}
-	data = helpers.ReadPcapL4(t, filepath.Join("testdata", "datalink-data.pcap"))
-	_, err = nfdecoder.Decode(
-		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error:\n%+v", err)
+	for data := range helpers.ReadManyPcapL4(t, filepath.Join("testdata", "datalink.pcap")) {
+		_, err := nfdecoder.Decode(
+			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+			options, bf, finalize)
+		if err != nil {
+			t.Fatalf("Decode() error:\n%+v", err)
+		}
 	}
 
 	expectedFlows := []*schema.FlowMessage{
@@ -555,9 +448,10 @@ func TestDecodeWithoutTemplate(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
 	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
-	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "datalink-data.pcap"))
+	// Skip the template
+	packets := slices.Collect(helpers.ReadManyPcapL4(t, filepath.Join("testdata", "datalink.pcap")))
 	_, err := nfdecoder.Decode(
-		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+		decoder.RawFlow{Payload: packets[1], Source: netip.MustParseAddr("::ffff:127.0.0.1")},
 		options, bf, finalize)
 	if err != nil {
 		t.Fatalf("Decode() error:\n%+v", err)
@@ -566,6 +460,86 @@ func TestDecodeWithoutTemplate(t *testing.T) {
 	expectedFlows := []*schema.FlowMessage{}
 	if diff := helpers.Diff(got, &expectedFlows); diff != "" {
 		t.Fatalf("Decode() (-got, +want):\n%s", diff)
+	}
+}
+
+func TestDecodeZeroSizeRecord(t *testing.T) {
+	u16 := func(v uint16) []byte { return binary.BigEndian.AppendUint16(nil, v) }
+	set := func(id uint16, content ...[]byte) []byte {
+		var body []byte
+		for _, c := range content {
+			body = append(body, c...)
+		}
+		b := u16(id)
+		b = binary.BigEndian.AppendUint16(b, uint16(4+len(body)))
+		return append(b, body...)
+	}
+	nfv9 := func(sets ...[]byte) []byte {
+		b := u16(9)
+		b = append(b, u16(uint16(len(sets)))...)
+		b = append(b, make([]byte, 16)...) // uptime, secs, sequence, source ID
+		for _, s := range sets {
+			b = append(b, s...)
+		}
+		return b
+	}
+	ipfix := func(sets ...[]byte) []byte {
+		var body []byte
+		for _, s := range sets {
+			body = append(body, s...)
+		}
+		b := u16(10)
+		b = append(b, u16(uint16(16+len(body)))...)
+		b = append(b, make([]byte, 12)...) // export time, sequence, domain
+		return append(b, body...)
+	}
+
+	cases := []struct {
+		description string
+		payload     []byte
+	}{
+		{
+			description: "NetFlow v9 template without fields",
+			payload: nfv9(
+				set(0, u16(256), u16(0)),
+				set(256, []byte{0, 0, 0, 0})),
+		}, {
+			description: "NetFlow v9 options template without scope nor option",
+			payload: nfv9(
+				set(1, u16(257), u16(0), u16(0), []byte{0, 0}),
+				set(257, []byte{0, 0, 0, 0})),
+		}, {
+			description: "IPFIX template withdrawal followed by data",
+			payload: ipfix(
+				set(2, u16(256), u16(0)),
+				set(256, []byte{0, 0, 0, 0})),
+		}, {
+			description: "IPFIX template with a zero-length field",
+			payload: ipfix(
+				set(2, u16(256), u16(1), u16(8), u16(0)),
+				set(256, []byte{0, 0, 0, 0})),
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.description, func(t *testing.T) {
+			_, nfdecoder, bf, _, finalize := setup(t, true)
+			options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
+			done := make(chan error, 1)
+			go func() {
+				_, err := nfdecoder.Decode(
+					decoder.RawFlow{Payload: tc.payload, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+					options, bf, finalize)
+				done <- err
+			}()
+			select {
+			case err := <-done:
+				if !errors.Is(err, netflow.ErrorEmptyRecord) {
+					t.Errorf("Decode() error:\n%+v", err)
+				}
+			case <-time.After(time.Second):
+				t.Fatal("Decode() did not terminate")
+			}
+		})
 	}
 }
 
@@ -586,7 +560,6 @@ func TestDecodeMPLS(t *testing.T) {
 			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
 			SrcAddr:         netip.MustParseAddr("fd00::1:0:1:7:1"),
 			DstAddr:         netip.MustParseAddr("fd00::1:0:1:5:1"),
-			NextHop:         netip.MustParseAddr("::ffff:0.0.0.0"),
 			SamplingRate:    10,
 			OutIf:           16,
 			OtherColumns: map[schema.ColumnKey]any{
@@ -606,7 +579,6 @@ func TestDecodeMPLS(t *testing.T) {
 			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
 			SrcAddr:         netip.MustParseAddr("fd00::1:0:1:7:1"),
 			DstAddr:         netip.MustParseAddr("fd00::1:0:1:6:1"),
-			NextHop:         netip.MustParseAddr("::ffff:0.0.0.0"),
 			SamplingRate:    10,
 			OutIf:           17,
 			OtherColumns: map[schema.ColumnKey]any{
@@ -649,7 +621,8 @@ func TestDecodeNFv5(t *testing.T) {
 
 			ts := uint32(1680626679)
 			if tsSource == pb.RawFlow_TS_NETFLOW_FIRST_SWITCHED {
-				ts = 1680611679
+				// First packet was switched 15 s before export.
+				ts = 1680626664
 			}
 
 			expectedFlows := []*schema.FlowMessage{
@@ -689,19 +662,13 @@ func TestDecodeTimestampFromNetFlowPacket(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, false)
 	options := decoder.Options{TimestampSource: pb.RawFlow_TS_NETFLOW_PACKET}
 
-	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "template.pcap"))
-	_, err := nfdecoder.Decode(
-		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error:\n%+v", err)
-	}
-	data = helpers.ReadPcapL4(t, filepath.Join("testdata", "data.pcap"))
-	_, err = nfdecoder.Decode(
-		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error:\n%+v", err)
+	for data := range helpers.ReadManyPcapL4(t, filepath.Join("testdata", "nfv9.pcap")) {
+		_, err := nfdecoder.Decode(
+			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+			options, bf, finalize)
+		if err != nil {
+			t.Fatalf("Decode() error:\n%+v", err)
+		}
 	}
 
 	// 4 flows in capture
@@ -724,25 +691,19 @@ func TestDecodeTimestampFromFirstSwitched(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, false)
 	options := decoder.Options{TimestampSource: pb.RawFlow_TS_NETFLOW_FIRST_SWITCHED}
 
-	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "template.pcap"))
-	_, err := nfdecoder.Decode(
-		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error:\n%+v", err)
-	}
-	data = helpers.ReadPcapL4(t, filepath.Join("testdata", "data.pcap"))
-	_, err = nfdecoder.Decode(
-		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error:\n%+v", err)
+	for data := range helpers.ReadManyPcapL4(t, filepath.Join("testdata", "nfv9.pcap")) {
+		_, err := nfdecoder.Decode(
+			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+			options, bf, finalize)
+		if err != nil {
+			t.Fatalf("Decode() error:\n%+v", err)
+		}
 	}
 
 	// 4 flows in capture
-	var sysUptime uint32 = 944951609
-	var packetTS uint32 = 1647285928
-	expectedFirstSwitched := []uint32{
+	var sysUptime uint64 = 944951609
+	var packetTS uint64 = 1647285928
+	expectedFirstSwitched := []uint64{
 		944948659,
 		944948659,
 		944948660,
@@ -750,7 +711,8 @@ func TestDecodeTimestampFromFirstSwitched(t *testing.T) {
 	}
 
 	for i, flow := range *got {
-		if val := packetTS - sysUptime + expectedFirstSwitched[i]; flow.TimeReceived != val {
+		// FIRST_SWITCHED and sysUptime are in milliseconds.
+		if val := (packetTS*1000 - (sysUptime - expectedFirstSwitched[i])) / 1000; uint64(flow.TimeReceived) != val {
 			t.Errorf("Decode() (-got, +want):\n-%d, +%d", flow.TimeReceived, val)
 		}
 	}
@@ -815,7 +777,6 @@ func TestDecodePhysicalInterfaces(t *testing.T) {
 			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
 			SrcAddr:         netip.MustParseAddr("::ffff:147.53.240.75"),
 			DstAddr:         netip.MustParseAddr("::ffff:212.82.101.24"),
-			NextHop:         netip.MustParseAddr("::"),
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnSrcMAC:       uint64(0xc014fef6c365),
 				schema.ColumnDstMAC:       uint64(0xe8b6c24ae34c),
@@ -840,19 +801,13 @@ func TestDecodeRFC5103(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
 	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
-	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "ipfixprobe-templates.pcap"))
-	_, err := nfdecoder.Decode(
-		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error:\n%+v", err)
-	}
-	data = helpers.ReadPcapL4(t, filepath.Join("testdata", "ipfixprobe-data.pcap"))
-	_, err = nfdecoder.Decode(
-		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error:\n%+v", err)
+	for data := range helpers.ReadManyPcapL4(t, filepath.Join("testdata", "ipfixprobe.pcap")) {
+		_, err := nfdecoder.Decode(
+			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+			options, bf, finalize)
+		if err != nil {
+			t.Fatalf("Decode() error:\n%+v", err)
+		}
 	}
 
 	expectedFlows := []*schema.FlowMessage{
@@ -977,52 +932,53 @@ func TestDecodeRFC5103(t *testing.T) {
 
 func TestDecodeNonEncap(t *testing.T) {
 	cases := []struct {
-		pcaps                []string
+		pcap                 string
 		expectedErrorMetrics map[string]string
 	}{
 		{
-			pcaps: []string{"options-template.pcap", "options-data.pcap", "template.pcap", "data.pcap"},
+			pcap: "nfv9.pcap",
 			expectedErrorMetrics: map[string]string{
 				`errors_total{error="non-encapsulated packet",exporter="::ffff:127.0.0.1"}`: "4",
 			},
 		}, {
-			// Data precedes the template in this combined PDU, so it is
-			// dropped before reaching the record decoder: no counter.
-			pcaps:                []string{"data+templates.pcap"},
-			expectedErrorMetrics: map[string]string{},
+			// The first data set precedes its template in this combined
+			// PDU and is dropped. The second one follows it.
+			pcap: "data+templates.pcap",
+			expectedErrorMetrics: map[string]string{
+				`errors_total{error="non-encapsulated packet",exporter="::ffff:127.0.0.1"}`: "10",
+			},
 		}, {
-			pcaps: []string{"mpls.pcap"},
+			pcap: "mpls.pcap",
 			expectedErrorMetrics: map[string]string{
 				`errors_total{error="non-encapsulated packet",exporter="::ffff:127.0.0.1"}`: "2",
 			},
 		}, {
-			pcaps: []string{"physicalinterfaces.pcap"},
+			pcap: "physicalinterfaces.pcap",
 			expectedErrorMetrics: map[string]string{
 				`errors_total{error="non-encapsulated packet",exporter="::ffff:127.0.0.1"}`: "8",
 			},
 		}, {
-			pcaps: []string{"icmp-template.pcap", "icmp-data.pcap"},
+			pcap: "icmp.pcap",
 			expectedErrorMetrics: map[string]string{
 				`errors_total{error="non-encapsulated packet",exporter="::ffff:127.0.0.1"}`: "4",
 			},
 		}, {
-			pcaps: []string{"multiplesamplingrates-options-template.pcap", "multiplesamplingrates-options-data.pcap",
-				"multiplesamplingrates-template.pcap", "multiplesamplingrates-data.pcap"},
+			pcap: "multiplesamplingrates.pcap",
 			expectedErrorMetrics: map[string]string{
 				`errors_total{error="non-encapsulated packet",exporter="::ffff:127.0.0.1"}`: "12",
 			},
 		}, {
-			pcaps: []string{"ipfixprobe-templates.pcap", "ipfixprobe-data.pcap"},
+			pcap: "ipfixprobe.pcap",
 			expectedErrorMetrics: map[string]string{
 				`errors_total{error="non-encapsulated packet",exporter="::ffff:127.0.0.1"}`: "6",
 			},
 		}, {
-			pcaps: []string{"nat.pcap"},
+			pcap: "nat.pcap",
 			expectedErrorMetrics: map[string]string{
 				`errors_total{error="non-encapsulated packet",exporter="::ffff:127.0.0.1"}`: "9",
 			},
 		}, {
-			pcaps: []string{"nfv5.pcap"},
+			pcap: "nfv5.pcap",
 			expectedErrorMetrics: map[string]string{
 				`errors_total{error="non-encapsulated packet",exporter="::ffff:127.0.0.1"}`: "1",
 			},
@@ -1036,8 +992,7 @@ func TestDecodeNonEncap(t *testing.T) {
 				DecapsulationProtocol: pb.RawFlow_DECAP_VXLAN,
 			}
 
-			for _, pcap := range tc.pcaps {
-				data := helpers.ReadPcapL4(t, filepath.Join("testdata", pcap))
+			for data := range helpers.ReadManyPcapL4(t, filepath.Join("testdata", tc.pcap)) {
 				_, err := nfdecoder.Decode(
 					decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
 					options, bf, finalize)
@@ -1048,14 +1003,14 @@ func TestDecodeNonEncap(t *testing.T) {
 
 			expectedFlows := []*schema.FlowMessage{}
 			if diff := helpers.Diff(*got, expectedFlows); diff != "" {
-				t.Fatalf("Decode(%v) (-got, +want):\n%s", tc.pcaps, diff)
+				t.Fatalf("Decode(%q) (-got, +want):\n%s", tc.pcap, diff)
 			}
 
 			// Every packet was non-encapsulated, so the error counter must
 			// have been incremented for our exporter.
 			gotMetrics := r.GetMetrics("akvorado_outlet_flow_decoder_netflow_", "errors_total")
 			if diff := helpers.Diff(gotMetrics, tc.expectedErrorMetrics); diff != "" {
-				t.Fatalf("Decode(%v) metrics (-got, +want):\n%s", tc.pcaps, diff)
+				t.Fatalf("Decode(%q) metrics (-got, +want):\n%s", tc.pcap, diff)
 			}
 		})
 	}
@@ -1067,20 +1022,15 @@ func TestDecodeSRv6(t *testing.T) {
 		TimestampSource:       pb.RawFlow_TS_INPUT,
 		DecapsulationProtocol: pb.RawFlow_DECAP_SRV6,
 	}
-	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "ipfix-srv6-template.pcap"))
-	_, err := nfdecoder.Decode(
-		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error:\n%+v", err)
+	for data := range helpers.ReadManyPcapL4(t, filepath.Join("testdata", "ipfix-srv6.pcap")) {
+		_, err := nfdecoder.Decode(
+			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+			options, bf, finalize)
+		if err != nil {
+			t.Fatalf("Decode() error:\n%+v", err)
+		}
 	}
-	data = helpers.ReadPcapL4(t, filepath.Join("testdata", "ipfix-srv6-data.pcap"))
-	_, err = nfdecoder.Decode(
-		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error:\n%+v", err)
-	}
+
 	expectedFlows := []*schema.FlowMessage{
 		{
 			SamplingRate:    0,
@@ -1098,9 +1048,60 @@ func TestDecodeSRv6(t *testing.T) {
 				schema.ColumnIPTTL:         uint8(63),
 				schema.ColumnIPFragmentID:  uint32(0xc96b),
 				// schema.ColumnICMPv4Type: uint8(0),
+				schema.ColumnSrcOuterAddr: netip.MustParseAddr("fc30:2200:1b::f"),
+				schema.ColumnDstOuterAddr: netip.MustParseAddr("fc30:2200:23:e009::"),
 			},
 		},
 	}
+	if diff := helpers.Diff(*got, expectedFlows); diff != "" {
+		t.Fatalf("Decode() (-got, +want):\n%s", diff)
+	}
+
+	// Decapsulation succeeded, so the non-encapsulated error counter must
+	// stay at zero.
+	gotMetrics := r.GetMetrics("akvorado_outlet_flow_decoder_netflow_", "errors_total")
+	if diff := helpers.Diff(gotMetrics, map[string]string{}); diff != "" {
+		t.Fatalf("Decode() metrics (-got, +want):\n%s", diff)
+	}
+}
+
+func TestIPFIXRandomAlgorithm(t *testing.T) {
+	r, nfdecoder, bf, got, finalize := setup(t, true)
+	options := decoder.Options{
+		TimestampSource:       pb.RawFlow_TS_INPUT,
+		DecapsulationProtocol: pb.RawFlow_DECAP_SRV6,
+	}
+	for data := range helpers.ReadManyPcapL4(t, filepath.Join("testdata", "ipfix-iosxr-srv6.pcap")) {
+		_, err := nfdecoder.Decode(
+			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+			options, bf, finalize)
+		if err != nil {
+			t.Fatalf("Decode() error:\n%+v", err)
+		}
+	}
+
+	expectedFlows := []*schema.FlowMessage{
+		{
+			SamplingRate:    1000,
+			InIf:            61,
+			OutIf:           106,
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("::ffff:100.0.0.1"),
+			DstAddr:         netip.MustParseAddr("::ffff:100.0.2.1"),
+			OtherColumns: map[schema.ColumnKey]any{
+				schema.ColumnPackets:      uint64(1),
+				schema.ColumnBytes:        uint64(84),
+				schema.ColumnEType:        uint32(constants.ETypeIPv4),
+				schema.ColumnProto:        uint32(constants.ProtoICMPv4),
+				schema.ColumnIPTTL:        uint8(63),
+				schema.ColumnIPFragmentID: uint32(0x54d),
+				schema.ColumnICMPv4Type:   uint8(8),
+				schema.ColumnSrcOuterAddr: netip.MustParseAddr("fc30:2200:4::f"),
+				schema.ColumnDstOuterAddr: netip.MustParseAddr("fc30:2200:7:e000::"),
+			},
+		},
+	}
+
 	if diff := helpers.Diff(*got, expectedFlows); diff != "" {
 		t.Fatalf("Decode() (-got, +want):\n%s", diff)
 	}
@@ -1118,20 +1119,15 @@ func TestJuniperCPIDDrop(t *testing.T) {
 	options := decoder.Options{
 		TimestampSource: pb.RawFlow_TS_INPUT,
 	}
-	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "juniper-cpid-template.pcap"))
-	_, err := nfdecoder.Decode(
-		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error:\n%+v", err)
+	for data := range helpers.ReadManyPcapL4(t, filepath.Join("testdata", "juniper-cpid.pcap")) {
+		_, err := nfdecoder.Decode(
+			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+			options, bf, finalize)
+		if err != nil {
+			t.Fatalf("Decode() error:\n%+v", err)
+		}
 	}
-	data = helpers.ReadPcapL4(t, filepath.Join("testdata", "juniper-cpid-data.pcap"))
-	_, err = nfdecoder.Decode(
-		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error:\n%+v", err)
-	}
+
 	expectedFlows := []*schema.FlowMessage{
 		{
 			SamplingRate:    0,
@@ -1163,22 +1159,13 @@ func TestDecodeEVPN(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
 	options := decoder.Options{}
 
-	// Send template
-	template := helpers.ReadPcapL4(t, filepath.Join("testdata", "ethernet-over-mpls-with-control-word-template.pcap"))
-	_, err := nfdecoder.Decode(
-		decoder.RawFlow{Payload: template, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error on template:\n%+v", err)
-	}
-
-	// Send data
-	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "ethernet-over-mpls-with-control-word-data.pcap"))
-	_, err = nfdecoder.Decode(
-		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
-		options, bf, finalize)
-	if err != nil {
-		t.Fatalf("Decode() error on data:\n%+v", err)
+	for data := range helpers.ReadManyPcapL4(t, filepath.Join("testdata", "ethernet-over-mpls-with-control-word.pcap")) {
+		_, err := nfdecoder.Decode(
+			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+			options, bf, finalize)
+		if err != nil {
+			t.Fatalf("Decode() error:\n%+v", err)
+		}
 	}
 
 	if len(*got) != 10 {

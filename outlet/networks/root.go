@@ -199,7 +199,7 @@ func (c *Component) updateSource(name string, results []externalNetworkAttribute
 // attributes of the most specific prefix win.
 func (c *Component) Lookup(ip netip.Addr) NetworkAttributes {
 	networks := c.networks.Load()
-	reference, ok := networks.prefixes.Lookup(ip)
+	reference, ok := networks.prefixes.Lookup(ip.Unmap())
 	if !ok {
 		return NetworkAttributes{}
 	}
@@ -265,6 +265,15 @@ func (c *Component) rebuild() {
 		}
 	}
 
+	// The merged tree uses IPv4-mapped prefixes, so an IPv6 prefix like ::/0
+	// also contains IPv4 prefixes. The lookup tree uses plain IPv4 prefixes,
+	// as bart is faster with them. But bart keeps IPv4 and IPv6 apart: an IPv4
+	// address is only looked up among IPv4 prefixes and never matches ::/0. To
+	// keep the attributes of ::/0 for IPv4, add ::ffff:0:0/96 without
+	// attributes. It gets them from the IPv6 prefixes containing it and
+	// becomes 0.0.0.0/0 in the lookup tree.
+	update(netip.MustParsePrefix("::ffff:0:0/96"), NetworkAttributes{})
+
 	// Merge the attributes from the least specific prefixes into the most
 	// specific ones: a prefix inherits the attributes it does not define
 	// itself. AllSorted() walks the prefixes in CIDR order, therefore a prefix
@@ -287,7 +296,7 @@ func (c *Component) rebuild() {
 			attributes = mergeNetworkAttrs(ancestors[len(ancestors)-1].attributes, attributes)
 		}
 		ancestors = append(ancestors, ancestor{prefix, attributes})
-		flattened.Insert(prefix, pool.Put(attributes))
+		flattened.Insert(helpers.UnmapPrefix(prefix), pool.Put(attributes))
 	}
 
 	c.networks.Store(&networkTree{prefixes: flattened, pool: pool})

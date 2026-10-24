@@ -181,7 +181,6 @@ func (w *worker) enrichFlow(exporterIP netip.Addr, exporterStr string) bool {
 		flow.AppendString(schema.ColumnDstGeoCity, dstNet.City)
 	}
 
-	flow.AppendString(schema.ColumnExporterName, flowExporterName)
 	flow.AppendUint(schema.ColumnInIfSpeed, uint64(flowInIfSpeed))
 	flow.AppendUint(schema.ColumnOutIfSpeed, uint64(flowOutIfSpeed))
 
@@ -268,6 +267,7 @@ func (c *Component) writeExporter(flow *schema.FlowMessage, classification expor
 	if classification.Reject {
 		return false
 	}
+	flow.AppendString(schema.ColumnExporterName, classification.Name)
 	flow.AppendString(schema.ColumnExporterGroup, classification.Group)
 	flow.AppendString(schema.ColumnExporterRole, classification.Role)
 	flow.AppendString(schema.ColumnExporterSite, classification.Site)
@@ -279,9 +279,12 @@ func (c *Component) writeExporter(flow *schema.FlowMessage, classification expor
 func (c *Component) classifyExporter(t time.Time, ip, name string, flow *schema.FlowMessage, classification exporterClassification) bool {
 	// we already have the info provided by the metadata component
 	if (classification != exporterClassification{}) {
+		classification.Name = name
 		return c.writeExporter(flow, classification)
 	}
 	if len(c.config.ExporterClassifiers) == 0 {
+		classification.Name = name
+		c.writeExporter(flow, classification)
 		return true
 	}
 	si := exporterInfo{IP: ip, Name: name}
@@ -303,6 +306,9 @@ func (c *Component) classifyExporter(t time.Time, ip, name string, flow *schema.
 			continue
 		}
 		break
+	}
+	if classification.Name == "" {
+		classification.Name = name
 	}
 	c.classifierExporterCache.Put(t, si, classification)
 	return c.writeExporter(flow, classification)
