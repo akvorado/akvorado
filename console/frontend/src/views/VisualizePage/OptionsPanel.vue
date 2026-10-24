@@ -202,11 +202,7 @@ import {
   default as InputTimeRange,
   type ModelType as InputTimeRangeModelType,
 } from "@/components/InputTimeRange.vue";
-import {
-  timezones,
-  selectedTimezoneItem,
-  parseTimezoneDate,
-} from "@/composables/useTimezone";
+import { timezones, selectedTimezoneItem } from "@/composables/useTimezone";
 import {
   default as InputDimensions,
   type ModelType as InputDimensionsModelType,
@@ -274,8 +270,8 @@ const submitOptions = (force?: boolean, auto?: boolean) => {
         "update:modelValue",
         {
           ...options.value,
-          start: parseTimezoneDate(options.value.humanStart).toISOString(),
-          end: parseTimezoneDate(options.value.humanEnd).toISOString(),
+          start: SugarDate.create(options.value.humanStart).toISOString(),
+          end: SugarDate.create(options.value.humanEnd).toISOString(),
         },
         auto,
       );
