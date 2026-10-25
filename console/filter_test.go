@@ -121,29 +121,30 @@ UNION DISTINCT
 SELECT label, detail FROM (
  SELECT
   'community' AS detail,
-  concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))) AS label
+  concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))) AS label,
+  n
  FROM (
-  SELECT arrayJoin(arrayJoin(DstCommunities)) AS c
+  SELECT arrayJoin(arrayJoin(DstCommunities)) AS c, COUNT(*) AS n
   FROM flows
   WHERE TimeReceived > date_sub(minute, 1, now())
   GROUP BY c
-  ORDER BY COUNT(*) DESC
  )
 
  UNION ALL
 
  SELECT
   'large community' AS detail,
-  concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))) AS label
+  concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))) AS label,
+  n
  FROM (
-  SELECT arrayJoin(arrayJoin(DstLargeCommunities)) AS c
+  SELECT arrayJoin(arrayJoin(DstLargeCommunities)) AS c, COUNT(*) AS n
   FROM flows
   WHERE TimeReceived > date_sub(minute, 1, now())
   GROUP BY c
-  ORDER BY COUNT(*) DESC
  )
 )
 WHERE startsWith(label, '6540')
+ORDER BY n DESC
 LIMIT 20`)).
 		SetArg(1, []struct {
 			Label  string `ch:"label"`
@@ -175,7 +176,7 @@ UNION DISTINCT
  WHERE positionCaseInsensitive(name, 'http') >= 1
  ORDER BY positionCaseInsensitive(name, 'http'), port
  LIMIT 20
-) GROUP BY rank, label, detail ORDER BY rank, MAX(c) DESC, MIN(rowNumberInBlock()) LIMIT 20`)).
+) GROUP BY label, detail ORDER BY MIN(rank), MAX(c) DESC, MIN(rowNumberInBlock()) LIMIT 20`)).
 		SetArg(1, []struct {
 			Label  string `ch:"label"`
 			Detail string `ch:"detail"`
@@ -532,7 +533,7 @@ LIMIT 20`)).
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
 SELECT label FROM (
- SELECT ICMPv6 AS label, 1 AS rank
+ SELECT ICMPv6 AS label, 1 AS rank, COUNT(*) AS c
  FROM flows
  WHERE TimeReceived > date_sub(minute, 1, now())
  AND Proto = 58
@@ -541,13 +542,13 @@ SELECT label FROM (
  ORDER BY COUNT(*) DESC
  LIMIT 20
 UNION DISTINCT
- SELECT name AS label, 2 AS rank
+ SELECT name AS label, 2 AS rank, 0 AS c
  FROM default.icmp
  WHERE positionCaseInsensitive(label, 'echo') >= 1
  AND proto = 58
  ORDER BY positionCaseInsensitive(label, 'echo'), type, code
  LIMIT 20
-) GROUP BY label ORDER BY MIN(rank), MIN(rowNumberInBlock()) LIMIT 20`)).
+) GROUP BY label ORDER BY MIN(rank), MAX(c) DESC, MIN(rowNumberInBlock()) LIMIT 20`)).
 		SetArg(1, []struct {
 			Label string `ch:"label"`
 		}{

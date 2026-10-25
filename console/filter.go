@@ -249,24 +249,27 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 			columnNamePrefix := c.fixQueryColumnName(input.Column)[:3]
 			// Each community of the recent flows, taken out of the arrays.
 			unrolled := func(column string) *sb.Query {
-				return sb.Select(sb.Alias(
-					sb.Function("arrayJoin", sb.Function("arrayJoin", sb.Column(column))), "c")).
+				return sb.Select(
+					sb.Alias(sb.Function("arrayJoin", sb.Function("arrayJoin", sb.Column(column))), "c"),
+					sb.Alias(sb.Function("COUNT", sb.Star()), "n")).
 					From(sb.Table("flows")).
 					Where(recentFlows(1)).
-					GroupBy(sb.Column("c")).
-					OrderBy(mostUsedFirst())
+					GroupBy(sb.Column("c"))
 			}
 			communities := sb.Select(
 				sb.Alias(sb.String("community"), "detail"),
-				sb.Alias(query.CommunityToString(sb.Column("c")), "label")).
+				sb.Alias(query.CommunityToString(sb.Column("c")), "label"),
+				sb.Column("n")).
 				FromSelect(unrolled(fmt.Sprintf("%sCommunities", columnNamePrefix)))
 			largeCommunities := sb.Select(
 				sb.Alias(sb.String("large community"), "detail"),
-				sb.Alias(query.LargeCommunityToString(sb.Column("c")), "label")).
+				sb.Alias(query.LargeCommunityToString(sb.Column("c")), "label"),
+				sb.Column("n")).
 				FromSelect(unrolled(fmt.Sprintf("%sLargeCommunities", columnNamePrefix)))
 			sqlQuery := sb.Select(sb.Columns("label", "detail")...).
 				FromSelect(communities.UnionAll(largeCommunities)).
 				Where(sb.Function("startsWith", sb.Column("label"), sb.String(input.Prefix))).
+				OrderBy(sb.Order(sb.Column("n")).Desc()).
 				Limit(input.Limit).
 				String()
 			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery); err != nil {
@@ -389,9 +392,9 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 				Limit(input.Limit)
 			sqlQuery := sb.Select(sb.Columns("label", "detail")...).
 				FromSelect(fromFlows.UnionDistinct(fromDictionaries)).
-				GroupBy(sb.Columns("rank", "label", "detail")...).
+				GroupBy(sb.Columns("label", "detail")...).
 				OrderBy(
-					sb.Order(sb.Column("rank")),
+					sb.Order(sb.Function("MIN", sb.Column("rank"))),
 					sb.Order(sb.Function("MAX", sb.Column("c"))).Desc(),
 					sb.Order(sb.Function("MIN", sb.Function("rowNumberInBlock")))).
 				Limit(input.Limit).
@@ -451,7 +454,8 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 			// The ICMP types seen in the recent flows, the most used first.
 			fromFlows := sb.Select(
 				sb.Alias(column, "label"),
-				sb.Alias(sb.Uint(1), "rank")).
+				sb.Alias(sb.Uint(1), "rank"),
+				sb.Alias(sb.Function("COUNT", sb.Star()), "c")).
 				From(sb.Table("flows")).
 				Where(sb.And(
 					recentFlows(1),
@@ -463,7 +467,8 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 			// The other ICMP types of the dictionary, whether they were seen or not.
 			fromDictionary := sb.Select(
 				sb.Alias(sb.Column("name"), "label"),
-				sb.Alias(sb.Uint(2), "rank")).
+				sb.Alias(sb.Uint(2), "rank"),
+				sb.Alias(sb.Uint(0), "c")).
 				From(c.dictionary(schema.DictionaryICMP)).
 				Where(sb.And(
 					matchPrefix(sb.Column("label"), input.Prefix),
@@ -478,6 +483,7 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 				GroupBy(sb.Column("label")).
 				OrderBy(
 					sb.Order(sb.Function("MIN", sb.Column("rank"))),
+					sb.Order(sb.Function("MAX", sb.Column("c"))).Desc(),
 					sb.Order(sb.Function("MIN", sb.Function("rowNumberInBlock")))).
 				Limit(input.Limit).
 				String()
