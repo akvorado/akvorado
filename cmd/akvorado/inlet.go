@@ -33,6 +33,11 @@ func (c *InletConfiguration) Reset() {
 	}
 }
 
+// UnusedButExportedFunction is there to test dead code elimination.
+func (c *InletConfiguration) UnusedButExportedFunction() {
+	panic("never call me!")
+}
+
 type inletOptions struct {
 	ConfigRelatedOptions
 	CheckMode bool
