@@ -49,6 +49,7 @@ GENERATED = \
 
 BUILD_ARGS =
 BUILD_TAGS = release,grpcnotrace,validator_novalidatefn
+BUILD_LDFLAGS = -X $(MODULE)/common/helpers.AkvoradoVersion=$(VERSION)
 
 .PHONY: all all-indep bin/$(basename $(MODULE)) bin/$(basename $(MODULE))-inlet
 all: bin/$(basename $(MODULE)) bin/$(basename $(MODULE))-inlet ## Build program binaries
@@ -64,6 +65,7 @@ all: bin/$(basename $(MODULE)) bin/$(basename $(MODULE))-inlet ## Build program 
 # - https://docs.docker.com/build/building/variables/#pre-defined-build-arguments
 # - https://github.com/containerd/platforms/pull/8
 bin/$(basename $(MODULE))-inlet: BUILD_TAGS := $(BUILD_TAGS),akvorado_inlet
+bin/$(basename $(MODULE))-inlet: BUILD_LDFLAGS += -w
 bin/$(basename $(MODULE)) bin/$(basename $(MODULE))-inlet: fmt lint all-indep ; @
 	$(call log,building $@ executable…)
 	$Q env GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) \
@@ -72,7 +74,7 @@ bin/$(basename $(MODULE)) bin/$(basename $(MODULE))-inlet: fmt lint all-indep ; 
          $(if $(filter arm,$(TARGETARCH)),GOARM=$(TARGETVARIANT:v%=%)))) \
 	   $(GO) build \
 		-tags $(BUILD_TAGS) \
-		-ldflags '-X $(MODULE)/common/helpers.AkvoradoVersion=$(VERSION)' \
+		-ldflags '$(BUILD_LDFLAGS)' \
 		$(BUILD_ARGS) \
 		-o $@ ./cmd/akvorado
 all-indep: $(GENERATED)
