@@ -124,7 +124,7 @@ SELECT label, detail FROM (
   concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))) AS label,
   n
  FROM (
-  SELECT arrayJoin(arrayJoin(DstCommunities)) AS c, COUNT(*) AS n
+  SELECT arrayJoin(DstCommunities) AS c, COUNT(*) AS n
   FROM flows
   WHERE TimeReceived > date_sub(minute, 1, now())
   GROUP BY c
@@ -137,7 +137,7 @@ SELECT label, detail FROM (
   concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))) AS label,
   n
  FROM (
-  SELECT arrayJoin(arrayJoin(DstLargeCommunities)) AS c, COUNT(*) AS n
+  SELECT arrayJoin(DstLargeCommunities) AS c, COUNT(*) AS n
   FROM flows
   WHERE TimeReceived > date_sub(minute, 1, now())
   GROUP BY c

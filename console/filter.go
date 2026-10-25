@@ -250,7 +250,7 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 			// Each community of the recent flows, taken out of the arrays.
 			unrolled := func(column string) *sb.Query {
 				return sb.Select(
-					sb.Alias(sb.Function("arrayJoin", sb.Function("arrayJoin", sb.Column(column))), "c"),
+					sb.Alias(sb.Function("arrayJoin", sb.Column(column)), "c"),
 					sb.Alias(sb.Function("COUNT", sb.Star()), "n")).
 					From(sb.Table("flows")).
 					Where(recentFlows(1)).
