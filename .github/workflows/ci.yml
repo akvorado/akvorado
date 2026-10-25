@@ -132,6 +132,8 @@ jobs:
       - name: Build
         if: matrix.binary
         run: |
+          # Use the committed eBPF programs
+          touch inlet/flow/input/udp/reuseport_*.o
           make TARGETARCH=amd64 TARGETVARIANT=v3
           mv bin/akvorado bin/akvorado-amd64
           mv bin/akvorado-inlet bin/akvorado-inlet-amd64
