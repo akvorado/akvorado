@@ -1,10 +1,13 @@
 // SPDX-FileCopyrightText: 2022 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
+//go:build !akvorado_inlet
+
 package httpserver
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -15,7 +18,53 @@ import (
 	"time"
 
 	"akvorado/common/httpserver/cachestore"
+
+	"github.com/redis/go-redis/v9"
 )
+
+// CacheBackendConfiguration represents the configuration of a cache backend.
+type CacheBackendConfiguration interface {
+	New() (cachestore.Store, error)
+}
+
+// New creates a new memory cache store from a memory cache configuration.
+func (MemoryCacheConfiguration) New() (cachestore.Store, error) {
+	return cachestore.NewMemory(5 * time.Minute), nil
+}
+
+// New creates a new Redis cache store from a Redis cache configuration.
+func (c RedisCacheConfiguration) New() (cachestore.Store, error) {
+	client := redis.NewClient(&redis.Options{
+		Network:  c.Protocol,
+		Addr:     c.Server,
+		Username: c.Username,
+		Password: c.Password,
+		DB:       c.DB,
+	})
+	if _, err := client.Ping(context.Background()).Result(); err != nil {
+		client.Close()
+		return nil, fmt.Errorf("cannot ping Redis server: %w", err)
+	}
+	return cachestore.NewRedis(client), nil
+}
+
+type cache struct {
+	cacheStore cachestore.Store
+}
+
+func (c *Component) startCache() error {
+	var err error
+	c.cacheStore, err = c.config.Cache.Config.New()
+	return err
+}
+
+func (c *Component) stopCache() {
+	if c.cacheStore != nil {
+		if err := c.cacheStore.Close(); err != nil {
+			c.r.Err(err).Msg("cannot close cache store")
+		}
+	}
+}
 
 // cachedResponse stores all the data needed to replay a cached
 // response.

@@ -26,7 +26,7 @@ identified with a specific icon:
 - 🌱 *console*: add a timezone selector in the user menu
 - 🌱 *docker*: update Valkey to 9.1 (not mandatory)
 - 🌱 *build*: also distribute `akvorado-inlet`, a minimal version of Akvorado
-  containing only the inlet (23 MiB instead of 100 MiB)
+  containing only the inlet (20 MiB instead of 100 MiB)
 
 ## 2026.10.0 - 2026-10-03
 
