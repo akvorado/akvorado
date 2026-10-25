@@ -302,7 +302,8 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 				sb.Alias(sb.Function("dictGet",
 					sb.String(asns.String()), sb.String("name"), column), "detail"),
 				sb.Alias(sb.Uint(1), "rank"),
-				sb.Alias(sb.Function("COUNT", sb.Star()), "c")).
+				sb.Alias(sb.Function("COUNT", sb.Star()), "c"),
+				sb.Alias(column, "k")).
 				From(sb.Table("flows")).
 				Where(sb.And(
 					recentFlows(1),
@@ -317,7 +318,8 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 					sb.String("AS"), sb.Function("toString", sb.Column("asn"))), "label"),
 				sb.Alias(sb.Column("name"), "detail"),
 				sb.Alias(sb.Uint(2), "rank"),
-				sb.Alias(sb.Uint(0), "c")).
+				sb.Alias(sb.Uint(0), "c"),
+				sb.Alias(sb.Column("asn"), "k")).
 				From(asns).
 				Where(matchPrefix(sb.Column("name"), input.Prefix)).
 				OrderBy(
@@ -330,7 +332,8 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 				OrderBy(
 					sb.Order(sb.Function("MIN", sb.Column("rank"))),
 					sb.Order(sb.Function("MAX", sb.Column("c"))).Desc(),
-					sb.Order(sb.Function("MIN", sb.Function("rowNumberInBlock")))).
+					sb.Order(prefixPosition(sb.Column("detail"), input.Prefix)),
+					sb.Order(sb.Function("MIN", sb.Column("k")))).
 				Limit(input.Limit).
 				String()
 			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery); err != nil {
@@ -365,7 +368,8 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 					portName(tcp),
 					portName(udp)), "detail"),
 				sb.Alias(sb.Uint(1), "rank"),
-				sb.Alias(sb.Function("COUNT", sb.Star()), "c")).
+				sb.Alias(sb.Function("COUNT", sb.Star()), "c"),
+				sb.Alias(column, "k")).
 				From(sb.Table("flows")).
 				Where(sb.And(
 					sb.Op(sb.Column("Proto"), "IN", sb.Tuple(
@@ -383,7 +387,8 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 				sb.Alias(sb.Function("toString", sb.Column("port")), "label"),
 				sb.Alias(sb.Column("name"), "detail"),
 				sb.Alias(sb.Uint(2), "rank"),
-				sb.Alias(sb.Uint(0), "c")).
+				sb.Alias(sb.Uint(0), "c"),
+				sb.Alias(sb.Column("port"), "k")).
 				FromSelect(knownPorts).
 				Where(matchPrefix(sb.Column("name"), input.Prefix)).
 				OrderBy(
@@ -396,7 +401,8 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 				OrderBy(
 					sb.Order(sb.Function("MIN", sb.Column("rank"))),
 					sb.Order(sb.Function("MAX", sb.Column("c"))).Desc(),
-					sb.Order(sb.Function("MIN", sb.Function("rowNumberInBlock")))).
+					sb.Order(prefixPosition(sb.Column("detail"), input.Prefix)),
+					sb.Order(sb.Function("MIN", sb.Column("k")))).
 				Limit(input.Limit).
 				String()
 			if err := c.d.ClickHouseDB.Select(ctx, &results, sqlQuery); err != nil {
@@ -455,7 +461,10 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 			fromFlows := sb.Select(
 				sb.Alias(column, "label"),
 				sb.Alias(sb.Uint(1), "rank"),
-				sb.Alias(sb.Function("COUNT", sb.Star()), "c")).
+				sb.Alias(sb.Function("COUNT", sb.Star()), "c"),
+				sb.Alias(sb.Function("MIN", sb.Tuple(
+					sb.Column(fmt.Sprintf("%sType", columnName)),
+					sb.Column(fmt.Sprintf("%sCode", columnName)))), "k")).
 				From(sb.Table("flows")).
 				Where(sb.And(
 					recentFlows(1),
@@ -468,7 +477,8 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 			fromDictionary := sb.Select(
 				sb.Alias(sb.Column("name"), "label"),
 				sb.Alias(sb.Uint(2), "rank"),
-				sb.Alias(sb.Uint(0), "c")).
+				sb.Alias(sb.Uint(0), "c"),
+				sb.Alias(sb.Tuple(sb.Column("type"), sb.Column("code")), "k")).
 				From(c.dictionary(schema.DictionaryICMP)).
 				Where(sb.And(
 					matchPrefix(sb.Column("label"), input.Prefix),
@@ -484,7 +494,8 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 				OrderBy(
 					sb.Order(sb.Function("MIN", sb.Column("rank"))),
 					sb.Order(sb.Function("MAX", sb.Column("c"))).Desc(),
-					sb.Order(sb.Function("MIN", sb.Function("rowNumberInBlock")))).
+					sb.Order(prefixPosition(sb.Column("label"), input.Prefix)),
+					sb.Order(sb.Function("MIN", sb.Column("k")))).
 				Limit(input.Limit).
 				String()
 			err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery)
