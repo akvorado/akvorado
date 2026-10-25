@@ -298,7 +298,8 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 					sb.String("AS"), sb.Function("toString", column)), "label"),
 				sb.Alias(sb.Function("dictGet",
 					sb.String(asns.String()), sb.String("name"), column), "detail"),
-				sb.Alias(sb.Uint(1), "rank")).
+				sb.Alias(sb.Uint(1), "rank"),
+				sb.Alias(sb.Function("COUNT", sb.Star()), "c")).
 				From(sb.Table("flows")).
 				Where(sb.And(
 					recentFlows(1),
@@ -312,7 +313,8 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 				sb.Alias(sb.Function("concat",
 					sb.String("AS"), sb.Function("toString", sb.Column("asn"))), "label"),
 				sb.Alias(sb.Column("name"), "detail"),
-				sb.Alias(sb.Uint(2), "rank")).
+				sb.Alias(sb.Uint(2), "rank"),
+				sb.Alias(sb.Uint(0), "c")).
 				From(asns).
 				Where(matchPrefix(sb.Column("name"), input.Prefix)).
 				OrderBy(
@@ -324,6 +326,7 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 				GroupBy(sb.Columns("label", "detail")...).
 				OrderBy(
 					sb.Order(sb.Function("MIN", sb.Column("rank"))),
+					sb.Order(sb.Function("MAX", sb.Column("c"))).Desc(),
 					sb.Order(sb.Function("MIN", sb.Function("rowNumberInBlock")))).
 				Limit(input.Limit).
 				String()

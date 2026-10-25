@@ -64,7 +64,7 @@ LIMIT 20`)).
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
 SELECT label, detail FROM (
- SELECT concat('AS', toString(DstAS)) AS label, dictGet('default.asns', 'name', DstAS) AS detail, 1 AS rank
+ SELECT concat('AS', toString(DstAS)) AS label, dictGet('default.asns', 'name', DstAS) AS detail, 1 AS rank, COUNT(*) AS c
  FROM flows
  WHERE TimeReceived > date_sub(minute, 1, now())
  AND detail != ''
@@ -73,12 +73,12 @@ SELECT label, detail FROM (
  ORDER BY COUNT(*) DESC
  LIMIT 20
 UNION DISTINCT
- SELECT concat('AS', toString(asn)) AS label, name AS detail, 2 AS rank
+ SELECT concat('AS', toString(asn)) AS label, name AS detail, 2 AS rank, 0 AS c
  FROM default.asns
  WHERE positionCaseInsensitive(name, 'goog') >= 1
  ORDER BY positionCaseInsensitive(name, 'goog'), asn
  LIMIT 20
-) GROUP BY label, detail ORDER BY MIN(rank), MIN(rowNumberInBlock()) LIMIT 20`)).
+) GROUP BY label, detail ORDER BY MIN(rank), MAX(c) DESC, MIN(rowNumberInBlock()) LIMIT 20`)).
 		SetArg(1, []struct {
 			Label  string `ch:"label"`
 			Detail string `ch:"detail"`
@@ -100,7 +100,7 @@ UNION DISTINCT
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
 SELECT label, detail FROM (
- SELECT concat('AS', toString(DstAS)) AS label, dictGet('default.asns', 'name', DstAS) AS detail, 1 AS rank
+ SELECT concat('AS', toString(DstAS)) AS label, dictGet('default.asns', 'name', DstAS) AS detail, 1 AS rank, COUNT(*) AS c
  FROM flows
  WHERE TimeReceived > date_sub(minute, 1, now())
  AND detail != ''
@@ -109,12 +109,12 @@ SELECT label, detail FROM (
  ORDER BY COUNT(*) DESC
  LIMIT 20
 UNION DISTINCT
- SELECT concat('AS', toString(asn)) AS label, name AS detail, 2 AS rank
+ SELECT concat('AS', toString(asn)) AS label, name AS detail, 2 AS rank, 0 AS c
  FROM default.asns
  WHERE positionCaseInsensitive(name, 'srca') >= 1
  ORDER BY positionCaseInsensitive(name, 'srca'), asn
  LIMIT 20
-) GROUP BY label, detail ORDER BY MIN(rank), MIN(rowNumberInBlock()) LIMIT 20`)).
+) GROUP BY label, detail ORDER BY MIN(rank), MAX(c) DESC, MIN(rowNumberInBlock()) LIMIT 20`)).
 		Return(nil)
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
