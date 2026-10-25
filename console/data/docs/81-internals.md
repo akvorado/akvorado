@@ -95,9 +95,9 @@ instead of distributing incoming flows with a channel.
 On Linux, an eBPF program is attached to the `SO_REUSEPORT` group to choose the
 socket for each incoming packet, using a round-robin counter. Without it, the
 kernel selects the socket by hashing the packet headers, which spreads the load
-badly when there are only a few exporters. Attaching the program needs the `BPF`
-capability. When it fails, the input logs a warning and keeps working with the
-kernel behaviour.
+badly when there are only a few exporters. Attaching the program needs Linux 5.2
+or more recent and the `BPF` capability. When it fails, the input logs a warning
+and keeps working with the kernel behaviour.
 
 NetFlow v5, NetFlow v9, IPFIX, and sFlow are currently supported for reception.
 

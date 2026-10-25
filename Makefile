@@ -126,7 +126,8 @@ common/clickhousedb/mocks/mock_driver.go:
 inlet/flow/input/udp/reuseport_%.o: inlet/flow/input/udp/reuseport_kern.c inlet/flow/input/udp/vmlinux.h
 	$(call log,generate eBPF program for input/udp ($*)…)
 	$Q ! $(CLANG) -print-targets 2> /dev/null | grep -qF $* || \
-		 $(CLANG) -O2 -g -Wall -target $* -c $< -o $@
+		 $(CLANG) -O2 -g -Wall -mcpu=v3 -fno-ident -ffile-prefix-map=$(CURDIR)=. \
+			-target $* -c $< -o $@
 
 common/kafka/loadbalancealgorithm_enumer.go: common/kafka/config.go
 	$(call log,generate enums for LoadBalanceAlgorithm…)
