@@ -4,14 +4,7 @@
 package httpserver
 
 import (
-	"context"
-	"fmt"
-	"time"
-
 	"akvorado/common/helpers"
-	"akvorado/common/httpserver/cachestore"
-
-	"github.com/redis/go-redis/v9"
 )
 
 // Configuration describes the configuration for the HTTP server.
@@ -31,19 +24,9 @@ type CacheConfiguration struct {
 	Config CacheBackendConfiguration
 }
 
-// CacheBackendConfiguration represents the configuration of a cache backend.
-type CacheBackendConfiguration interface {
-	New() (cachestore.Store, error)
-}
-
 // MemoryCacheConfiguration is the configuration for an in-memory cache. There
 // is no configuration.
 type MemoryCacheConfiguration struct{}
-
-// New creates a new memory cache store from a memory cache configuration.
-func (MemoryCacheConfiguration) New() (cachestore.Store, error) {
-	return cachestore.NewMemory(5 * time.Minute), nil
-}
 
 // DefaultMemoryCacheConfiguration returns the default configuration for an
 // in-memory cache.
@@ -63,22 +46,6 @@ type RedisCacheConfiguration struct {
 	Password string
 	// Database to connect to
 	DB int
-}
-
-// New creates a new Redis cache store from a Redis cache configuration.
-func (c RedisCacheConfiguration) New() (cachestore.Store, error) {
-	client := redis.NewClient(&redis.Options{
-		Network:  c.Protocol,
-		Addr:     c.Server,
-		Username: c.Username,
-		Password: c.Password,
-		DB:       c.DB,
-	})
-	if _, err := client.Ping(context.Background()).Result(); err != nil {
-		client.Close()
-		return nil, fmt.Errorf("cannot ping Redis server: %w", err)
-	}
-	return cachestore.NewRedis(client), nil
 }
 
 // DefaultRedisCacheConfiguration returns the default configuration for a

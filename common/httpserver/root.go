@@ -20,7 +20,6 @@ import (
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/daemon"
-	"akvorado/common/httpserver/cachestore"
 	"akvorado/common/reporter"
 )
 
@@ -40,8 +39,8 @@ type Component struct {
 	serviceName string
 
 	// APIRouter is the router exposed for /api
-	APIRouter  *Router
-	cacheStore cachestore.Store
+	APIRouter *Router
+	cache
 }
 
 // Dependencies define the dependencies of the HTTP component.
@@ -126,9 +125,7 @@ func recoveryMiddleware(r *reporter.Reporter) Middleware {
 
 // Start starts the HTTP component.
 func (c *Component) Start() error {
-	var err error
-	c.cacheStore, err = c.config.Cache.Config.New()
-	if err != nil {
+	if err := c.startCache(); err != nil {
 		return err
 	}
 	server := &http.Server{Handler: c.mux}
@@ -214,11 +211,7 @@ func (c *Component) Stop() error {
 	defer c.r.Info().Msg("HTTP component stopped")
 	c.t.Kill(nil)
 	err := c.t.Wait()
-	if c.cacheStore != nil {
-		if cerr := c.cacheStore.Close(); cerr != nil {
-			c.r.Err(cerr).Msg("cannot close cache store")
-		}
-	}
+	c.stopCache()
 	return err
 }
 
