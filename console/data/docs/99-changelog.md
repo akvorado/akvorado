@@ -10,7 +10,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 2026.10.1 - 2026-10-25
 
 - ✨ *inlet*: add support for IPFIX over TCP and SCTP
 - ✨ *outlet*: add `SetName()` to exporter classifiers to rename exporters
