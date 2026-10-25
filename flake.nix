@@ -68,6 +68,7 @@
           backend = pkgs.buildGoModule.override { inherit go; } {
             doCheck = false;
             name = "akvorado";
+            outputs = [ "out" "inlet" ];
             src = ./.;
             vendorHash = l.readFile ./nix/vendorHash.txt;
             proxyVendor = true; # generated code may contain additional dependencies
@@ -88,6 +89,8 @@
             installPhase = ''
               mkdir -p $out/bin
               cp bin/akvorado $out/bin/.
+              mkdir -p $inlet/bin
+              cp bin/akvorado-inlet $inlet/bin/.
             '';
           };
         in
