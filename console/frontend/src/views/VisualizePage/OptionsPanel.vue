@@ -131,15 +131,6 @@
           v-model="timeRange"
           @submit="submitOptions(true)"
         />
-        <InputListBox
-          v-model="selectedTimezoneItem"
-          :items="timezones"
-          filter="name"
-          label="Timezone"
-        >
-          <template #selected>{{ selectedTimezoneItem.name }}</template>
-          <template #item="{ name }">{{ name }}</template>
-        </InputListBox>
         <SectionLabel>
           <span class="flex items-center gap-1">
             Dimensions
@@ -203,11 +194,6 @@ import {
   type ModelType as InputTimeRangeModelType,
 } from "@/components/InputTimeRange.vue";
 import {
-  timezones,
-  selectedTimezone,
-  type TimezoneOption,
-} from "@/utils/timezone";
-import {
   default as InputDimensions,
   type ModelType as InputDimensionsModelType,
 } from "@/components/InputDimensions.vue";
@@ -264,13 +250,6 @@ const filter = ref<InputFilterModelType>(null);
 const units = ref<Units>("l3bps");
 const bidirectional = ref(false);
 const previousPeriod = ref(false);
-const selectedTimezoneItem = computed({
-  get: () =>
-    timezones.find((t) => t.code === selectedTimezone.value) || timezones[0],
-  set: (val: TimezoneOption) => {
-    selectedTimezone.value = val.code;
-  },
-});
 
 const submitOptions = (force?: boolean, auto?: boolean) => {
   if (!force && props.loading) {

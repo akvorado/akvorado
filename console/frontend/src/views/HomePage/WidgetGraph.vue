@@ -5,6 +5,7 @@
   <div>
     <div class="h-[300px]">
       <v-chart
+        :key="selectedTimezone"
         :option="option"
         :update-options="{ notMerge: true }"
         :theme="isDark ? 'dark' : undefined"
@@ -29,6 +30,7 @@ import {
 } from "echarts/components";
 import VChart from "vue-echarts";
 import { dataColor, formatXps } from "../../utils";
+import { selectedTimezone } from "@/utils/timezone";
 const { isDark } = inject(ThemeKey)!;
 
 const props = withDefaults(

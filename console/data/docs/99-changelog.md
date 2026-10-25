@@ -23,7 +23,7 @@ identified with a specific icon:
 - 🩹 *orchestrator*: keep watching configuration files after an error
 - 🩹 *outlet*: fix SNMPv3 polling of Cisco NX-OS when the engine ID is cached
 - 🌱 *outlet*: add support for random n-out-of-N sampling in IPFIX flows
-- 🌱 *console*: add a timezone selector
+- 🌱 *console*: add a timezone selector in the user menu
 - 🌱 *docker*: update Valkey to 9.1 (not mandatory)
 
 ## 2026.10.0 - 2026-10-03

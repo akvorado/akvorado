@@ -22,7 +22,11 @@
       <template #selected>{{ selectedPreset.name }}</template>
       <template #item="{ name }">{{ name }}</template>
     </InputListBox>
-    <InputString v-model="startTime" label="Start" :error="startTimeError">
+    <InputString
+      v-model="startTime"
+      :label="`Start${timezoneHint}`"
+      :error="startTimeError"
+    >
       <template #button>
         <button
           type="button"
@@ -35,7 +39,11 @@
         </button>
       </template>
     </InputString>
-    <InputString v-model="endTime" label="End" :error="endTimeError">
+    <InputString
+      v-model="endTime"
+      :label="`End${timezoneHint}`"
+      :error="endTimeError"
+    >
       <template #button>
         <button
           type="button"
@@ -58,6 +66,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/vue/solid";
 import InputString from "@/components/InputString.vue";
 import InputListBox from "@/components/InputListBox.vue";
 import { isEqual } from "lodash-es";
+import { selectedTimezone } from "@/utils/timezone";
 
 const props = defineProps<{
   modelValue: ModelType;
@@ -66,6 +75,18 @@ const emit = defineEmits<{
   "update:modelValue": [value: typeof props.modelValue];
   submit: [];
 }>();
+
+const timezoneHint = computed(() => {
+  const tz = selectedTimezone.value;
+  if (tz === "browser") return "";
+  const name = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    timeZoneName: "short",
+  })
+    .formatToParts()
+    .find((p) => p.type === "timeZoneName")?.value;
+  return ` (${name ?? tz})`;
+});
 
 const startTime = ref("");
 const endTime = ref("");
