@@ -20,11 +20,11 @@
     "iana-assignments": {
       "flake": false,
       "locked": {
-        "lastModified": 1792189058,
-        "narHash": "sha256-mSy5QRzBSyHLgf9OnzHjD7l8ZDFWfbQjvZXNn6cXPFI=",
+        "lastModified": 1792804386,
+        "narHash": "sha256-8q0cZnkfswOsMopNCfCe7XeTeTqvjzuRl7kPUfSIhWs=",
         "owner": "larseggert",
         "repo": "iana-assignments",
-        "rev": "eb80e2fcc5c4beeaa1993352af02dbe493fe89a4",
+        "rev": "f3495bb80e4e6b5098341ff10b2351255ece1834",
         "type": "github"
       },
       "original": {
