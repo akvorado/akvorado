@@ -274,8 +274,8 @@ func TestResolve(t *testing.T) {
 	c, _, _, _ := NewMock(t, DefaultConfiguration())
 	for _, tc := range cases {
 		t.Run(tc.Description, func(t *testing.T) {
-			c.flowsTables = tc.Tables
-			got := c.resolve(tc.Context)
+			ctx := contextWithFlowsTables(t.Context(), tc.Tables)
+			got := c.resolve(ctx, tc.Context)
 			if diff := helpers.Diff(got.forRange(tc.Context.Start, tc.Context.End), tc.Expected); diff != "" {
 				t.Fatalf("resolve().forRange() (-got, +want):\n%s", diff)
 			}
@@ -460,9 +460,8 @@ func TestComputeBestTableAndInterval(t *testing.T) {
 	c, _, _, _ := NewMock(t, DefaultConfiguration())
 	for _, tc := range cases {
 		t.Run(tc.Description, func(t *testing.T) {
-			c.flowsTables = tc.Tables
-			table, interval, _ := c.computeTableAndInterval(
-				tc.Context)
+			ctx := contextWithFlowsTables(t.Context(), tc.Tables)
+			table, interval, _ := c.computeTableAndInterval(ctx, tc.Context)
 			got := tableIntervalOutput{
 				Table:    table,
 				Interval: uint64(interval.Seconds()),

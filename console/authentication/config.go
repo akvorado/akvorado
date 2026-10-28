@@ -26,6 +26,7 @@ type ConfigurationHeaders struct {
 	Login     string
 	Name      string
 	Email     string
+	Groups    string
 	LogoutURL string
 	AvatarURL string
 }
@@ -37,6 +38,7 @@ func DefaultConfiguration() Configuration {
 			Login:     "Remote-User",
 			Name:      "Remote-Name",
 			Email:     "Remote-Email",
+			Groups:    "Remote-Groups",
 			LogoutURL: "X-Logout-URL",
 			AvatarURL: "X-Avatar-URL",
 		},

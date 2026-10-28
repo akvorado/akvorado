@@ -52,6 +52,7 @@ func TestUserHandler(t *testing.T) {
 					headers.Add("Remote-User", "alfred")
 					headers.Add("Remote-Name", "Alfred Pennyworth")
 					headers.Add("Remote-Email", "alfred@batman.com")
+					headers.Add("Remote-Groups", "butlers, wayne-manor,,")
 					headers.Add("X-Logout-URL", "/logout")
 					headers.Add("X-Avatar-URL", "https://avatars.githubusercontent.com/akvorado")
 					return headers
@@ -61,6 +62,7 @@ func TestUserHandler(t *testing.T) {
 					"login":      "alfred",
 					"name":       "Alfred Pennyworth",
 					"email":      "alfred@batman.com",
+					"groups":     []string{"butlers", "wayne-manor"},
 					"logout-url": "/logout",
 					"avatar-url": "https://avatars.githubusercontent.com/akvorado",
 				},

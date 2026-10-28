@@ -215,7 +215,7 @@ func (c *Component) widgetTopHandlerFunc(w http.ResponseWriter, req *http.Reques
 
 	now := c.d.Clock.Now()
 	start, end := now.Add(-5*time.Minute), now
-	r := c.resolve(inputContext{
+	r := c.resolve(req.Context(), inputContext{
 		Start:             start,
 		End:               end,
 		MainTableRequired: mainTableRequired,
@@ -254,7 +254,7 @@ func (c *Component) widgetGraphHandlerFunc(w http.ResponseWriter, req *http.Requ
 	ctx := c.t.Context(req.Context())
 	now := c.d.Clock.Now()
 	start, end := now.Add(-c.config.HomepageGraphTimeRange), now
-	r := c.resolve(inputContext{
+	r := c.resolve(req.Context(), inputContext{
 		Start:             start,
 		End:               end,
 		MainTableRequired: c.config.HomepageGraphFilter.MainTableRequired(),
