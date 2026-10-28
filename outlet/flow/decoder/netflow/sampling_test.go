@@ -194,8 +194,8 @@ func TestGetSamplingRateAcrossObservationDomains(t *testing.T) {
 			_, nfdecoder, _, _, _ := setup(t, false)
 			tao := nfdecoder.(*Decoder).collection.Get("::ffff:127.0.0.1")
 			applySamplingEvents(t, tao, tc.events)
-			if got := tao.GetSamplingRate(9, tc.obsDomainID, 1); got != tc.expected {
-				t.Errorf("GetSamplingRate() = %d, expected %d", got, tc.expected)
+			if diff := helpers.Diff(tao.GetSamplingRate(9, tc.obsDomainID, 1), tc.expected); diff != "" {
+				t.Errorf("GetSamplingRate() (-got, +expected):\n%s", diff)
 			}
 		})
 	}
@@ -241,8 +241,8 @@ func TestGetSamplingRateRestoreIsDeterministic(t *testing.T) {
 			t.Fatalf("Unmarshal() error:\n%+v", err)
 		}
 		tao := restored.(*Decoder).collection.Get("::ffff:127.0.0.1")
-		if got := tao.GetSamplingRate(9, 256, 1); got != 800 {
-			t.Fatalf("GetSamplingRate() after restore = %d, expected 800", got)
+		if diff := helpers.Diff(tao.GetSamplingRate(9, 256, 1), uint32(800)); diff != "" {
+			t.Fatalf("GetSamplingRate() after restore (-got, +expected):\n%s", diff)
 		}
 	}
 }

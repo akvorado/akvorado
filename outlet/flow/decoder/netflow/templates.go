@@ -31,13 +31,8 @@ type templatesAndOptions struct {
 	Key           string
 	Templates     templates
 	SamplingRates map[samplingRateKey]uint32
-	// samplerRates contains the sampling rates received from observation
-	// domains without data template, indexed by sampler only. Cisco IOS XE
-	// exports the sampler options and the flows with different source IDs. A
-	// zero rate is a tombstone: the sampler is also used by a domain with a
-	// data template. It is rebuilt from SamplingRates and Templates when
-	// restoring the state.
-	samplerRates map[samplerKey]uint32
+	// unmatched source ID (IOS XE)
+	fallbackSamplingRates map[fallbackSamplingRateKey]uint32
 }
 
 // templates is a mapping to one of netflow.TemplateRecord,
@@ -51,9 +46,9 @@ type templateKey struct {
 	templateID  uint16
 }
 
-// samplerKey is the key structure to access a sampling rate from any
+// fallbackSamplingRateKey is the key structure to access a sampling rate from any
 // observation domain.
-type samplerKey struct {
+type fallbackSamplingRateKey struct {
 	version   uint16
 	samplerID uint64
 }
@@ -79,11 +74,11 @@ func (c *templateAndOptionCollection) Get(key string) *templatesAndOptions {
 		return t
 	}
 	t = &templatesAndOptions{
-		nd:            c.nd,
-		Key:           key,
-		Templates:     make(map[templateKey]any),
-		SamplingRates: make(map[samplingRateKey]uint32),
-		samplerRates:  make(map[samplerKey]uint32),
+		nd:                    c.nd,
+		Key:                   key,
+		Templates:             make(map[templateKey]any),
+		SamplingRates:         make(map[samplingRateKey]uint32),
+		fallbackSamplingRates: make(map[fallbackSamplingRateKey]uint32),
 	}
 	c.Collection[key] = t
 	return t
@@ -128,7 +123,7 @@ func (t *templatesAndOptions) AddTemplate(_ netflow.FlowContext, version uint16,
 		defer t.samplingRateLock.Unlock()
 		for key := range t.SamplingRates {
 			if key.version == version && key.obsDomainID == obsDomainID {
-				t.setSamplerRate(version, key.samplerID, 0, true)
+				t.setFallbackSamplingRate(version, key.samplerID, 0, true)
 			}
 		}
 	}
@@ -148,38 +143,38 @@ func (t *templatesAndOptions) hasDataTemplate(version uint16, obsDomainID uint32
 	return false
 }
 
-// setSamplerRate records a sampling rate for a sampler, regardless of the
+// setFallbackSamplingRate records a sampling rate for a sampler, regardless of the
 // observation domain. When the domain also has a data template, the sampler
 // is marked as ambiguous for good. Otherwise, the most recent rate wins. The
 // sampling rate lock should be held.
-func (t *templatesAndOptions) setSamplerRate(version uint16, samplerID uint64, samplingRate uint32, hasData bool) {
-	if t.samplerRates == nil {
-		t.samplerRates = make(map[samplerKey]uint32)
+func (t *templatesAndOptions) setFallbackSamplingRate(version uint16, samplerID uint64, samplingRate uint32, hasData bool) {
+	if t.fallbackSamplingRates == nil {
+		t.fallbackSamplingRates = make(map[fallbackSamplingRateKey]uint32)
 	}
-	key := samplerKey{version: version, samplerID: samplerID}
-	if current, ok := t.samplerRates[key]; ok && current == 0 {
+	key := fallbackSamplingRateKey{version: version, samplerID: samplerID}
+	if current, ok := t.fallbackSamplingRates[key]; ok && current == 0 {
 		return
 	}
 	if hasData {
 		samplingRate = 0
 	}
-	t.samplerRates[key] = samplingRate
+	t.fallbackSamplingRates[key] = samplingRate
 }
 
-// rebuildSamplerRates rebuilds the sampling rates indexed by sampler after
+// rebuildFallbackSamplingRates rebuilds the sampling rates indexed by sampler after
 // restoring the state. The reception order is lost: when several observation
 // domains without data template disagree, the highest domain ID wins.
-func (t *templatesAndOptions) rebuildSamplerRates() {
+func (t *templatesAndOptions) rebuildFallbackSamplingRates() {
 	t.templateLock.RLock()
 	defer t.templateLock.RUnlock()
 	t.samplingRateLock.Lock()
 	defer t.samplingRateLock.Unlock()
-	t.samplerRates = make(map[samplerKey]uint32)
+	t.fallbackSamplingRates = make(map[fallbackSamplingRateKey]uint32)
 	keys := slices.SortedFunc(maps.Keys(t.SamplingRates), func(a, b samplingRateKey) int {
 		return cmp.Compare(a.obsDomainID, b.obsDomainID)
 	})
 	for _, key := range keys {
-		t.setSamplerRate(key.version, key.samplerID, t.SamplingRates[key],
+		t.setFallbackSamplingRate(key.version, key.samplerID, t.SamplingRates[key],
 			t.hasDataTemplate(key.version, key.obsDomainID))
 	}
 }
@@ -198,7 +193,7 @@ func (t *templatesAndOptions) GetSamplingRate(version uint16, obsDomainID uint32
 	if ok {
 		return rate
 	}
-	return t.samplerRates[samplerKey{version: version, samplerID: samplerID}]
+	return t.fallbackSamplingRates[fallbackSamplingRateKey{version: version, samplerID: samplerID}]
 }
 
 // SetSamplingRate sets the sampling rate.
@@ -212,6 +207,6 @@ func (t *templatesAndOptions) SetSamplingRate(version uint16, obsDomainID uint32
 		obsDomainID: obsDomainID,
 		samplerID:   samplerID,
 	}] = samplingRate
-	t.setSamplerRate(version, samplerID, samplingRate,
+	t.setFallbackSamplingRate(version, samplerID, samplingRate,
 		t.hasDataTemplate(version, obsDomainID))
 }

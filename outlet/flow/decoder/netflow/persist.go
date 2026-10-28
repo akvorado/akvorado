@@ -121,7 +121,7 @@ func (nd *Decoder) UnmarshalJSON(data []byte) error {
 	}
 	for _, tao := range nd.collection.Collection {
 		tao.nd = nd
-		tao.rebuildSamplerRates()
+		tao.rebuildFallbackSamplingRates()
 	}
 	return nil
 }
