@@ -15,11 +15,12 @@ import (
 
 // UserInformation contains information about the current user.
 type UserInformation struct {
-	Login     string `json:"login"`
-	Name      string `json:"name,omitempty"`
-	Email     string `json:"email,omitempty" validate:"omitempty,email"`
-	LogoutURL string `json:"logout-url,omitempty" validate:"omitempty,uri"`
-	AvatarURL string `json:"avatar-url,omitempty" validate:"omitempty,uri"`
+	Login     string   `json:"login"`
+	Name      string   `json:"name,omitempty"`
+	Email     string   `json:"email,omitempty" validate:"omitempty,email"`
+	Groups    []string `json:"groups,omitempty"`
+	LogoutURL string   `json:"logout-url,omitempty" validate:"omitempty,uri"`
+	AvatarURL string   `json:"avatar-url,omitempty" validate:"omitempty,uri"`
 }
 
 // userContextKey is the key under which the current user is stored in the
@@ -88,7 +89,21 @@ func (c *Component) userFromHeaders(req *http.Request) UserInformation {
 		Login:     get(c.config.Headers.Login),
 		Name:      get(c.config.Headers.Name),
 		Email:     get(c.config.Headers.Email),
+		Groups:    splitGroups(get(c.config.Headers.Groups)),
 		LogoutURL: get(c.config.Headers.LogoutURL),
 		AvatarURL: get(c.config.Headers.AvatarURL),
 	}
+}
+
+// splitGroups turns the comma-separated list of groups found in a header into
+// a slice. Spaces around the names are dropped, as are empty names. It returns
+// nil when there is no group, so the field is omitted from the JSON output.
+func splitGroups(header string) []string {
+	var groups []string
+	for group := range strings.SplitSeq(header, ",") {
+		if group = strings.TrimSpace(group); group != "" {
+			groups = append(groups, group)
+		}
+	}
+	return groups
 }

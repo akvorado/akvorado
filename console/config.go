@@ -40,6 +40,8 @@ type Configuration struct {
 	Branding bool
 	// CacheTTL tells how long to keep the most costly requests in cache.
 	CacheTTL time.Duration `validate:"min=5s"`
+	// Authorization defines what an authenticated user is allowed to see.
+	Authorization AuthorizationConfiguration
 }
 
 // HomepageTopWidget represents a top widget on the homepage.
@@ -113,6 +115,7 @@ func DefaultConfiguration() Configuration {
 		CacheTTL:                 3 * time.Hour,
 		HomepageGraphFilter:      query.NewFilter("InIfBoundary = external"),
 		HomepageGraphTimeRange:   24 * time.Hour,
+		Authorization:            AuthorizationConfiguration{Rules: []AuthorizationRule{}},
 	}
 }
 

@@ -4,12 +4,16 @@
 package console
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"slices"
 	"sort"
 	"strings"
 	"time"
 
+	"akvorado/common/httpserver"
 	sb "akvorado/common/sqlbuilder"
 	"akvorado/console/query"
 )
@@ -83,6 +87,41 @@ AND (engine LIKE '%MergeTree' OR engine = 'Distributed')
 	c.flowsTables = newFlowsTables
 	c.flowsTablesLock.Unlock()
 	return nil
+}
+
+// flowsTablesContextKey is the key under which the flows tables known when a
+// request started are stored in its context.
+type flowsTablesContextKey struct{}
+
+// contextWithFlowsTables returns a context carrying the provided flows tables.
+func contextWithFlowsTables(ctx context.Context, tables []flowsTable) context.Context {
+	return context.WithValue(ctx, flowsTablesContextKey{}, tables)
+}
+
+// withFlowsTables is a middleware storing the flows tables known when the
+// request starts in its context. Everything serving the request then works on
+// the same set of tables, even if the list is refreshed in the meantime.
+func (c *Component) withFlowsTables() httpserver.Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			c.flowsTablesLock.RLock()
+			tables := slices.Clone(c.flowsTables)
+			c.flowsTablesLock.RUnlock()
+			next.ServeHTTP(w, req.WithContext(contextWithFlowsTables(req.Context(), tables)))
+		})
+	}
+}
+
+// flowsTablesFromContext returns the flows tables stored in the context by
+// withFlowsTables(). It panics when there is none: a handler reached without
+// the middleware could otherwise pick a table the authorization filter does
+// not cover.
+func flowsTablesFromContext(ctx context.Context) []flowsTable {
+	tables, ok := ctx.Value(flowsTablesContextKey{}).([]flowsTable)
+	if !ok {
+		panic("flows tables missing from context: withFlowsTables() middleware not applied")
+	}
+	return tables
 }
 
 // inputContext describes a time range, as requested by an input handler. It is
@@ -213,8 +252,8 @@ func unitsWeightExpr(units string) sb.Expr {
 
 // resolve picks the best table for the requested time range and the interval
 // between two points.
-func (c *Component) resolve(input inputContext) resolution {
-	table, tableInterval, targetInterval := c.computeTableAndInterval(input)
+func (c *Component) resolve(ctx context.Context, input inputContext) resolution {
+	table, tableInterval, targetInterval := c.computeTableAndInterval(ctx, input)
 
 	// Adapt the table interval to match the target one more closely
 	interval := tableInterval
@@ -266,7 +305,7 @@ func intervalOffset(start time.Time, interval uint64) uint64 {
 	return interval - uint64(start.UTC().Sub(aligned).Seconds())
 }
 
-func (c *Component) computeTableAndInterval(input inputContext) (string, time.Duration, time.Duration) {
+func (c *Component) computeTableAndInterval(ctx context.Context, input inputContext) (string, time.Duration, time.Duration) {
 	targetInterval := time.Duration(uint64(input.End.Sub(input.Start)) / uint64(input.Points))
 	targetInterval = max(targetInterval, time.Second)
 
@@ -274,22 +313,21 @@ func (c *Component) computeTableAndInterval(input inputContext) (string, time.Du
 	if input.MainTableRequired {
 		return "flows", time.Second, targetInterval
 	}
-	table, computedInterval := c.getBestTable(input.Start, targetInterval)
+	table, computedInterval := c.getBestTable(ctx, input.Start, targetInterval)
 	return table, computedInterval, targetInterval
 }
 
 // Get the best table starting at the specified time.
-func (c *Component) getBestTable(start time.Time, targetInterval time.Duration) (string, time.Duration) {
-	c.flowsTablesLock.RLock()
-	defer c.flowsTablesLock.RUnlock()
+func (c *Component) getBestTable(ctx context.Context, start time.Time, targetInterval time.Duration) (string, time.Duration) {
+	flowsTables := flowsTablesFromContext(ctx)
 
 	table := "flows"
 	computedInterval := time.Second
-	if len(c.flowsTables) > 0 {
+	if len(flowsTables) > 0 {
 		// We can use the consolidated data. The first criteria is to find the
 		// tables matching the time criteria.
 		candidates := []int{}
-		for idx, table := range c.flowsTables {
+		for idx, table := range flowsTables {
 			if start.After(table.Oldest.Add(table.Resolution)) {
 				candidates = append(candidates, idx)
 			}
@@ -297,35 +335,35 @@ func (c *Component) getBestTable(start time.Time, targetInterval time.Duration) 
 		if len(candidates) == 0 {
 			// No candidate, fallback to the one with oldest data
 			best := 0
-			for idx, table := range c.flowsTables {
-				if c.flowsTables[best].Oldest.After(table.Oldest.Add(table.Resolution)) {
+			for idx, table := range flowsTables {
+				if flowsTables[best].Oldest.After(table.Oldest.Add(table.Resolution)) {
 					best = idx
 				}
 			}
 			candidates = []int{best}
 			// Add other candidates that are not far off in term of oldest data
-			for idx, table := range c.flowsTables {
+			for idx, table := range flowsTables {
 				if idx == best {
 					continue
 				}
-				if c.flowsTables[best].Oldest.After(table.Oldest) {
+				if flowsTables[best].Oldest.After(table.Oldest) {
 					candidates = append(candidates, idx)
 				}
 			}
 		}
 		sort.Slice(candidates, func(i, j int) bool {
-			return c.flowsTables[candidates[i]].Resolution < c.flowsTables[candidates[j]].Resolution
+			return flowsTables[candidates[i]].Resolution < flowsTables[candidates[j]].Resolution
 		})
 		// If possible, use the first resolution before the target interval
 		for len(candidates) > 1 {
-			if c.flowsTables[candidates[1]].Resolution <= targetInterval {
+			if flowsTables[candidates[1]].Resolution <= targetInterval {
 				candidates = candidates[1:]
 			} else {
 				break
 			}
 		}
-		table = c.flowsTables[candidates[0]].Name
-		computedInterval = c.flowsTables[candidates[0]].Resolution
+		table = flowsTables[candidates[0]].Name
+		computedInterval = flowsTables[candidates[0]].Resolution
 	}
 	if computedInterval < time.Second {
 		computedInterval = time.Second

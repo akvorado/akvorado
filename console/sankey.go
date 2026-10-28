@@ -179,7 +179,7 @@ func (c *Component) graphSankeyHandlerFunc(w http.ResponseWriter, req *http.Requ
 	}
 
 	// Prepare and execute query
-	r := c.resolve(input.resolveContext())
+	r := c.resolve(req.Context(), input.resolveContext())
 	sqlQuery := unionAll(input.toSQL(r))
 	w.Header().Set("X-SQL-Query", strings.ReplaceAll(sqlQuery, "\n", "  "))
 	results := []struct {

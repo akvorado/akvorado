@@ -240,7 +240,7 @@ func (c *Component) graphLineHandlerFunc(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	r := c.resolve(input.resolveContext())
+	r := c.resolve(req.Context(), input.resolveContext())
 	sqlQuery := unionAll(input.toSQL(r))
 	w.Header().Set("X-SQL-Query", strings.ReplaceAll(sqlQuery, "\n", "  "))
 
@@ -478,7 +478,7 @@ func (c *Component) getTableAndIntervalHandlerFunc(w http.ResponseWriter, req *h
 		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
-	table, interval, _ := c.computeTableAndInterval(inputContext{
+	table, interval, _ := c.computeTableAndInterval(req.Context(), inputContext{
 		Points: input.Points,
 		Start:  input.Start,
 		End:    input.End,
