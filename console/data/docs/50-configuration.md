@@ -1370,6 +1370,8 @@ The console itself accepts the following keys:
    homepage. It defaults to 24 hours.
  - `dimensions-limit` to set the upper limit of the number of returned dimensions
  - `cache-ttl` sets the time costly requests are kept in cache
+ - `authorization` restricts what an authenticated user can see. See
+   [authorization](#authorization).
 
 It also takes a `clickhouse` key, accepting the [same
 configuration](#clickhouse-database) as the orchestrator service. These keys are
@@ -1397,6 +1399,7 @@ headers to the API endpoints:
 - `Remote-User` is the user login,
 - `Remote-Name` is the user display name,
 - `Remote-Email` is the user email address,
+- `Remote-Groups` is a comma-separated list of the groups the user belongs to,
 - `X-Logout-URL` is a link to the logout link,
 - `X-Avatar-URL` is a link to the avatar image.
 
@@ -1414,6 +1417,7 @@ auth:
     login: Remote-User
     name: Remote-Name
     email: Remote-Email
+    groups: Remote-Groups
     logout-url: X-Logout-URL
   default-user:
     login: default
@@ -1451,6 +1455,54 @@ present in `docker/docker-compose-local.yml`.
 [oauth2 proxy]:
 https://oauth2-proxy.github.io/oauth2-proxy/configuration/integration#configuring-for-use-with-the-traefik-v2-forwardauth-middleware
 [traefik forward auth]: https://github.com/ItalyPaleAle/traefik-forward-auth
+
+### Authorization
+
+By default, everyone reaching the console sees every flow. The `authorization`
+key restricts what an authenticated user can see, with a list of rules
+evaluated for each request:
+
+```yaml
+authorization:
+  rules:
+    - '"admins" in Groups && Allow()'
+    - 'Login == "guest" && Deny()'
+    - '"customers" in Groups && SetFilter("SrcNetTenant = ? OR DstNetTenant = ?", Login, Login)'
+    - '"resellers" in Groups && SetFilter("SrcNetTenant IN (?)", Groups)'
+```
+
+The rules are written in [Expr][], like the [classifiers](#classification) of
+the outlet service. They have access to the information about the user:
+
+- `Login` is the user login,
+- `Name` is the user display name,
+- `Email` is the user email address,
+- `Groups` is the list of groups the user belongs to.
+
+The rules are evaluated in order. The first one calling one of the following
+functions decides, and the remaining rules are skipped:
+
+- `Allow()` lets the user see every flow,
+- `Deny()` refuses the user, with a 403 error,
+- `SetFilter()` restricts the user to the flows matching a filter.
+
+When no rule decides, the user is denied. Without any rule, everyone sees
+everything.
+
+The filter given to `SetFilter()` is written in the same language as the
+filters of the console. It must be a literal string. Each `?` in it is replaced
+by the matching argument, which can be a string or a list of strings, quoted as
+a string literal. Nothing coming from the headers can alter the filter: a quote
+in a login stays a quote inside the value. The filter is checked when the
+console starts. It is applied to every flows table, including the consolidated
+ones, so it cannot use a column only present in the main table, like `SrcAddr`
+or `DstAddr`.
+
+The cache of the console is keyed on the filter the rules resolve to, not on the
+user: two users whose rules produce the same filter, for example two members of
+the same group with `SetFilter("SrcNetTenant = ?", "acme")`, share the cached
+responses. Users with different filters never do, and users allowed with
+`Allow()` share the same cache as when there is no rule at all.
 
 ### Database
 

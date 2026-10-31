@@ -42,7 +42,7 @@
 #       - traefik.http.routers.akvorado-console.middlewares=sso
 #       - traefik.http.middlewares.sso.forwardauth.address=http://sso.example.com/api/authz/forward-auth
 #       - traefik.http.middlewares.sso.forwardauth.trustForwardHeader=true
-#       - traefik.http.middlewares.sso.forwardauth.authResponseHeaders=Remote-User,Remote-Name,Remote-Email
+#       - traefik.http.middlewares.sso.forwardauth.authResponseHeaders=Remote-User,Remote-Name,Remote-Email,Remote-Groups
 
 # It is possible to configure the middleware globally:
 
@@ -53,7 +53,7 @@
 #     labels:
 #       - traefik.http.middlewares.sso.forwardauth.address=http://sso.example.com/api/authz/forward-auth
 #       - traefik.http.middlewares.sso.forwardauth.trustForwardHeader=true
-#       - traefik.http.middlewares.sso.forwardauth.authResponseHeaders=Remote-User,Remote-Name,Remote-Email
+#       - traefik.http.middlewares.sso.forwardauth.authResponseHeaders=Remote-User,Remote-Name,Remote-Email,Remote-Groups
 #   akvorado-console:
 #     labels:
 #       - traefik.http.routers.akvorado-console.middlewares=
