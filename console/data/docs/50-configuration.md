@@ -1504,6 +1504,10 @@ the same group with `SetFilter("SrcNetTenant = ?", "acme")`, share the cached
 responses. Users with different filters never do, and users allowed with
 `Allow()` share the same cache as when there is no rule at all.
 
+The filter only applies to flows. A restricted user can still see the names of
+all exporters, as well as the names, descriptions, providers and connectivity
+types of their interfaces, through the homepage and the completion of filters.
+
 ### Database
 
 The console stores some data, like per-user filters, into a relational database.

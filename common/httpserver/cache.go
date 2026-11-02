@@ -74,23 +74,18 @@ type cachedResponse struct {
 	Body    []byte
 }
 
-// cacheKeyContextKey is the key under which an additional discriminator for
-// the cache keys is stored in the request context.
+// cacheKeyContextKey is the context key for the cache key discriminator.
 type cacheKeyContextKey struct{}
 
-// WithCacheKeyDiscriminator returns a context making the caching middlewares
-// mix the provided value into the keys they build. A response depending on
-// something else than the request itself, like the identity of the
-// authenticated user, must set it. Otherwise, the response computed for one
-// user is served to the next one.
+// WithCacheKeyDiscriminator returns a context making the cache middlewares add
+// the provided value to their keys. Use it when a response depends on more than
+// the request, like the authenticated user.
 func WithCacheKeyDiscriminator(ctx context.Context, discriminator string) context.Context {
 	return context.WithValue(ctx, cacheKeyContextKey{}, discriminator)
 }
 
-// cacheKeyPrefix returns what to put in front of a cache key for the request:
-// the discriminator attached by WithCacheKeyDiscriminator followed by a NUL, or
-// nothing when there is none. Keys are then unchanged for the requests not
-// carrying a discriminator.
+// cacheKeyPrefix returns the discriminator followed by a NUL, or nothing when
+// there is none.
 func cacheKeyPrefix(req *http.Request) string {
 	discriminator, _ := req.Context().Value(cacheKeyContextKey{}).(string)
 	if discriminator == "" {

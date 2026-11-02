@@ -10,6 +10,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- ✨ *console*: add authorization rules to restrict the flows a user can see
+
 ## 2026.10.1 - 2026-10-25
 
 - ✨ *inlet*: add support for IPFIX over TCP and SCTP

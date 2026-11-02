@@ -24,21 +24,19 @@ import (
 	"akvorado/console/filter"
 )
 
-// AuthorizationConfiguration describes what an authenticated user is allowed
-// to see.
+// AuthorizationConfiguration describes what an authenticated user can see.
 type AuthorizationConfiguration struct {
-	// Rules decide what an authenticated user can see. They are evaluated in
-	// order and the first one calling Allow(), Deny() or SetFilter() decides.
-	// When rules are present and none decides, the user is denied. Without any
-	// rule, every user sees every flow.
+	// Rules are evaluated in order. The first one calling Allow(), Deny() or
+	// SetFilter() decides. When none decides, the user is denied. No rule means
+	// any user is allowed.
 	Rules []AuthorizationRule
 }
 
-// AuthorizationRule is a rule deciding what an authenticated user can see.
+// AuthorizationRule is a compiled authorization rule.
 type AuthorizationRule struct {
 	program *vm.Program
-	// filters are the filter templates found in the SetFilter() calls of the
-	// rule. They can only be checked against the schema once it is known.
+	// filters are the templates used by SetFilter(), checked later against
+	// the schema.
 	filters []string
 }
 
@@ -53,17 +51,13 @@ type authorizationEnvironment struct {
 
 // authorizationDecision is the outcome of the evaluation of the rules.
 type authorizationDecision struct {
-	// taken tells if a rule has decided.
-	taken bool
-	// denied tells if the user is denied access.
+	taken  bool
 	denied bool
-	// filter is the filter restricting what the user sees, in the console
-	// filter language, with placeholders bound. Empty means no restriction.
+	// filter is the bound filter. Empty means no restriction.
 	filter string
 }
 
-// decide evaluates the rules for the provided user. The returned decision is
-// not taken when no rule decided.
+// decide evaluates the rules for the provided user.
 func (config AuthorizationConfiguration) decide(user authentication.UserInformation) (authorizationDecision, error) {
 	decision := authorizationDecision{}
 	env := authorizationEnvironment{
@@ -150,11 +144,9 @@ func (rule AuthorizationRule) MarshalText() ([]byte, error) {
 	return []byte(rule.String()), nil
 }
 
-// validate checks the filters used by the rule against the schema. A filter
-// with a placeholder is checked with an empty string in its place: the
-// placeholders are bound to string literals, so this is what the parser will
-// get. The filter is sent along queries on every flows table, so it cannot
-// use a column only present in the main one.
+// validate checks the filters of the rule against the schema, with an empty
+// string for each placeholder. As the filter applies to every flows table, it
+// cannot use a column only present in the main one.
 func (rule AuthorizationRule) validate(sch *schema.Component, database string) error {
 	for _, template := range rule.filters {
 		args := make([]any, placeholders(template))
@@ -217,7 +209,6 @@ func quoteFilterString(value string) string {
 // bindFilter replaces each placeholder of a filter template with the matching
 // argument, quoted as a string literal of the filter language. A list of
 // strings becomes a comma-separated list of literals, to be used with `IN'.
-// Nothing coming from the user can reach the filter unquoted.
 func bindFilter(template string, args []any) (string, error) {
 	pieces := splitFilterTemplate(template)
 	if len(pieces)-1 != len(args) {
@@ -247,9 +238,9 @@ func bindFilter(template string, args []any) (string, error) {
 	return result.String(), nil
 }
 
-// setFilterValidator is a patch checking the SetFilter() calls at compile
-// time: the filter has to be a string literal, with as many placeholders as
-// arguments. It collects the filters, for a later check against the schema.
+// setFilterValidator checks that the filter of each SetFilter() call is a
+// string literal with as many placeholders as arguments. It collects the
+// filters.
 type setFilterValidator struct {
 	filters []string
 	err     error
@@ -315,11 +306,8 @@ func (c *Component) renderFilter(bound string) (string, error) {
 }
 
 // additionalTableFilters builds the value of the `additional_table_filters'
-// ClickHouse setting applying the provided expression to every flows table. The
-// keys are qualified with the database: ClickHouse resolves a bare one against
-// the current database and silently ignores a key matching no table. The
-// tables come from the request context, so they are the same ones the handlers
-// pick from.
+// setting for the flows tables of the request context. The keys include the
+// database, as ClickHouse silently ignores a key matching no table.
 func (c *Component) additionalTableFilters(ctx context.Context, expression string) string {
 	database := c.d.ClickHouseDB.DatabaseName()
 	flowsTables := flowsTablesFromContext(ctx)
@@ -331,14 +319,8 @@ func (c *Component) additionalTableFilters(ctx context.Context, expression strin
 	return "{" + strings.Join(entries, ", ") + "}"
 }
 
-// authorization is a middleware applying the authorization rules to the
-// authenticated user. A denied user gets a 403. A restricted user gets the
-// filter attached to every ClickHouse query made while serving the request,
-// through the `additional_table_filters' setting. The cache is keyed on the
-// rendered filter: users whose rules resolve to the same filter share the
-// cached responses, users with another filter never do.
-//
-// It does nothing when there is no rule.
+// authorization is a middleware applying the authorization rules. The filter
+// of a restricted user is added to each ClickHouse query and to the cache keys.
 func (c *Component) authorization() httpserver.Middleware {
 	return func(next http.Handler) http.Handler {
 		if len(c.config.Authorization.Rules) == 0 {

@@ -89,8 +89,7 @@ AND (engine LIKE '%MergeTree' OR engine = 'Distributed')
 	return nil
 }
 
-// flowsTablesContextKey is the key under which the flows tables known when a
-// request started are stored in its context.
+// flowsTablesContextKey is the context key for the flows tables of a request.
 type flowsTablesContextKey struct{}
 
 // contextWithFlowsTables returns a context carrying the provided flows tables.
@@ -98,9 +97,8 @@ func contextWithFlowsTables(ctx context.Context, tables []flowsTable) context.Co
 	return context.WithValue(ctx, flowsTablesContextKey{}, tables)
 }
 
-// withFlowsTables is a middleware storing the flows tables known when the
-// request starts in its context. Everything serving the request then works on
-// the same set of tables, even if the list is refreshed in the meantime.
+// withFlowsTables is a middleware storing the current flows tables in the
+// request context, so the whole request uses the same tables.
 func (c *Component) withFlowsTables() httpserver.Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -112,10 +110,9 @@ func (c *Component) withFlowsTables() httpserver.Middleware {
 	}
 }
 
-// flowsTablesFromContext returns the flows tables stored in the context by
-// withFlowsTables(). It panics when there is none: a handler reached without
-// the middleware could otherwise pick a table the authorization filter does
-// not cover.
+// flowsTablesFromContext returns the flows tables stored by withFlowsTables().
+// It panics when there is none, as the authorization filter would not cover
+// the selected table.
 func flowsTablesFromContext(ctx context.Context) []flowsTable {
 	tables, ok := ctx.Value(flowsTablesContextKey{}).([]flowsTable)
 	if !ok {
