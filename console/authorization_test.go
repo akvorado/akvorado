@@ -143,8 +143,8 @@ func TestAuthorizationRuleUnmarshalText(t *testing.T) {
 			if err != nil {
 				t.Fatalf("UnmarshalText() error:\n%+v", err)
 			}
-			if diff := helpers.Diff(rule.filters, tc.Filters); diff != "" {
-				t.Fatalf("UnmarshalText() filters (-got, +want):\n%s", diff)
+			if diff := helpers.Diff(rule.filterTemplates(), tc.Filters); diff != "" {
+				t.Fatalf("filterTemplates() (-got, +want):\n%s", diff)
 			}
 			if diff := helpers.Diff(rule.String(), tc.Rule); diff != "" {
 				t.Fatalf("String() (-got, +want):\n%s", diff)

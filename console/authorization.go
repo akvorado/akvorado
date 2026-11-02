@@ -35,9 +35,6 @@ type AuthorizationConfiguration struct {
 // AuthorizationRule is a compiled authorization rule.
 type AuthorizationRule struct {
 	program *vm.Program
-	// filters are the templates used by SetFilter(), checked later against
-	// the schema.
-	filters []string
 }
 
 // authorizationEnvironment is what a rule has access to.
@@ -130,7 +127,6 @@ func (rule *AuthorizationRule) UnmarshalText(text []byte) error {
 		return fmt.Errorf("cannot compile authorization rule %q: %w", string(text), validator.err)
 	}
 	rule.program = program
-	rule.filters = validator.filters
 	return nil
 }
 
@@ -148,7 +144,7 @@ func (rule AuthorizationRule) MarshalText() ([]byte, error) {
 // string for each placeholder. As the filter applies to every flows table, it
 // cannot use a column only present in the main one.
 func (rule AuthorizationRule) validate(sch *schema.Component, database string) error {
-	for _, template := range rule.filters {
+	for _, template := range rule.filterTemplates() {
 		args := make([]any, placeholders(template))
 		for idx := range args {
 			args[idx] = ""
@@ -239,11 +235,9 @@ func bindFilter(template string, args []any) (string, error) {
 }
 
 // setFilterValidator checks that the filter of each SetFilter() call is a
-// string literal with as many placeholders as arguments. It collects the
-// filters.
+// string literal with as many placeholders as arguments.
 type setFilterValidator struct {
-	filters []string
-	err     error
+	err error
 }
 
 func (v *setFilterValidator) Visit(node *ast.Node) {
@@ -267,9 +261,31 @@ func (v *setFilterValidator) Visit(node *ast.Node) {
 	if got, expected := len(call.Arguments)-1, placeholders(template.Value); got != expected {
 		v.err = fmt.Errorf("filter %q has %d placeholders but %d arguments were provided",
 			template.Value, expected, got)
+	}
+}
+
+// filterTemplates returns the filters used by the SetFilter() calls of the
+// rule.
+func (rule AuthorizationRule) filterTemplates() []string {
+	var collector setFilterCollector
+	node := rule.program.Node()
+	ast.Walk(&node, &collector)
+	return collector
+}
+
+// setFilterCollector collects the filters of the SetFilter() calls in a
+// compiled rule. There, the filter is the second argument, after the decision.
+type setFilterCollector []string
+
+func (templates *setFilterCollector) Visit(node *ast.Node) {
+	call, ok := (*node).(*ast.CallNode)
+	if !ok {
 		return
 	}
-	v.filters = append(v.filters, template.Value)
+	if callee, ok := call.Callee.(*ast.IdentifierNode); !ok || callee.Value != "SetFilter" {
+		return
+	}
+	*templates = append(*templates, call.Arguments[1].(*ast.StringNode).Value)
 }
 
 // withDecisionPatcher is a patch adding the current decision as the first
