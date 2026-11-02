@@ -65,6 +65,13 @@ const router = createRouter({
       meta: { title: "Not authorized", notAuthenticated: true },
       props: { error: "Not authorized!" },
     },
+    {
+      path: "/forbidden",
+      name: "403",
+      component: ErrorPage,
+      meta: { title: "Access denied", notAuthenticated: true },
+      props: { error: "Access denied!" },
+    },
   ],
 });
 

@@ -16,6 +16,8 @@ const { data, execute } = useFetch("api/v0/console/user/info", {
     if (ctx.response?.status === 401) {
       // TODO: avoid component flash.
       router.replace({ name: "401", query: { redirect: route.path } });
+    } else if (ctx.response?.status === 403) {
+      router.replace({ name: "403" });
     }
     return ctx;
   },
