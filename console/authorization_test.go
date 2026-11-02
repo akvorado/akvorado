@@ -230,6 +230,16 @@ func TestBindFilter(t *testing.T) {
 			Args:        []any{[]string{}},
 			Expected:    "SrcNetTenant IN ()",
 		}, {
+			Description: "generic list",
+			Template:    "SrcNetTenant IN (?)",
+			Args:        []any{[]any{"acme", "o'brien"}},
+			Expected:    `SrcNetTenant IN ('acme', 'o\'brien')`,
+		}, {
+			Description: "generic list with a non-string",
+			Template:    "SrcNetTenant IN (?)",
+			Args:        []any{[]any{"acme", 42}},
+			Error:       "unsupported type int in list",
+		}, {
 			Description: "placeholder inside single quotes",
 			Template:    "SrcNetName = '?' AND DstNetTenant = ?",
 			Args:        []any{"acme"},
@@ -290,6 +300,8 @@ func TestAuthorizationDecide(t *testing.T) {
 		`"customers" in Groups && SetFilter("SrcNetTenant = ? OR DstNetTenant = ?", Login, Login)`,
 		`"resellers" in Groups && SetFilter("SrcNetTenant IN (?)", Groups)`,
 		`Email endsWith "@acme.com" && SetFilter("SrcNetTenant = 'acme'")`,
+		`"partners" in Groups && SetFilter("SrcNetTenant IN (?)", filter(Groups, # startsWith "t-"))`,
+		`Login == "eve" && SetFilter("SrcNetTenant IN (?)", ["acme", "globex"])`,
 	}
 	cases := []struct {
 		Description string
@@ -337,6 +349,20 @@ func TestAuthorizationDecide(t *testing.T) {
 			Description: "filter without placeholder",
 			User:        authentication.UserInformation{Login: "david", Email: "david@acme.com"},
 			Expected:    authorizationDecision{taken: true, filter: "SrcNetTenant = 'acme'"},
+		}, {
+			Description: "filter on filtered groups",
+			User:        authentication.UserInformation{Login: "frank", Groups: []string{"partners", "t-acme", "t-globex"}},
+			Expected: authorizationDecision{
+				taken:  true,
+				filter: "SrcNetTenant IN ('t-acme', 't-globex')",
+			},
+		}, {
+			Description: "filter on list literal",
+			User:        authentication.UserInformation{Login: "eve"},
+			Expected: authorizationDecision{
+				taken:  true,
+				filter: "SrcNetTenant IN ('acme', 'globex')",
+			},
 		},
 	}
 	config := AuthorizationConfiguration{Rules: parseRules(t, rules...)}

@@ -226,6 +226,17 @@ func bindFilter(template string, args []any) (string, error) {
 				quoted[i] = quoteFilterString(value)
 			}
 			result.WriteString(strings.Join(quoted, ", "))
+		case []any:
+			quoted := make([]string, len(arg))
+			for i, value := range arg {
+				s, ok := value.(string)
+				if !ok {
+					return "", fmt.Errorf("cannot bind argument %d of filter %q: unsupported type %T in list",
+						idx+1, template, value)
+				}
+				quoted[i] = quoteFilterString(s)
+			}
+			result.WriteString(strings.Join(quoted, ", "))
 		default:
 			return "", fmt.Errorf("cannot bind argument %d of filter %q: unsupported type %T",
 				idx+1, template, args[idx])
