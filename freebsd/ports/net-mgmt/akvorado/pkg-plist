@@ -1,0 +1,7 @@
+bin/akvorado
+bin/akvorado-inlet
+@sample etc/akvorado/akvorado.yaml.sample
+@sample etc/akvorado/console.yaml.sample
+@sample etc/akvorado/inlet.yaml.sample
+@sample etc/akvorado/outlet.yaml.sample
+@comment End of package plist

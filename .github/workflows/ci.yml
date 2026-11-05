@@ -209,6 +209,33 @@ jobs:
           path: |
             test/go/profile.out
 
+  build-netbsd:
+    name: 🐡 Build and test on NetBSD 11 amd64
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Build and test natively
+        uses: vmactions/netbsd-vm@v1
+        with:
+          release: "11.1"
+          usesh: true
+          run: |
+            export PKG_PATH=https://cdn.netbsd.org/pub/pkgsrc/packages/NetBSD/amd64/11.0/All
+            pkg_add go127-1.27.3
+            export PATH=/usr/pkg/go127/bin:$PATH
+            export GOTOOLCHAIN=local CGO_ENABLED=0
+            go version
+            go test ./inlet/flow/input/udp
+            go build -tags=release,grpcnotrace,validator_novalidatefn -o /tmp/akvorado ./cmd/akvorado
+            go build -tags=release,grpcnotrace,validator_novalidatefn,akvorado_inlet -o /tmp/akvorado-inlet ./cmd/akvorado
+            /tmp/akvorado version
+            /tmp/akvorado-inlet version
+
   e2e:
     name: 🧪 End-to-end testing
     runs-on: ubuntu-latest

@@ -50,6 +50,10 @@ GENERATED = \
 BUILD_ARGS =
 BUILD_TAGS = release,grpcnotrace,validator_novalidatefn
 BUILD_LDFLAGS = -X $(MODULE)/common/helpers.AkvoradoVersion=$(VERSION)
+BUILD_LINT = lint
+ifeq ($(shell uname -s),FreeBSD)
+BUILD_LINT = .lint-go~
+endif
 
 .PHONY: all all-indep bin/$(basename $(MODULE)) bin/$(basename $(MODULE))-inlet
 all: bin/$(basename $(MODULE)) bin/$(basename $(MODULE))-inlet ## Build program binaries
@@ -66,7 +70,7 @@ all: bin/$(basename $(MODULE)) bin/$(basename $(MODULE))-inlet ## Build program 
 # - https://github.com/containerd/platforms/pull/8
 bin/$(basename $(MODULE))-inlet: BUILD_TAGS := $(BUILD_TAGS),akvorado_inlet
 bin/$(basename $(MODULE))-inlet: BUILD_LDFLAGS += -w
-bin/$(basename $(MODULE)) bin/$(basename $(MODULE))-inlet: fmt lint all-indep ; @
+bin/$(basename $(MODULE)) bin/$(basename $(MODULE))-inlet: fmt $(BUILD_LINT) all-indep ; @
 	$(call log,building $@ executable…)
 	$Q env GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) \
          $(if $(filter amd64,$(TARGETARCH)),GOAMD64=$(TARGETVARIANT),\

@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# PROVIDE: akvorado_orchestrator
+# REQUIRE: NETWORKING
+# KEYWORD: shutdown
+
+. /etc/rc.subr
+
+name=akvorado_orchestrator
+rcvar=akvorado_orchestrator_enable
+
+load_rc_config "$name"
+
+: ${akvorado_orchestrator_enable:="NO"}
+: ${akvorado_user:="%%AKVORADO_USER%%"}
+: ${akvorado_config:="%%ETCDIR%%/akvorado.yaml"}
+: ${akvorado_orchestrator_pidfile:="/var/run/akvorado_orchestrator.pid"}
+
+required_files="${akvorado_config}"
+pidfile="${akvorado_orchestrator_pidfile}"
+command="/usr/sbin/daemon"
+procname="%%PREFIX%%/bin/akvorado"
+command_args="-f -S -T ${name} -p ${pidfile} -u ${akvorado_user} ${procname} orchestrator ${akvorado_config}"
+
+run_rc_command "$1"

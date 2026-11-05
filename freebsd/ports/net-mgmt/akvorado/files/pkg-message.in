@@ -1,0 +1,19 @@
+[
+{ type: install
+  message: <<EOM
+Akvorado is installed. It requires external Kafka and ClickHouse services.
+
+Copy the sample configuration files into place and update the Kafka and
+ClickHouse addresses before starting any services:
+
+  for f in akvorado.yaml console.yaml inlet.yaml outlet.yaml; do
+    cp %%ETCDIR%%/$f.sample %%ETCDIR%%/$f
+  done
+
+The rc.d services are disabled by default. Enable the services you need in
+/etc/rc.conf. Start the orchestrator before inlet, outlet and console.
+
+For additional information, see %%DOCSDIR%%/README.md.
+EOM
+}
+]

@@ -1,0 +1,8 @@
+@comment $NetBSD$
+bin/akvorado
+bin/akvorado-inlet
+share/doc/akvorado/README.md
+share/examples/akvorado/akvorado.yaml
+share/examples/akvorado/console.yaml
+share/examples/akvorado/inlet.yaml
+share/examples/akvorado/outlet.yaml

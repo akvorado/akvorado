@@ -1,0 +1,24 @@
+#!/bin/sh
+
+# PROVIDE: akvorado_inlet
+# REQUIRE: NETWORKING akvorado_orchestrator
+# KEYWORD: shutdown
+
+. /etc/rc.subr
+
+name=akvorado_inlet
+rcvar=akvorado_inlet_enable
+
+load_rc_config "$name"
+
+: ${akvorado_inlet_enable:="NO"}
+: ${akvorado_user:="%%AKVORADO_USER%%"}
+: ${akvorado_orchestrator_url:="http://127.0.0.1:8080"}
+: ${akvorado_inlet_pidfile:="/var/run/akvorado_inlet.pid"}
+
+pidfile="${akvorado_inlet_pidfile}"
+command="/usr/sbin/daemon"
+procname="%%PREFIX%%/bin/akvorado"
+command_args="-f -S -T ${name} -p ${pidfile} -u ${akvorado_user} ${procname} inlet ${akvorado_orchestrator_url}"
+
+run_rc_command "$1"
