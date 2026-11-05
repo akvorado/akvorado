@@ -512,5 +512,6 @@
   clickhousetype: UInt8
 - key: DecapProto
   name: DecapProto
+  group: 4
   parsertype: string
   clickhousetype: Enum8('none' = 0, 'ipip' = 1, 'gre' = 2, 'vxlan' = 3, 'srv6' = 4)

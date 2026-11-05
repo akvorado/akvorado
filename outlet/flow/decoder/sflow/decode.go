@@ -122,15 +122,14 @@ func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.
 
 		// Selectively apply decapsulation based on source address
 		appliedDecapsulationProtocol := options.DecapsulationProtocol
-		var dstOuterAddr, srcOuterAddr netip.Addr
+		var srcOuterAddr netip.Addr
 		if appliedDecapsulationProtocol == pb.RawFlow_DECAP_NONE && options.PrefixDecapsulationProtocols != nil {
 			// get source ip
 			for _, record := range records {
 				switch recordData := record.Data.(type) {
 				case sflow.SampledHeader:
-					if src, dst, ok := peekOuterAddresses(&recordData); ok {
+					if src, ok := peekSourceAddress(&recordData); ok {
 						srcOuterAddr = src
-						dstOuterAddr = dst
 					}
 				case sflow.SampledIPv4:
 					srcOuterAddr = decoder.DecodeIP(recordData.SrcIP)
@@ -161,8 +160,6 @@ func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.
 					if l := nd.parseSampledHeader(bf, appliedDecapsulationProtocol, &recordData); l > 0 {
 						l3length = l
 						if appliedDecapsulationProtocol != pb.RawFlow_DECAP_NONE && options.PrefixDecapsulationProtocols != nil {
-							bf.AppendIPv6(schema.ColumnDstOuterAddr, dstOuterAddr)
-							bf.AppendIPv6(schema.ColumnSrcOuterAddr, srcOuterAddr)
 							bf.AppendUint(schema.ColumnDecapProto, uint64(appliedDecapsulationProtocol))
 						}
 					}
@@ -275,33 +272,33 @@ func (nd *Decoder) parseSampledHeader(bf *schema.FlowMessage, decap pb.RawFlow_D
 	return 0
 }
 
-// peekOuterAddresses extracts the source and destination addresses from a raw
-// sampled header, without decoding into a FlowMessage. It mirrors the
-// traversal done by decoder.ParseEthernet/ParseIPv4/ParseIPv6 for an
-// unencapsulated packet, but only extracts addresses, so it needs neither a
-// *schema.FlowMessage nor a *schema.Component.
-func peekOuterAddresses(header *sflow.SampledHeader) (src, dst netip.Addr, ok bool) {
+// peekSourceAddress extracts the source address from a raw sampled header,
+// without decoding into a FlowMessage. It mirrors the traversal done by
+// decoder.ParseEthernet/ParseIPv4/ParseIPv6 for an unencapsulated packet, but
+// only extracts the source address, so it needs neither a *schema.FlowMessage
+// nor a *schema.Component.
+func peekSourceAddress(header *sflow.SampledHeader) (src netip.Addr, ok bool) {
 	data := header.HeaderData
 	switch header.Protocol {
 	case 1: // Ethernet
-		return peekEthernetAddresses(data)
+		return peekEthernetSource(data)
 	case 11: // IPv4
-		return peekIPv4Addresses(data)
+		return peekIPv4Source(data)
 	case 12: // IPv6
-		return peekIPv6Addresses(data)
+		return peekIPv6Source(data)
 	}
-	return netip.Addr{}, netip.Addr{}, false
+	return netip.Addr{}, false
 }
 
-func peekEthernetAddresses(data []byte) (src, dst netip.Addr, ok bool) {
+func peekEthernetSource(data []byte) (src netip.Addr, ok bool) {
 	if len(data) < 14 {
-		return netip.Addr{}, netip.Addr{}, false
+		return netip.Addr{}, false
 	}
 	etherType := binary.BigEndian.Uint16(data[12:14])
 	data = data[14:]
 	for etherType == constants.ETypeVLAN {
 		if len(data) < 4 {
-			return netip.Addr{}, netip.Addr{}, false
+			return netip.Addr{}, false
 		}
 		etherType = binary.BigEndian.Uint16(data[2:4])
 		data = data[4:]
@@ -311,7 +308,7 @@ func peekEthernetAddresses(data []byte) (src, dst netip.Addr, ok bool) {
 		var bottom byte
 		for bottom != 1 {
 			if len(data) < 5 {
-				return netip.Addr{}, netip.Addr{}, false
+				return netip.Addr{}, false
 			}
 			label = binary.BigEndian.Uint32(append([]byte{0}, data[:3]...)) >> 4
 			bottom = data[2] & 1
@@ -325,7 +322,7 @@ func peekEthernetAddresses(data []byte) (src, dst netip.Addr, ok bool) {
 			etherType = constants.ETypeIPv6
 		default:
 			if len(data) < 1 {
-				return netip.Addr{}, netip.Addr{}, false
+				return netip.Addr{}, false
 			}
 			switch data[0] >> 4 {
 			case 0x4:
@@ -334,36 +331,36 @@ func peekEthernetAddresses(data []byte) (src, dst netip.Addr, ok bool) {
 				etherType = constants.ETypeIPv6
 			case 0x0:
 				if len(data) < 4 {
-					return netip.Addr{}, netip.Addr{}, false
+					return netip.Addr{}, false
 				}
 				if binary.BigEndian.Uint32(data[0:4]) != 0x00000000 {
-					return netip.Addr{}, netip.Addr{}, false
+					return netip.Addr{}, false
 				}
-				return peekEthernetAddresses(data[4:])
+				return peekEthernetSource(data[4:])
 			default:
-				return netip.Addr{}, netip.Addr{}, false
+				return netip.Addr{}, false
 			}
 		}
 	}
 	switch etherType {
 	case constants.ETypeIPv4:
-		return peekIPv4Addresses(data)
+		return peekIPv4Source(data)
 	case constants.ETypeIPv6:
-		return peekIPv6Addresses(data)
+		return peekIPv6Source(data)
 	}
-	return netip.Addr{}, netip.Addr{}, false
+	return netip.Addr{}, false
 }
 
-func peekIPv4Addresses(data []byte) (src, dst netip.Addr, ok bool) {
+func peekIPv4Source(data []byte) (src netip.Addr, ok bool) {
 	if len(data) < 20 {
-		return netip.Addr{}, netip.Addr{}, false
+		return netip.Addr{}, false
 	}
-	return decoder.DecodeIP(data[12:16]), decoder.DecodeIP(data[16:20]), true
+	return decoder.DecodeIP(data[12:16]), true
 }
 
-func peekIPv6Addresses(data []byte) (src, dst netip.Addr, ok bool) {
+func peekIPv6Source(data []byte) (src netip.Addr, ok bool) {
 	if len(data) < 40 {
-		return netip.Addr{}, netip.Addr{}, false
+		return netip.Addr{}, false
 	}
-	return decoder.DecodeIP(data[8:24]), decoder.DecodeIP(data[24:40]), true
+	return decoder.DecodeIP(data[8:24]), true
 }

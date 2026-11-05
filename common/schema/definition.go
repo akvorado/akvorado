@@ -562,6 +562,7 @@ END`,
 			{
 				Key:            ColumnDecapProto,
 				Disabled:       true,
+				Group:          ColumnGroupOuter,
 				ParserType:     "string",
 				ClickHouseType: fmt.Sprintf("Enum8('none' = %d, 'ipip' = %d, 'gre' = %d, 'vxlan' = %d, 'srv6' = %d)", pb.RawFlow_DECAP_NONE, pb.RawFlow_DECAP_IPIP, pb.RawFlow_DECAP_GRE, pb.RawFlow_DECAP_VXLAN, pb.RawFlow_DECAP_SRV6),
 			},
