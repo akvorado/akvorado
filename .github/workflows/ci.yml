@@ -209,32 +209,64 @@ jobs:
           path: |
             test/go/profile.out
 
-  build-netbsd:
-    name: 🐡 Build and test on NetBSD 11 amd64
+  build-bsd:
+    name: 😈 Build and smoke test on ${{ matrix.os }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - freebsd
+          - netbsd
+          - openbsd
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - name: Build and test natively
-        uses: vmactions/netbsd-vm@v1
+      - name: Setup
+        uses: ./.github/actions/setup
+      # The BSD VMs have no Node.js toolchain: generate the embedded assets and
+      # generated Go code here, like the generated-assets distfile of the ports.
+      - name: Generate files
+        run: |
+          # Use the committed eBPF programs
+          touch inlet/flow/input/udp/reuseport_*.o
+          make all-indep
+          rm -rf console/frontend/node_modules
+      - name: Build and smoke test on FreeBSD
+        if: matrix.os == 'freebsd'
+        uses: vmactions/freebsd-vm@c46abacb49f09938ca4e1702d15d836285d694cc # v1.5.9
+        with:
+          usesh: true
+          prepare: pkg install -y go127
+          run: |
+            export PATH=/usr/local/go127/bin:$PATH
+            sh bsd/smoke-test.sh
+      - name: Build and smoke test on NetBSD
+        if: matrix.os == 'netbsd'
+        uses: vmactions/netbsd-vm@5957cf330aef2e6ddc63c604364c99ce2e02b91d # v1.5.3
         with:
           release: "11.1"
           usesh: true
+          prepare: |
+            PKG_PATH=https://cdn.netbsd.org/pub/pkgsrc/packages/NetBSD/amd64/11.0/All
+            export PKG_PATH
+            pkg_add go127
           run: |
-            export PKG_PATH=https://cdn.netbsd.org/pub/pkgsrc/packages/NetBSD/amd64/11.0/All
-            pkg_add go127-1.27.3
             export PATH=/usr/pkg/go127/bin:$PATH
-            export GOTOOLCHAIN=local CGO_ENABLED=0
-            go version
-            go test ./inlet/flow/input/udp
-            go build -tags=release,grpcnotrace,validator_novalidatefn -o /tmp/akvorado ./cmd/akvorado
-            go build -tags=release,grpcnotrace,validator_novalidatefn,akvorado_inlet -o /tmp/akvorado-inlet ./cmd/akvorado
-            /tmp/akvorado version
-            /tmp/akvorado-inlet version
+            sh bsd/smoke-test.sh
+      - name: Build and smoke test on OpenBSD
+        if: matrix.os == 'openbsd'
+        uses: vmactions/openbsd-vm@f1ca8bc8ecc5b6ef7218e5b914836e067e1546d3 # v1.4.9
+        with:
+          usesh: true
+          prepare: pkg_add -I go
+          run: |
+            export PATH=/usr/local/go/bin:$PATH
+            sh bsd/smoke-test.sh
 
   e2e:
     name: 🧪 End-to-end testing
