@@ -1,0 +1,3 @@
+Akvorado is a flow collector, enricher and visualizer. It collects network
+flows, enriches them with metadata, and stores them in ClickHouse for analysis
+through its web console. Kafka and ClickHouse are required separately.
