@@ -26,4 +26,5 @@ reachable. Enable the services in this order:
     # rcctl start akvorado_orchestrator
     # rcctl start akvorado_inlet akvorado_outlet akvorado_console
 
-GeoIP databases are read from /var/db/GeoIP (see net/geoipupdate).
+GeoIP databases are optional and read from /var/db/GeoIP. geoipupdate is
+not packaged for OpenBSD: download the MMDB files from MaxMind or IPinfo.
