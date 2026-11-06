@@ -1,0 +1,24 @@
+===========================================================================
+$NetBSD$
+
+Akvorado requires Kafka and ClickHouse, which are not installed by this
+package. Review the Kafka and ClickHouse addresses in
+${PKG_SYSCONFDIR}/akvorado.yaml before starting the services.
+
+The sample configuration runs every service on a single host, each with
+its own HTTP port:
+
+	orchestrator  :8080  (configuration served to the other services)
+	inlet         :8081  (flows on UDP 2055 NetFlow, 4739 IPFIX, 6343 sFlow)
+	outlet        :8082  (BMP on TCP 10179)
+	console       :8083  (web interface)
+
+SO_REUSEPORT does not load-balance UDP flows on NetBSD, so the inlet uses
+one worker per listening port.
+
+Copy the rc.d scripts from ${PREFIX}/share/examples/rc.d (or set
+PKG_RCD_SCRIPTS=YES) and enable the services in /etc/rc.conf. Start Kafka
+and ClickHouse first: the orchestrator exits when they are unreachable, and
+the other services exit when the orchestrator is unreachable. Logs are
+written to ${VARBASE}/log/akvorado.
+===========================================================================

@@ -6,3 +6,7 @@ share/examples/akvorado/akvorado.yaml
 share/examples/akvorado/console.yaml
 share/examples/akvorado/inlet.yaml
 share/examples/akvorado/outlet.yaml
+share/examples/rc.d/akvorado_console
+share/examples/rc.d/akvorado_inlet
+share/examples/rc.d/akvorado_orchestrator
+share/examples/rc.d/akvorado_outlet
