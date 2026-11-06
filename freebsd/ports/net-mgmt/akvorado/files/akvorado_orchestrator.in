@@ -3,23 +3,40 @@
 # PROVIDE: akvorado_orchestrator
 # REQUIRE: NETWORKING
 # KEYWORD: shutdown
+#
+# Akvorado orchestrator (configuration and ClickHouse setup)
+#
+# Add the following lines to /etc/rc.conf to enable it:
+#
+# akvorado_orchestrator_enable (bool):	Set to "NO" by default.
+#					Set it to "YES" to enable it.
+# akvorado_orchestrator_config (str):	Configuration file.
+#					Default: %%ETCDIR%%/akvorado.yaml
+# akvorado_user (str):			User to run as. Default: %%AKVORADO_USER%%
+# akvorado_restart_delay (int):		Seconds before restarting a failed
+#					service. Default: 10
 
 . /etc/rc.subr
 
 name=akvorado_orchestrator
 rcvar=akvorado_orchestrator_enable
 
-load_rc_config "$name"
+load_rc_config $name
 
 : ${akvorado_orchestrator_enable:="NO"}
 : ${akvorado_user:="%%AKVORADO_USER%%"}
-: ${akvorado_config:="%%ETCDIR%%/akvorado.yaml"}
-: ${akvorado_orchestrator_pidfile:="/var/run/akvorado_orchestrator.pid"}
+: ${akvorado_restart_delay:="10"}
+: ${akvorado_orchestrator_config:="%%ETCDIR%%/akvorado.yaml"}
 
-required_files="${akvorado_config}"
-pidfile="${akvorado_orchestrator_pidfile}"
+required_files="${akvorado_orchestrator_config}"
+_akvorado_args="orchestrator ${akvorado_orchestrator_config}"
+
+# Services exit when Kafka, ClickHouse or the orchestrator are not reachable
+# yet: daemon(8) restarts them until their dependencies are available. The
+# pidfile holds the supervisor PID, so procname is left to its default.
+pidfile="/var/run/${name}.pid"
+_akvorado_bin="%%PREFIX%%/bin/akvorado"
 command="/usr/sbin/daemon"
-procname="%%PREFIX%%/bin/akvorado"
-command_args="-f -S -T ${name} -p ${pidfile} -u ${akvorado_user} ${procname} orchestrator ${akvorado_config}"
+command_args="-f -S -T ${name} -R ${akvorado_restart_delay} -P ${pidfile} -u ${akvorado_user} ${_akvorado_bin} ${_akvorado_args}"
 
 run_rc_command "$1"

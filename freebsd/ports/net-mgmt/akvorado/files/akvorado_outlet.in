@@ -3,22 +3,39 @@
 # PROVIDE: akvorado_outlet
 # REQUIRE: NETWORKING akvorado_orchestrator
 # KEYWORD: shutdown
+#
+# Akvorado outlet
+#
+# Add the following lines to /etc/rc.conf to enable it:
+#
+# akvorado_outlet_enable (bool):	Set to "NO" by default.
+#					Set it to "YES" to enable it.
+# akvorado_outlet_url (str):	Orchestrator URL to fetch the configuration
+#					from. Default: http://127.0.0.1:8080
+# akvorado_user (str):			User to run as. Default: %%AKVORADO_USER%%
+# akvorado_restart_delay (int):		Seconds before restarting a failed
+#					service. Default: 10
 
 . /etc/rc.subr
 
 name=akvorado_outlet
 rcvar=akvorado_outlet_enable
 
-load_rc_config "$name"
+load_rc_config $name
 
 : ${akvorado_outlet_enable:="NO"}
 : ${akvorado_user:="%%AKVORADO_USER%%"}
-: ${akvorado_orchestrator_url:="http://127.0.0.1:8080"}
-: ${akvorado_outlet_pidfile:="/var/run/akvorado_outlet.pid"}
+: ${akvorado_restart_delay:="10"}
+: ${akvorado_outlet_url:="http://127.0.0.1:8080"}
 
-pidfile="${akvorado_outlet_pidfile}"
+_akvorado_args="outlet ${akvorado_outlet_url}"
+
+# Services exit when Kafka, ClickHouse or the orchestrator are not reachable
+# yet: daemon(8) restarts them until their dependencies are available. The
+# pidfile holds the supervisor PID, so procname is left to its default.
+pidfile="/var/run/${name}.pid"
+_akvorado_bin="%%PREFIX%%/bin/akvorado"
 command="/usr/sbin/daemon"
-procname="%%PREFIX%%/bin/akvorado"
-command_args="-f -S -T ${name} -p ${pidfile} -u ${akvorado_user} ${procname} outlet ${akvorado_orchestrator_url}"
+command_args="-f -S -T ${name} -R ${akvorado_restart_delay} -P ${pidfile} -u ${akvorado_user} ${_akvorado_bin} ${_akvorado_args}"
 
 run_rc_command "$1"
