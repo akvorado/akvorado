@@ -14,6 +14,20 @@ import (
 	sb "akvorado/common/sqlbuilder"
 )
 
+// TCPFlagNames are the names of the TCP flags, indexed by bit position. The
+// first letter is used when displaying the flags.
+var TCPFlagNames = []string{
+	"FIN",
+	"SYN",
+	"RST",
+	"PSH",
+	".ACK",
+	"URG",
+	"ECE",
+	"CWR",
+	"NS",
+}
+
 // Column represents a query column. It should be instantiated with NewColumn() or
 // Unmarshal(), then call Validate().
 type Column struct {
@@ -138,19 +152,8 @@ func (qc Column) ToSQLSelect(sch *schema.Component, database string) sb.Expr {
 	case schema.ColumnSrcMAC, schema.ColumnDstMAC:
 		return sb.Function("MACNumToString", self)
 	case schema.ColumnTCPFlags:
-		bits := []string{
-			"FIN",
-			"SYN",
-			"RST",
-			"PSH",
-			".ACK",
-			"URG",
-			"ECE",
-			"CWR",
-			"NS",
-		}
-		flags := make([]sb.Expr, len(bits))
-		for bit, name := range bits {
+		flags := make([]sb.Expr, len(TCPFlagNames))
+		for bit, name := range TCPFlagNames {
 			flags[bit] = sb.Function("if",
 				sb.Op(
 					sb.Function("bitTest", self, sb.Uint(uint64(bit))),

@@ -1,8 +1,7 @@
 ---
-http:
-  cache:
-    type: redis
-    server: redis:6379
+schema:
+  enabled:
+    - TCPFlags
 database:
   saved-filters:
     # These are prepopulated filters you can select in a drop-down

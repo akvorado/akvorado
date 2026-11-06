@@ -556,6 +556,20 @@ UNION DISTINCT
 			{"echo-reply"},
 		}).
 		Return(nil)
+	mockConn.EXPECT().
+		Select(gomock.Any(), gomock.Any(), sb.SQLMatcher(t, `
+SELECT TCPFlags AS label
+FROM flows
+WHERE TimeReceived > date_sub(minute, 1, now())
+AND Proto = 6
+GROUP BY TCPFlags
+ORDER BY COUNT(*) DESC
+LIMIT 20`)).
+		SetArg(1, []struct {
+			Label uint16 `ch:"label"`
+		}{{16}, {0}, {18}, {194}}).
+		Return(nil).
+		Times(2)
 
 	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
@@ -575,6 +589,33 @@ UNION DISTINCT
 			JSONOutput: helpers.M{"completions": []helpers.M{
 				{"label": "echo-request", "detail": "ICMPv6", "quoted": true},
 				{"label": "echo-reply", "detail": "ICMPv6", "quoted": true},
+			}},
+		},
+		{
+			URL:        "/api/v0/console/filter/complete",
+			StatusCode: 200,
+			JSONInput:  helpers.M{"what": "value", "column": "tcpFlags", "operator": "=", "prefix": ""},
+			JSONOutput: helpers.M{"completions": []helpers.M{
+				{"label": "16", "detail": ". (ACK)", "quoted": false},
+				{"label": "0", "detail": "no flag", "quoted": false},
+				{"label": "18", "detail": "S. (SYN ACK)", "quoted": false},
+				{"label": "194", "detail": "SEC (SYN ECE CWR)", "quoted": false},
+				{"label": "2", "detail": "S (SYN)", "quoted": false},
+				{"label": "24", "detail": "P. (PSH ACK)", "quoted": false},
+				{"label": "17", "detail": "F. (FIN ACK)", "quoted": false},
+				{"label": "25", "detail": "FP. (FIN PSH ACK)", "quoted": false},
+				{"label": "4", "detail": "R (RST)", "quoted": false},
+				{"label": "20", "detail": "R. (RST ACK)", "quoted": false},
+			}},
+		},
+		{
+			URL:        "/api/v0/console/filter/complete",
+			StatusCode: 200,
+			JSONInput:  helpers.M{"what": "value", "column": "tcpFlags", "operator": "=", "prefix": "syn"},
+			JSONOutput: helpers.M{"completions": []helpers.M{
+				{"label": "18", "detail": "S. (SYN ACK)", "quoted": false},
+				{"label": "194", "detail": "SEC (SYN ECE CWR)", "quoted": false},
+				{"label": "2", "detail": "S (SYN)", "quoted": false},
 			}},
 		},
 	})

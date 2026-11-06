@@ -511,6 +511,61 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 				})
 			}
 			input.Prefix = ""
+		case "tcpflags":
+			column := sb.Column(c.fixQueryColumnName(input.Column))
+			values := []uint16{}
+			results := []struct {
+				Label uint16 `ch:"label"`
+			}{}
+			// The flags seen in the recent flows, the most used first.
+			sqlQuery := sb.Select(sb.Alias(column, "label")).
+				From(sb.Table("flows")).
+				Where(sb.And(
+					recentFlows(1),
+					sb.Op(sb.Column("Proto"), "=", sb.Uint(constants.ProtoTCP)))).
+				GroupBy(column).
+				OrderBy(mostUsedFirst()).
+				Limit(input.Limit).
+				String()
+			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery); err == nil {
+				for _, result := range results {
+					values = append(values, result.Label)
+				}
+			}
+			// Then, the common combinations: S, S., ., P., F., FP., R, R.
+			for _, value := range []uint16{2, 18, 16, 24, 17, 25, 4, 20} {
+				if !slices.Contains(values, value) {
+					values = append(values, value)
+				}
+			}
+			prefix := strings.ToLower(input.Prefix)
+			for _, value := range values {
+				letters := []string{}
+				names := []string{}
+				for bit, name := range query.TCPFlagNames {
+					if value&(1<<bit) != 0 {
+						letters = append(letters, name[:1])
+						names = append(names, strings.TrimPrefix(name, "."))
+					}
+				}
+				label := strconv.FormatUint(uint64(value), 10)
+				detail := "no flag"
+				if value != 0 {
+					detail = fmt.Sprintf("%s (%s)", strings.Join(letters, ""), strings.Join(names, " "))
+				}
+				if !strings.HasPrefix(label, prefix) && !strings.Contains(strings.ToLower(detail), prefix) {
+					continue
+				}
+				completions = append(completions, filterCompletion{
+					Label:  label,
+					Detail: detail,
+					Quoted: false,
+				})
+				if len(completions) >= input.Limit {
+					break
+				}
+			}
+			input.Prefix = "" // We have handled this internally
 		case "exportername", "exportergroup", "exporterrole", "exportersite", "exporterregion", "exportertenant":
 			column = c.fixQueryColumnName(inputColumn)
 			detail = fmt.Sprintf("exporter %s", inputColumn[8:])
@@ -610,6 +665,9 @@ func (c *Component) filterComparableColumns(name, operator, prefix string) []fil
 	var parserType string
 	for _, column := range c.d.Schema.Columns() {
 		if strings.EqualFold(name, column.Name) {
+			if column.Key == schema.ColumnTCPFlags {
+				return nil
+			}
 			parserType = column.ParserType
 			break
 		}
@@ -629,7 +687,8 @@ func (c *Component) filterComparableColumns(name, operator, prefix string) []fil
 
 	names := []string{}
 	for _, column := range c.d.Schema.Columns() {
-		if column.Disabled || column.ParserType != parserType || strings.EqualFold(name, column.Name) {
+		if column.Disabled || column.ParserType != parserType || strings.EqualFold(name, column.Name) ||
+			column.Key == schema.ColumnTCPFlags {
 			continue
 		}
 		if strings.HasPrefix(strings.ToLower(column.Name), strings.ToLower(prefix)) {

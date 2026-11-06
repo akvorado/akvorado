@@ -13,6 +13,7 @@ identified with a specific icon:
 ## Unreleased
 
 - ✨ *console*: add authorization rules to restrict the flows a user can see
+- 🌱 *console*: complete TCP flags in filters
 
 ## 2026.10.1 - 2026-10-25
 
