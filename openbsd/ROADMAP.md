@@ -1,5 +1,10 @@
 # OpenBSD Port Roadmap
 
+> **Superseded on 2026-11-06.** The blockers below (main module fetch, Go
+> module staging, `embed.zip`) are resolved in the port. See
+> [PORTING_STATUS.md](PORTING_STATUS.md) for the current state and the
+> remaining steps on the OpenBSD VM. Kept for history.
+
 Status as of 2026-11-06. This is a working plan, not a finished port.
 
 ## Progress Through Phase 3

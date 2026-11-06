@@ -1,0 +1,29 @@
++-------------------------------------------------------------------------------
+| Running ${PKGSTEM} on OpenBSD
++-------------------------------------------------------------------------------
+
+Akvorado requires Kafka and ClickHouse, which are not installed by this
+package. Review the Kafka and ClickHouse addresses in
+${SYSCONFDIR}/akvorado/akvorado.yaml before starting the services.
+
+The sample configuration runs every service on a single host, each with its
+own HTTP port:
+
+    orchestrator  :8080  (configuration served to the other services)
+    inlet         :8081  (flows on UDP 2055 NetFlow, 4739 IPFIX, 6343 sFlow)
+    outlet        :8082  (BMP on TCP 10179)
+    console       :8083  (web interface)
+
+SO_REUSEPORT does not load-balance UDP flows on OpenBSD, so the inlet uses
+one worker per listening port.
+
+Start Kafka and ClickHouse first: the orchestrator exits when they are not
+reachable, and the other services exit when the orchestrator is not
+reachable. Enable the services in this order:
+
+    # rcctl enable akvorado_orchestrator akvorado_inlet akvorado_outlet \
+        akvorado_console
+    # rcctl start akvorado_orchestrator
+    # rcctl start akvorado_inlet akvorado_outlet akvorado_console
+
+GeoIP databases are read from /var/db/GeoIP (see net/geoipupdate).
