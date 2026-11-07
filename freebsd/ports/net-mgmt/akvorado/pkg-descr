@@ -1,0 +1,3 @@
+Akvorado collects NetFlow, IPFIX and sFlow data, enriches the flows with
+network and routing metadata, and stores them in ClickHouse for analysis.
+Kafka and ClickHouse are external services and are not installed by this port.

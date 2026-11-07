@@ -1,0 +1,38 @@
+[
+{ type: install
+  message: <<EOM
+Akvorado requires Kafka and ClickHouse, which are not installed by this
+package. They can run on this host or elsewhere.
+
+1. Copy the sample configuration files and review them, in particular the
+   Kafka and ClickHouse addresses in akvorado.yaml:
+
+     cd %%ETCDIR%%
+     for f in akvorado console inlet outlet; do cp $f.yaml.sample $f.yaml; done
+
+2. The samples are adapted to run every service on a single host, each with
+   its own HTTP port:
+
+     orchestrator  :8080  (configuration served to the other services)
+     inlet         :8081  (flows on UDP 2055 NetFlow, 4739 IPFIX, 6343 sFlow)
+     outlet        :8082  (BMP on TCP 10179)
+     console       :8083  (web interface)
+
+   SO_REUSEPORT does not load-balance UDP flows on FreeBSD, so the inlet
+   uses one worker per listening port.
+
+3. Enable the services you need in /etc/rc.conf, for example:
+
+     sysrc akvorado_orchestrator_enable=YES akvorado_inlet_enable=YES \
+           akvorado_outlet_enable=YES akvorado_console_enable=YES
+
+   Services are supervised by daemon(8) and restarted every 10 seconds
+   (akvorado_restart_delay) until Kafka, ClickHouse and the orchestrator are
+   reachable. Logs go to syslog, tagged with the service name.
+
+GeoIP databases are looked up in %%LOCALBASE%%/share/GeoIP (see
+net/geoipupdate). See %%DOCSDIR%%/README.md and
+https://demo.akvorado.net/docs for more information.
+EOM
+}
+]

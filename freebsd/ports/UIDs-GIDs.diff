@@ -1,0 +1,22 @@
+--- a/UIDs
++++ b/UIDs
+@@ -777,7 +777,7 @@
+ _tuptime:*:827:827::0:0:Tuptime:/var/lib/tuptime:/usr/sbin/nologin
+ cirrus:*:828:828::0:0:Cirrus CI:/usr/local/cirrus:/bin/sh
+ # free: 829
+-# free: 830
++akvorado:*:830:830::0:0:Akvorado Daemon:/nonexistent:/usr/sbin/nologin
+ telemt:*:831:831::0:0:Telemt daemon:/var/db/telemt:/usr/sbin/nologin
+ beehive:*:832:832::0:0:beehive user:/nonexistent:/usr/sbin/nologin
+ bhyvemgrd:*:833:833::0:0:bhyvemgrd daemon user:/nonexistent:/usr/sbin/nologin
+--- a/GIDs
++++ b/GIDs
+@@ -772,7 +772,7 @@
+ _tuptime:*:827:
+ cirrus:*:828:
+ # free: 829
+-# free: 830
++akvorado:*:830:
+ telemt:*:831:
+ beehive:*:832:
+ bhyvemgrd:*:833:

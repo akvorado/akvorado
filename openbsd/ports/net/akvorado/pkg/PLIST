@@ -1,0 +1,20 @@
+@newgroup _akvorado:906
+@newuser _akvorado:906:_akvorado::Akvorado daemon:/nonexistent:/sbin/nologin
+@rcscript ${RCDIR}/akvorado_console
+@rcscript ${RCDIR}/akvorado_inlet
+@rcscript ${RCDIR}/akvorado_orchestrator
+@rcscript ${RCDIR}/akvorado_outlet
+@bin bin/akvorado
+@bin bin/akvorado-inlet
+share/doc/akvorado/
+share/doc/akvorado/README.md
+share/examples/akvorado/
+@sample ${SYSCONFDIR}/akvorado/
+share/examples/akvorado/akvorado.yaml
+@sample ${SYSCONFDIR}/akvorado/akvorado.yaml
+share/examples/akvorado/console.yaml
+@sample ${SYSCONFDIR}/akvorado/console.yaml
+share/examples/akvorado/inlet.yaml
+@sample ${SYSCONFDIR}/akvorado/inlet.yaml
+share/examples/akvorado/outlet.yaml
+@sample ${SYSCONFDIR}/akvorado/outlet.yaml

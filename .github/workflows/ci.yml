@@ -209,6 +209,74 @@ jobs:
           path: |
             test/go/profile.out
 
+  build-bsd:
+    name: 😈 Build and smoke test on ${{ matrix.os }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - freebsd
+          - netbsd
+          - openbsd
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Setup
+        uses: ./.github/actions/setup
+      # The BSD VMs have no Node.js toolchain: generate the embedded assets and
+      # generated Go code here, like the generated-assets distfile of the ports.
+      - name: Generate files
+        run: |
+          # Use the committed eBPF programs
+          touch inlet/flow/input/udp/reuseport_*.o
+          make all-indep
+          rm -rf console/frontend/node_modules
+      - name: Build and smoke test on FreeBSD
+        if: matrix.os == 'freebsd'
+        uses: vmactions/freebsd-vm@c46abacb49f09938ca4e1702d15d836285d694cc # v1.5.9
+        with:
+          usesh: true
+          prepare: pkg install -y go127
+          run: |
+            export PATH=/usr/local/go127/bin:$PATH
+            sh bsd/smoke-test.sh
+      - name: Build and smoke test on NetBSD
+        if: matrix.os == 'netbsd'
+        uses: vmactions/netbsd-vm@5957cf330aef2e6ddc63c604364c99ce2e02b91d # v1.5.3
+        with:
+          release: "11.1"
+          usesh: true
+          prepare: |
+            PKG_PATH=https://cdn.netbsd.org/pub/pkgsrc/packages/NetBSD/amd64/11.0/All
+            export PKG_PATH
+            pkg_add go127
+            # The default UDP receive buffer (~41 kB) drops part of the
+            # bursts sent by the UDP input tests.
+            sysctl -w kern.sbmax=4194304
+            sysctl -w net.inet.udp.recvspace=1048576
+          run: |
+            export PATH=/usr/pkg/go127/bin:$PATH
+            sh bsd/smoke-test.sh
+      - name: Build and smoke test on OpenBSD
+        if: matrix.os == 'openbsd'
+        uses: vmactions/openbsd-vm@f1ca8bc8ecc5b6ef7218e5b914836e067e1546d3 # v1.4.9
+        with:
+          usesh: true
+          # The VM disk is too small for the Go module and build caches:
+          # mount the checkout from the runner and keep the caches there.
+          sync: nfs
+          prepare: pkg_add -I go
+          run: |
+            export PATH=/usr/local/go/bin:$PATH
+            mkdir -p .ci/tmp
+            export GOMODCACHE=$PWD/.ci/gomod GOCACHE=$PWD/.ci/gocache TMPDIR=$PWD/.ci/tmp
+            sh bsd/smoke-test.sh
+
   e2e:
     name: 🧪 End-to-end testing
     runs-on: ubuntu-latest
