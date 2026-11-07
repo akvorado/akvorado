@@ -255,6 +255,10 @@ jobs:
             PKG_PATH=https://cdn.netbsd.org/pub/pkgsrc/packages/NetBSD/amd64/11.0/All
             export PKG_PATH
             pkg_add go127
+            # The default UDP receive buffer (~41 kB) drops part of the
+            # bursts sent by the UDP input tests.
+            sysctl -w kern.sbmax=4194304
+            sysctl -w net.inet.udp.recvspace=1048576
           run: |
             export PATH=/usr/pkg/go127/bin:$PATH
             sh bsd/smoke-test.sh
@@ -263,9 +267,14 @@ jobs:
         uses: vmactions/openbsd-vm@f1ca8bc8ecc5b6ef7218e5b914836e067e1546d3 # v1.4.9
         with:
           usesh: true
+          # The VM disk is too small for the Go module and build caches:
+          # mount the checkout from the runner and keep the caches there.
+          sync: nfs
           prepare: pkg_add -I go
           run: |
             export PATH=/usr/local/go/bin:$PATH
+            mkdir -p .ci/tmp
+            export GOMODCACHE=$PWD/.ci/gomod GOCACHE=$PWD/.ci/gocache TMPDIR=$PWD/.ci/tmp
             sh bsd/smoke-test.sh
 
   e2e:
