@@ -39,16 +39,16 @@ type mockWorker struct {
 }
 
 // FinalizeAndSend always "send" the current flows.
-func (w *mockWorker) FinalizeAndSend(ctx context.Context) WorkerStatus {
-	w.Flush(ctx)
-	return WorkerStatusIdle
+func (w *mockWorker) FinalizeAndSend(ctx context.Context) (WorkerStatus, bool) {
+	return WorkerStatusIdle, w.Flush(ctx) == nil
 }
 
 // Send will record the sent flows for testing purpose.
-func (w *mockWorker) Flush(_ context.Context) {
+func (w *mockWorker) Flush(_ context.Context) error {
 	clone := *w.bf
 	w.c.callback(&clone)
 	w.bf.Clear() // Clear instead of finalizing
+	return nil
 }
 
 // Close is a no-op for the mock worker.

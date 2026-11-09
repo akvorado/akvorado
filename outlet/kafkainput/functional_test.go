@@ -56,12 +56,12 @@ func TestFakeKafka(t *testing.T) {
 	got := []string{}
 	expected := []string{"hello 1", "hello 2", "hello 3"}
 	gotAll := make(chan bool)
-	callback := func(_ context.Context, message []byte) error {
+	callback := func(_ context.Context, message []byte) (Flushed, error) {
 		got = append(got, string(message))
 		if len(got) == len(expected) {
 			close(gotAll)
 		}
-		return nil
+		return FlushedNothing, nil
 	}
 
 	// Start the component
@@ -83,8 +83,8 @@ func TestFakeKafka(t *testing.T) {
 		Observe: true,
 		Count:   -1,
 	})
-	c.StartWorkers(func(int, chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
-		return callback, func() { shutdownCalled = true }
+	c.StartWorkers(func(int, chan<- ScaleRequest) (ReceiveFunc, FlushFunc, ShutdownFunc) {
+		return callback, noFlush, func() { shutdownCalled = true }
 	})
 
 	// Send messages once the consumer is fetching
@@ -166,8 +166,8 @@ func TestStartSeveralWorkers(t *testing.T) {
 	if err := c.(*realComponent).Start(); err != nil {
 		t.Fatalf("Start() error:\n%+v", err)
 	}
-	c.StartWorkers(func(int, chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
-		return func(context.Context, []byte) error { return nil }, func() {}
+	c.StartWorkers(func(int, chan<- ScaleRequest) (ReceiveFunc, FlushFunc, ShutdownFunc) {
+		return func(context.Context, []byte) (Flushed, error) { return FlushedNothing, nil }, noFlush, func() {}
 	})
 	time.Sleep(20 * time.Millisecond)
 	if err := c.Stop(); err != nil {
@@ -213,11 +213,11 @@ func TestWorkerStop(t *testing.T) {
 
 	var last int
 	done := make(chan bool)
-	c.StartWorkers(func(int, chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
-		return func(_ context.Context, got []byte) error {
+	c.StartWorkers(func(int, chan<- ScaleRequest) (ReceiveFunc, FlushFunc, ShutdownFunc) {
+		return func(_ context.Context, got []byte) (Flushed, error) {
 				last, _ = strconv.Atoi(string(got))
-				return nil
-			}, func() {
+				return FlushedNothing, nil
+			}, noFlush, func() {
 				close(done)
 			}
 	})
@@ -355,8 +355,8 @@ func TestWorkerScaling(t *testing.T) {
 		Observe: true,
 		Count:   -1,
 	})
-	c.StartWorkers(func(_ int, ch chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
-		return func(context.Context, []byte) error {
+	c.StartWorkers(func(_ int, ch chan<- ScaleRequest) (ReceiveFunc, FlushFunc, ShutdownFunc) {
+		return func(context.Context, []byte) (Flushed, error) {
 			c := msg.Add(1)
 			if c <= 1 {
 				t.Logf("received message %d, request a scale increase", c)
@@ -365,8 +365,8 @@ func TestWorkerScaling(t *testing.T) {
 				t.Logf("received message %d, request a scale decrease", c)
 				ch <- ScaleDecrease
 			}
-			return nil
-		}, func() {}
+			return FlushedNothing, nil
+		}, noFlush, func() {}
 	})
 
 	// 1 worker, wait for it to fetch
@@ -496,13 +496,13 @@ func TestKafkaLagMetric(t *testing.T) {
 	workerReceived := make(chan any, 10)
 	workerBlockReceive := make(chan any)
 	defer close(workerBlockReceive)
-	c.StartWorkers(func(_ int, _ chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
-		return func(context.Context, []byte) error {
+	c.StartWorkers(func(_ int, _ chan<- ScaleRequest) (ReceiveFunc, FlushFunc, ShutdownFunc) {
+		return func(context.Context, []byte) (Flushed, error) {
 			t.Log("worker received a message")
 			workerReceived <- nil
 			<-workerBlockReceive
-			return nil
-		}, func() {}
+			return FlushedAll, nil
+		}, noFlush, func() {}
 	})
 	waitReceive := func() {
 		t.Helper()
@@ -579,7 +579,7 @@ func TestKafkaLagMetric(t *testing.T) {
 	waitReceive()
 	releaseReceive()
 
-	t.Log("wait for autocommit")
+	t.Log("wait for commit")
 	waitCommitted(1)
 
 	// The message was processed, there's no lag
@@ -616,7 +616,7 @@ func TestKafkaLagMetric(t *testing.T) {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
 
-	// Let the worker process all 5 messages (and wait for autocommit), expect
+	// Let the worker process all 5 messages (each one flushed and committed), expect
 	// the lag to drop back to zero
 	t.Log("accept processing of 5 messages")
 	releaseReceive() // the second message was already received above

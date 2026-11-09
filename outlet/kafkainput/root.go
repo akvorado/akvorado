@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -77,9 +76,8 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		kgo.ConsumeStartOffset(kgo.NewOffset().AtEnd()),
 		kgo.ConsumeResetOffset(kgo.NewOffset().AtEnd()),
 		kgo.ConsumeTopics(fmt.Sprintf("%s-v%d", configuration.Topic, pb.Version)),
-		kgo.AutoCommitMarks(),
-		kgo.AutoCommitInterval(time.Second),
-		kgo.OnPartitionsRevoked(c.onPartitionsRevoked),
+		// Offsets are committed after each write to ClickHouse.
+		kgo.DisableAutoCommit(),
 		kgo.BlockRebalanceOnPoll(),
 	)
 
