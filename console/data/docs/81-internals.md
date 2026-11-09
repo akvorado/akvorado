@@ -120,6 +120,12 @@ allocating a new one. The same idea is used for the batch sent to ClickHouse.
 This keeps the pressure on the garbage collector low, as the outlet handles
 every single flow.
 
+Kafka offsets are committed only after a batch is written to ClickHouse. A
+worker flushes its batch between two Kafka records, then commits the offsets of
+the records in the batch. On shutdown or when partitions are revoked, it
+flushes before committing. A crash replays the records not yet committed, so
+delivery is at-least-once: no flow is lost, but a few may be written twice.
+
 ## Kafka
 
 The Kafka component relies on [franz-go](https://github.com/twmb/franz-go). It

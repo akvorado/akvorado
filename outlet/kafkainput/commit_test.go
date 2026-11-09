@@ -202,6 +202,9 @@ func TestCommitOnlyAfterFlush(t *testing.T) {
 	// Records in the batch, no flush: a crash here must replay them.
 	h.produce(0, "a", "b", "c")
 	rec.wait(t, 3)
+	// Longer than the former 1 s autocommit interval, so a return of
+	// autocommit fails here.
+	time.Sleep(1500 * time.Millisecond)
 	h.assertCommittedStays(0)
 
 	// The flush includes all records.

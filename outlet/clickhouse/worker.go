@@ -20,9 +20,11 @@ import (
 // Worker represents a worker sending to ClickHouse. It is synchronous (no
 // goroutines) and most functions are bound to a context.
 type Worker interface {
+	// Finalize adds the current flow to the batch.
 	Finalize()
 	// MaybeFlush also reports whether a batch was written to ClickHouse.
 	MaybeFlush(context.Context) (WorkerStatus, bool)
+	// Flush writes the batch to ClickHouse. The batch is kept on error.
 	Flush(context.Context) error
 	Close()
 }
@@ -125,7 +127,7 @@ func (w *commonWorker) Finalize() {
 }
 
 // MaybeFlush sends data to ClickHouse if we have a full batch or exceeded the
-// maximum wait time. It should be called between Kafka records, so a batch
+// maximum wait time. It should be called between input records, so a batch
 // never holds part of a record. A batch may exceed the maximum batch size by
 // the flows of one record. See
 // https://clickhouse.com/docs/best-practices/selecting-an-insert-strategy for
