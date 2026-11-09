@@ -19,12 +19,12 @@ func TestMock(t *testing.T) {
 	expected := []string{"hello1", "hello2", "hello3"}
 	gotAll := make(chan bool)
 	var shutdownCalled atomic.Bool
-	callback := func(_ context.Context, message []byte) (Flushed, error) {
+	callback := func(_ context.Context, message []byte) (bool, error) {
 		got = append(got, string(message))
 		if len(got) == len(expected) {
 			close(gotAll)
 		}
-		return FlushedNothing, nil
+		return false, nil
 	}
 	c.StartWorkers(
 		func(int, chan<- ScaleRequest) (ReceiveFunc, FlushFunc, ShutdownFunc) {

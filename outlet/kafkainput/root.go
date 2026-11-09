@@ -76,7 +76,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		kgo.ConsumeStartOffset(kgo.NewOffset().AtEnd()),
 		kgo.ConsumeResetOffset(kgo.NewOffset().AtEnd()),
 		kgo.ConsumeTopics(fmt.Sprintf("%s-v%d", configuration.Topic, pb.Version)),
-		// Offsets are committed after each write to ClickHouse.
+		// Offsets are committed after each flush by the worker.
 		kgo.DisableAutoCommit(),
 		kgo.BlockRebalanceOnPoll(),
 	)

@@ -55,20 +55,20 @@ func (w *worker) shutdown() {
 	w.l.Info().Msg("worker stopped")
 }
 
-// processIncomingFlow processes one incoming flow from Kafka.
-func (w *worker) processIncomingFlow(ctx context.Context, data []byte) (kafkainput.Flushed, error) {
+// processIncomingFlow processes one incoming flow from Kafka. It reports
+// whether the batch, including this flow, was flushed.
+func (w *worker) processIncomingFlow(ctx context.Context, data []byte) (bool, error) {
 	// Raw flow decoding
 	w.c.metrics.rawFlowsReceived.Inc()
 	w.rawFlow.ResetVT()
 	if err := w.rawFlow.UnmarshalVT(data); err != nil {
 		w.c.metrics.rawFlowsErrors.WithLabelValues("cannot decode protobuf")
-		return kafkainput.FlushedNothing, fmt.Errorf("cannot decode raw flow: %w", err)
+		return false, fmt.Errorf("cannot decode raw flow: %w", err)
 	}
 
 	// Process each decoded flow
 	rateLimit := w.rawFlow.RateLimit
 	timeReceived := w.rawFlow.TimeReceived
-	flushed := false
 	finalize := func() {
 		// Accounting
 		exporter := w.bf.ExporterAddress.Unmap().String()
@@ -110,10 +110,9 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) (kafkainp
 
 		// Finalize and forward to ClickHouse
 		w.c.metrics.flowsForwarded.WithLabelValues(exporter).Inc()
-		status, ok := w.cw.FinalizeAndSend(ctx)
-		flushed = flushed || ok
+		w.cw.Finalize()
 		// Export the enriched flow to Kafka, in parallel with ClickHouse, if
-		// enabled. FinalizeAndSend has finalized the flow, so the Protobuf
+		// enabled. Finalize has finalized the flow, so the Protobuf
 		// message reflects the full enriched flow (including the fixed fields
 		// appended during Finalize). Best-effort: a slow/broken Kafka output
 		// must not stall the ClickHouse path.
@@ -121,14 +120,6 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) (kafkainp
 			if payload := w.bf.ProtobufMessage(); len(payload) > 0 {
 				w.c.d.KafkaOutput.Send(exporter, payload)
 			}
-		}
-		switch status {
-		case clickhouse.WorkerStatusOverloaded:
-			w.scaleRequestChan <- kafkainput.ScaleIncrease
-		case clickhouse.WorkerStatusUnderloaded:
-			w.scaleRequestChan <- kafkainput.ScaleDecrease
-		case clickhouse.WorkerStatusSteady:
-			w.scaleRequestChan <- kafkainput.ScaleSteady
 		}
 	}
 
@@ -139,12 +130,15 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) (kafkainp
 		w.c.metrics.rawFlowsErrors.WithLabelValues("cannot decode payload").Inc()
 	}
 
-	switch {
-	case !flushed:
-		return kafkainput.FlushedNothing, nil
-	case w.bf.FlowCount() == 0:
-		return kafkainput.FlushedAll, nil
-	default:
-		return kafkainput.FlushedBefore, nil
+	// Flush between records only: a batch never holds part of a record.
+	status, flushed := w.cw.MaybeFlush(ctx)
+	switch status {
+	case clickhouse.WorkerStatusOverloaded:
+		w.scaleRequestChan <- kafkainput.ScaleIncrease
+	case clickhouse.WorkerStatusUnderloaded:
+		w.scaleRequestChan <- kafkainput.ScaleDecrease
+	case clickhouse.WorkerStatusSteady:
+		w.scaleRequestChan <- kafkainput.ScaleSteady
 	}
+	return flushed, nil
 }

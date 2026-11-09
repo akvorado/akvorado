@@ -24,11 +24,13 @@ import (
 	"akvorado/outlet/routing"
 )
 
-// scriptedClickHouse returns workers flushing on the given FinalizeAndSend calls.
+// scriptedClickHouse returns workers flushing (or failing to) on each
+// MaybeFlush call.
 type scriptedClickHouse struct {
-	flushOn func(call int) bool
-	fail    bool
-	calls   int
+	flush     bool
+	fail      bool
+	finalized int
+	maybe     int
 }
 
 func (c *scriptedClickHouse) NewWorker(_ int, bf *schema.FlowMessage) clickhouse.Worker {
@@ -40,10 +42,14 @@ type scriptedWorker struct {
 	bf *schema.FlowMessage
 }
 
-func (w *scriptedWorker) FinalizeAndSend(ctx context.Context) (clickhouse.WorkerStatus, bool) {
+func (w *scriptedWorker) Finalize() {
 	w.bf.Finalize()
-	w.c.calls++
-	if !w.c.flushOn(w.c.calls) {
+	w.c.finalized++
+}
+
+func (w *scriptedWorker) MaybeFlush(ctx context.Context) (clickhouse.WorkerStatus, bool) {
+	w.c.maybe++
+	if !w.c.flush {
 		return clickhouse.WorkerStatusIdle, false
 	}
 	return clickhouse.WorkerStatusSteady, w.Flush(ctx) == nil
@@ -75,14 +81,13 @@ func TestWorkerFlushed(t *testing.T) {
 
 	cases := []struct {
 		name     string
-		flushOn  func(int) bool
+		flush    bool
 		fail     bool
-		expected kafkainput.Flushed
+		expected bool
 	}{
-		{"no flush", func(int) bool { return false }, false, kafkainput.FlushedNothing},
-		{"flush on each flow", func(int) bool { return true }, false, kafkainput.FlushedAll},
-		{"flush on first flow", func(call int) bool { return call == 1 }, false, kafkainput.FlushedBefore},
-		{"failed flush", func(int) bool { return true }, true, kafkainput.FlushedNothing},
+		{"no flush", false, false, false},
+		{"flush", true, false, true},
+		{"failed flush", true, true, false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -95,7 +100,7 @@ func TestWorkerFlushed(t *testing.T) {
 			}
 			routingComponent := routing.NewMock(t, r)
 			kafkaInputComponent, _ := kafkainput.NewMock(t, kafkainput.DefaultConfiguration())
-			clickhouseComponent := &scriptedClickHouse{flushOn: tc.flushOn, fail: tc.fail}
+			clickhouseComponent := &scriptedClickHouse{flush: tc.flush, fail: tc.fail}
 			c, err := New(r, DefaultConfiguration(), Dependencies{
 				Daemon: daemonComponent,
 				Flow:   flowComponent,
@@ -117,11 +122,15 @@ func TestWorkerFlushed(t *testing.T) {
 			if err != nil {
 				t.Fatalf("receive() error:\n%+v", err)
 			}
-			if clickhouseComponent.calls < 2 {
-				t.Fatalf("FinalizeAndSend() calls: got %d, want at least 2", clickhouseComponent.calls)
+			// Several flows, one flush attempt: only between records.
+			if clickhouseComponent.finalized < 2 {
+				t.Fatalf("Finalize() calls: got %d, want at least 2", clickhouseComponent.finalized)
 			}
-			if got != tc.expected {
-				t.Fatalf("receive(): got %d, want %d", got, tc.expected)
+			if diff := helpers.Diff(clickhouseComponent.maybe, 1); diff != "" {
+				t.Fatalf("MaybeFlush() calls (-got, +want):\n%s", diff)
+			}
+			if diff := helpers.Diff(got, tc.expected); diff != "" {
+				t.Fatalf("receive() (-got, +want):\n%s", diff)
 			}
 		})
 	}

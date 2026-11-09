@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand/v2"
-	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -17,10 +17,41 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 
 	"akvorado/common/daemon"
+	"akvorado/common/helpers"
 	"akvorado/common/kafka"
 	"akvorado/common/pb"
 	"akvorado/common/reporter"
 )
+
+// sumCommits returns the sum of committed offsets of a group for a topic.
+func sumCommits(g *kfake.GroupInfo, topic string) int64 {
+	var total int64
+	if g != nil {
+		for _, commit := range g.Commits[topic] {
+			total += commit.Offset
+		}
+	}
+	return total
+}
+
+// committedOffsets returns the sum of committed offsets of a group.
+func committedOffsets(cluster *kfake.Cluster, group, topic string) int64 {
+	return sumCommits(cluster.GroupInfo(group), topic)
+}
+
+// waitCommitted waits for the sum of committed offsets of a group to reach
+// expected.
+func waitCommitted(t *testing.T, cluster *kfake.Cluster, group, topic string, expected int64) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	if _, err := cluster.WaitGroupInfo(ctx, group, func(g *kfake.GroupInfo) bool {
+		return sumCommits(g, topic) == expected
+	}); err != nil {
+		t.Fatalf("WaitGroupInfo() error, committed %d, want %d:\n%+v",
+			committedOffsets(cluster, group, topic), expected, err)
+	}
+}
 
 // commitHarness runs the component against a fake Kafka cluster.
 type commitHarness struct {
@@ -110,58 +141,43 @@ func (h *commitHarness) waitFetching() {
 	}
 }
 
-// committed returns the sum of committed offsets of the group.
 func (h *commitHarness) committed() int64 {
-	var total int64
-	if g := h.cluster.GroupInfo(h.group); g != nil {
-		for _, commit := range g.Commits[h.topic] {
-			total += commit.Offset
-		}
-	}
-	return total
+	return committedOffsets(h.cluster, h.group, h.topic)
 }
 
-// waitCommitted waits for the sum of committed offsets to reach expected.
 func (h *commitHarness) waitCommitted(expected int64) {
 	h.t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
-	for time.Now().Before(deadline) {
-		if h.committed() == expected {
-			return
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
-	h.t.Fatalf("committed offsets: got %d, want %d", h.committed(), expected)
+	waitCommitted(h.t, h.cluster, h.group, h.topic, expected)
 }
 
-// assertCommittedStays checks the committed offsets stay at expected for
-// longer than the former autocommit interval.
+// assertCommittedStays checks the committed offsets do not move: no commit
+// without a flush.
 func (h *commitHarness) assertCommittedStays(expected int64) {
 	h.t.Helper()
-	time.Sleep(1500 * time.Millisecond)
-	if got := h.committed(); got != expected {
-		h.t.Fatalf("committed offsets: got %d, want %d", got, expected)
+	time.Sleep(100 * time.Millisecond)
+	if diff := helpers.Diff(h.committed(), expected); diff != "" {
+		h.t.Fatalf("committed offsets (-got, +want):\n%s", diff)
 	}
 }
 
-// recorder records received messages and answers with a scripted status.
+// recorder signals received messages and reports a flush for the scripted
+// ones.
 type recorder struct {
-	mu       sync.Mutex
-	received []string
-	statuses map[string]Flushed
-	notify   chan string
+	flushOn map[string]bool
+	notify  chan string
 }
 
-func newRecorder(statuses map[string]Flushed) *recorder {
-	return &recorder{statuses: statuses, notify: make(chan string, 100)}
+func newRecorder(flushOn ...string) *recorder {
+	r := &recorder{flushOn: map[string]bool{}, notify: make(chan string, 100)}
+	for _, value := range flushOn {
+		r.flushOn[value] = true
+	}
+	return r
 }
 
-func (r *recorder) receive(_ context.Context, data []byte) (Flushed, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	r.received = append(r.received, string(data))
+func (r *recorder) receive(_ context.Context, data []byte) (bool, error) {
 	r.notify <- string(data)
-	return r.statuses[string(data)], nil
+	return r.flushOn[string(data)], nil
 }
 
 func (r *recorder) wait(t *testing.T, n int) {
@@ -177,7 +193,7 @@ func (r *recorder) wait(t *testing.T, n int) {
 
 func TestCommitOnlyAfterFlush(t *testing.T) {
 	h := newCommitHarness(t, 1)
-	rec := newRecorder(map[string]Flushed{"d": FlushedAll})
+	rec := newRecorder("d")
 	h.c.StartWorkers(func(int, chan<- ScaleRequest) (ReceiveFunc, FlushFunc, ShutdownFunc) {
 		return rec.receive, noFlush, func() {}
 	})
@@ -194,37 +210,39 @@ func TestCommitOnlyAfterFlush(t *testing.T) {
 	h.waitCommitted(4)
 }
 
-func TestCommitPartialRecord(t *testing.T) {
-	h := newCommitHarness(t, 1)
-	rec := newRecorder(map[string]Flushed{"c": FlushedBefore})
+func TestCommitAllPartitionsOnFlush(t *testing.T) {
+	h := newCommitHarness(t, 2)
+	rec := newRecorder("c")
 	h.c.StartWorkers(func(int, chan<- ScaleRequest) (ReceiveFunc, FlushFunc, ShutdownFunc) {
 		return rec.receive, noFlush, func() {}
 	})
 	h.waitFetching()
 
-	// "c" is partly flushed: commit up to "c" excluded.
-	h.produce(0, "a", "b", "c")
-	rec.wait(t, 3)
-	h.waitCommitted(2)
-	h.assertCommittedStays(2)
+	h.produce(0, "a", "b")
+	rec.wait(t, 2)
+	h.assertCommittedStays(0)
+
+	// A flush on partition 1 also writes the records of partition 0.
+	h.produce(1, "c")
+	rec.wait(t, 1)
+	h.waitCommitted(3)
+
+	// The next record is not flushed yet.
+	h.produce(0, "d")
+	rec.wait(t, 1)
+	h.assertCommittedStays(3)
 }
 
 func TestStopFlushesThenCommits(t *testing.T) {
 	h := newCommitHarness(t, 1)
-	rec := newRecorder(nil)
-	var mu sync.Mutex
-	steps := []string{}
-	step := func(s string) {
-		mu.Lock()
-		defer mu.Unlock()
-		steps = append(steps, s)
-	}
+	rec := newRecorder()
+	var atFlush, atShutdown int64 = -1, -1
 	h.c.StartWorkers(func(int, chan<- ScaleRequest) (ReceiveFunc, FlushFunc, ShutdownFunc) {
 		return rec.receive, func(context.Context) error {
-				step(fmt.Sprintf("flush (committed=%d)", h.committed()))
+				atFlush = h.committed()
 				return nil
 			}, func() {
-				step(fmt.Sprintf("shutdown (committed=%d)", h.committed()))
+				atShutdown = h.committed()
 			}
 	})
 	h.waitFetching()
@@ -232,18 +250,14 @@ func TestStopFlushesThenCommits(t *testing.T) {
 	rec.wait(t, 3)
 
 	h.c.StopWorkers()
-	h.waitCommitted(3)
-	mu.Lock()
-	defer mu.Unlock()
-	expected := []string{"flush (committed=0)", "shutdown (committed=3)"}
-	if fmt.Sprint(steps) != fmt.Sprint(expected) {
-		t.Fatalf("StopWorkers() steps: got %q, want %q", steps, expected)
+	if diff := helpers.Diff([]int64{atFlush, atShutdown}, []int64{0, 3}); diff != "" {
+		t.Fatalf("committed offsets at flush and at shutdown (-got, +want):\n%s", diff)
 	}
 }
 
 func TestStopFailedFlushCommitsNothing(t *testing.T) {
 	h := newCommitHarness(t, 1)
-	rec := newRecorder(nil)
+	rec := newRecorder()
 	shutdown := make(chan struct{})
 	h.c.StartWorkers(func(int, chan<- ScaleRequest) (ReceiveFunc, FlushFunc, ShutdownFunc) {
 		return rec.receive, func(context.Context) error {
@@ -256,21 +270,20 @@ func TestStopFailedFlushCommitsNothing(t *testing.T) {
 
 	h.c.StopWorkers()
 	<-shutdown
-	if got := h.committed(); got != 0 {
-		t.Fatalf("committed offsets after failed flush: got %d, want 0", got)
+	if diff := helpers.Diff(h.committed(), int64(0)); diff != "" {
+		t.Fatalf("committed offsets after failed flush (-got, +want):\n%s", diff)
 	}
 }
 
 func TestRevokeFlushesThenCommits(t *testing.T) {
 	h := newCommitHarness(t, 2)
-	rec := newRecorder(nil)
-	var mu sync.Mutex
-	flushes := map[int]int{}
+	rec := newRecorder()
+	var flushed atomic.Bool
 	h.c.StartWorkers(func(i int, _ chan<- ScaleRequest) (ReceiveFunc, FlushFunc, ShutdownFunc) {
 		return rec.receive, func(context.Context) error {
-			mu.Lock()
-			defer mu.Unlock()
-			flushes[i]++
+			if i == 0 {
+				flushed.Store(true)
+			}
 			return nil
 		}, func() {}
 	})
@@ -287,9 +300,7 @@ func TestRevokeFlushesThenCommits(t *testing.T) {
 		t.Fatalf("startOneWorker() error:\n%+v", err)
 	}
 	h.waitCommitted(3)
-	mu.Lock()
-	defer mu.Unlock()
-	if flushes[0] == 0 {
+	if !flushed.Load() {
 		t.Fatal("revoke did not flush worker 0")
 	}
 }

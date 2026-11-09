@@ -120,7 +120,8 @@ func runInsertTest(t *testing.T, serverSelection clickhouse.ServerSelectionAlgor
 		if i == 15 {
 			time.Sleep(time.Second)
 		}
-		w.FinalizeAndSend(ctx)
+		w.Finalize()
+		w.MaybeFlush(ctx)
 		if i == 23 {
 			w.Flush(ctx)
 		}

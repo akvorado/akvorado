@@ -41,8 +41,9 @@ func (finalizingClickHouse) NewWorker(_ int, bf *schema.FlowMessage) clickhouse.
 
 type finalizingWorker struct{ bf *schema.FlowMessage }
 
-func (w *finalizingWorker) FinalizeAndSend(context.Context) (clickhouse.WorkerStatus, bool) {
-	w.bf.Finalize()
+func (w *finalizingWorker) Finalize() { w.bf.Finalize() }
+
+func (w *finalizingWorker) MaybeFlush(context.Context) (clickhouse.WorkerStatus, bool) {
 	return clickhouse.WorkerStatusIdle, false
 }
 
