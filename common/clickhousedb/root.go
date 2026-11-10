@@ -50,6 +50,7 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 		TLS:             tlsConfig,
 		Compression:     &clickhouse.Compression{Method: clickhouse.CompressionLZ4},
 		DialTimeout:     config.DialTimeout,
+		ReadTimeout:     config.ReadTimeout,
 		MaxOpenConns:    config.MaxOpenConns,
 		MaxIdleConns:    config.MaxOpenConns/2 + 1,
 		ConnMaxLifetime: time.Hour,

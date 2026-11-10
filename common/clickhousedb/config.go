@@ -29,6 +29,8 @@ type Configuration struct {
 	MaxOpenConns int `validate:"min=1"`
 	// DialTimeout tells how much time to wait when connecting to ClickHouse
 	DialTimeout time.Duration `validate:"min=100ms"`
+	// ReadTimeout tells how much time to wait when reading the response from ClickHouse
+	ReadTimeout time.Duration `validate:"min=100ms"`
 	// TLS defines TLS connection parameters, if empty, plain TCP will be used.
 	TLS helpers.TLSConfiguration
 }
@@ -41,6 +43,7 @@ func DefaultConfiguration() Configuration {
 		Username:     "default",
 		MaxOpenConns: 10,
 		DialTimeout:  5 * time.Second,
+		ReadTimeout:  5 * time.Minute,
 	}
 }
 
