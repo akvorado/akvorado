@@ -75,8 +75,8 @@ func (bf *FlowMessage) reset() {
 
 // Clear clears all column data. The last finalized Protobuf message
 // (protobufMessage) is intentionally left intact: it is overwritten on the next
-// Finalize and the caller reads it right after FinalizeAndSend, which may flush
-// (and thus Clear) the batch as part of the same call.
+// Finalize and the caller reads it right after Finalize, before a flush may
+// Clear the batch.
 func (bf *FlowMessage) Clear() {
 	bf.reset()
 	bf.batch.input.Reset()

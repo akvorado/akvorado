@@ -56,12 +56,12 @@ func TestFakeKafka(t *testing.T) {
 	got := []string{}
 	expected := []string{"hello 1", "hello 2", "hello 3"}
 	gotAll := make(chan bool)
-	callback := func(_ context.Context, message []byte) error {
+	callback := func(_ context.Context, message []byte) (bool, error) {
 		got = append(got, string(message))
 		if len(got) == len(expected) {
 			close(gotAll)
 		}
-		return nil
+		return false, nil
 	}
 
 	// Start the component
@@ -83,8 +83,8 @@ func TestFakeKafka(t *testing.T) {
 		Observe: true,
 		Count:   -1,
 	})
-	c.StartWorkers(func(int, chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
-		return callback, func() { shutdownCalled = true }
+	c.StartWorkers(func(int, chan<- ScaleRequest) (ReceiveFunc, FlushFunc, ShutdownFunc) {
+		return callback, noFlush, func() { shutdownCalled = true }
 	})
 
 	// Send messages once the consumer is fetching
@@ -166,8 +166,8 @@ func TestStartSeveralWorkers(t *testing.T) {
 	if err := c.(*realComponent).Start(); err != nil {
 		t.Fatalf("Start() error:\n%+v", err)
 	}
-	c.StartWorkers(func(int, chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
-		return func(context.Context, []byte) error { return nil }, func() {}
+	c.StartWorkers(func(int, chan<- ScaleRequest) (ReceiveFunc, FlushFunc, ShutdownFunc) {
+		return func(context.Context, []byte) (bool, error) { return false, nil }, noFlush, func() {}
 	})
 	time.Sleep(20 * time.Millisecond)
 	if err := c.Stop(); err != nil {
@@ -213,11 +213,11 @@ func TestWorkerStop(t *testing.T) {
 
 	var last int
 	done := make(chan bool)
-	c.StartWorkers(func(int, chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
-		return func(_ context.Context, got []byte) error {
+	c.StartWorkers(func(int, chan<- ScaleRequest) (ReceiveFunc, FlushFunc, ShutdownFunc) {
+		return func(_ context.Context, got []byte) (bool, error) {
 				last, _ = strconv.Atoi(string(got))
-				return nil
-			}, func() {
+				return false, nil
+			}, noFlush, func() {
 				close(done)
 			}
 	})
@@ -355,8 +355,8 @@ func TestWorkerScaling(t *testing.T) {
 		Observe: true,
 		Count:   -1,
 	})
-	c.StartWorkers(func(_ int, ch chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
-		return func(context.Context, []byte) error {
+	c.StartWorkers(func(_ int, ch chan<- ScaleRequest) (ReceiveFunc, FlushFunc, ShutdownFunc) {
+		return func(context.Context, []byte) (bool, error) {
 			c := msg.Add(1)
 			if c <= 1 {
 				t.Logf("received message %d, request a scale increase", c)
@@ -365,8 +365,8 @@ func TestWorkerScaling(t *testing.T) {
 				t.Logf("received message %d, request a scale decrease", c)
 				ch <- ScaleDecrease
 			}
-			return nil
-		}, func() {}
+			return false, nil
+		}, noFlush, func() {}
 	})
 
 	// 1 worker, wait for it to fetch
@@ -496,13 +496,13 @@ func TestKafkaLagMetric(t *testing.T) {
 	workerReceived := make(chan any, 10)
 	workerBlockReceive := make(chan any)
 	defer close(workerBlockReceive)
-	c.StartWorkers(func(_ int, _ chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
-		return func(context.Context, []byte) error {
+	c.StartWorkers(func(_ int, _ chan<- ScaleRequest) (ReceiveFunc, FlushFunc, ShutdownFunc) {
+		return func(context.Context, []byte) (bool, error) {
 			t.Log("worker received a message")
 			workerReceived <- nil
 			<-workerBlockReceive
-			return nil
-		}, func() {}
+			return true, nil
+		}, noFlush, func() {}
 	})
 	waitReceive := func() {
 		t.Helper()
@@ -520,24 +520,6 @@ func TestKafkaLagMetric(t *testing.T) {
 			t.Fatal("worker did not process the message")
 		}
 	}
-	waitCommitted := func(expected int64) {
-		t.Helper()
-		ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
-		defer cancel()
-		if _, err := cluster.WaitGroupInfo(ctx, configuration.ConsumerGroup, func(g *kfake.GroupInfo) bool {
-			if g == nil {
-				return false
-			}
-			var committed int64
-			for _, commit := range g.Commits[expectedTopicName] {
-				committed += commit.Offset
-			}
-			return committed == expected
-		}); err != nil {
-			t.Fatalf("WaitGroupInfo() error:\n%+v", err)
-		}
-	}
-
 	t.Log("wait first fetch")
 	fetchCtx, fetchCancel := context.WithTimeout(t.Context(), time.Second)
 	defer fetchCancel()
@@ -579,8 +561,8 @@ func TestKafkaLagMetric(t *testing.T) {
 	waitReceive()
 	releaseReceive()
 
-	t.Log("wait for autocommit")
-	waitCommitted(1)
+	t.Log("wait for commit")
+	waitCommitted(t, cluster, configuration.ConsumerGroup, expectedTopicName, 1)
 
 	// The message was processed, there's no lag
 	gotMetrics := r.GetMetrics("akvorado_outlet_kafkainput_", "consumergroup", "received_messages_total")
@@ -616,7 +598,7 @@ func TestKafkaLagMetric(t *testing.T) {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
 
-	// Let the worker process all 5 messages (and wait for autocommit), expect
+	// Let the worker process all 5 messages (each one flushed and committed), expect
 	// the lag to drop back to zero
 	t.Log("accept processing of 5 messages")
 	releaseReceive() // the second message was already received above
@@ -624,7 +606,7 @@ func TestKafkaLagMetric(t *testing.T) {
 		waitReceive()
 		releaseReceive()
 	}
-	waitCommitted(6)
+	waitCommitted(t, cluster, configuration.ConsumerGroup, expectedTopicName, 6)
 	gotMetrics = r.GetMetrics("akvorado_outlet_kafkainput_", "consumergroup", "received_messages_total")
 	expected = map[string]string{
 		"consumergroup_lag_messages":          "0",

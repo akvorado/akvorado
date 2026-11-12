@@ -19,16 +19,16 @@ func TestMock(t *testing.T) {
 	expected := []string{"hello1", "hello2", "hello3"}
 	gotAll := make(chan bool)
 	var shutdownCalled atomic.Bool
-	callback := func(_ context.Context, message []byte) error {
+	callback := func(_ context.Context, message []byte) (bool, error) {
 		got = append(got, string(message))
 		if len(got) == len(expected) {
 			close(gotAll)
 		}
-		return nil
+		return false, nil
 	}
 	c.StartWorkers(
-		func(int, chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
-			return callback, func() { shutdownCalled.Store(true) }
+		func(int, chan<- ScaleRequest) (ReceiveFunc, FlushFunc, ShutdownFunc) {
+			return callback, noFlush, func() { shutdownCalled.Store(true) }
 		},
 	)
 
@@ -52,3 +52,5 @@ func TestMock(t *testing.T) {
 		t.Error("Stop() should have triggered shutdown function")
 	}
 }
+
+func noFlush(context.Context) error { return nil }

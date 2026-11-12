@@ -187,7 +187,9 @@ func TestFlushSelectServerError(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
 	defer cancel()
-	w.Flush(ctx)
+	if err := w.Flush(ctx); err == nil {
+		t.Error("Flush() should report the batch was not written")
+	}
 
 	// Nothing could be sent, so the batch must be preserved (no data lost).
 	if diff := helpers.Diff(w.bf.FlowCount(), 1); diff != "" {

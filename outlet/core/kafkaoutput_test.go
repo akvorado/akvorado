@@ -41,12 +41,16 @@ func (finalizingClickHouse) NewWorker(_ int, bf *schema.FlowMessage) clickhouse.
 
 type finalizingWorker struct{ bf *schema.FlowMessage }
 
-func (w *finalizingWorker) FinalizeAndSend(context.Context) clickhouse.WorkerStatus {
-	w.bf.Finalize()
-	return clickhouse.WorkerStatusIdle
+func (w *finalizingWorker) Finalize() { w.bf.Finalize() }
+
+func (w *finalizingWorker) MaybeFlush(context.Context) (clickhouse.WorkerStatus, bool) {
+	return clickhouse.WorkerStatusIdle, false
 }
 
-func (w *finalizingWorker) Flush(context.Context) { w.bf.Clear() }
+func (w *finalizingWorker) Flush(context.Context) error {
+	w.bf.Clear()
+	return nil
+}
 
 func (w *finalizingWorker) Close() {}
 
