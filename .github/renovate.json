@@ -4,8 +4,7 @@
     "config:recommended",
     ":configMigration",
     ":semanticCommits",
-    ":semanticCommitTypeAll(build)",
-    "helpers:pinGitHubActionDigests"
+    ":semanticCommitTypeAll(build)"
   ],
   "labels": [
     "dependencies"
@@ -302,9 +301,10 @@
       "matchManagers": [
         "github-actions"
       ],
-      "groupName": "github-actions-digests",
+      "groupName": "github-actions-non-major",
       "matchUpdateTypes": [
-        "digest"
+        "minor",
+        "patch"
       ],
       "automerge": true,
       "dependencyDashboardApproval": false

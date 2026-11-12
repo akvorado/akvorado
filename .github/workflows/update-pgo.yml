@@ -14,7 +14,7 @@ jobs:
       contents: write
       actions: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
       - name: Download profile
         env:
           GH_TOKEN: ${{ github.token }}
@@ -26,7 +26,7 @@ jobs:
                      --jq '[.[] | select(.headBranch == "main" and .event == "push" and .conclusion == "success")][0].databaseId')
           gh run download "$run_id" --name pgo --dir .
       - name: Set up git identity
-        uses: ./.github/actions/identity
+        uses: $/.github/actions/identity
         with:
           client-id: ${{ secrets.AKVORADO_APP_ID }}
           private-key: ${{ secrets.AKVORADO_APP_KEY }}
