@@ -330,7 +330,7 @@ func BenchmarkRIBLookup(b *testing.B) {
 
 func BenchmarkRIBFlush(b *testing.B) {
 	for _, routes := range []int{1_000, 10_000, 100_000} {
-		for _, peers := range []int{1, 2, 5} {
+		for _, peers := range []int{1, 2, 5, 10} {
 			name := fmt.Sprintf("%d routes, %d peers", routes, peers)
 
 			b.Run(name, func(b *testing.B) {
