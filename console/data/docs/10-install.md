@@ -55,6 +55,13 @@ Check with `docker version -f {{ .Server.Version }}`.
 
 If you want to compile the Docker image yourself, use `make docker`.
 
+If you need a proxy to reach the Internet, configure it in
+`~/.docker/config.json`, as explained in the [Docker
+documentation](https://docs.docker.com/engine/cli/proxy/). Add
+`akvorado-orchestrator,247.16.14.0/24,fd1c:8ce3:6fb:1::/64` to `noProxy`. The
+Docker daemon needs its [own proxy
+configuration](https://docs.docker.com/engine/daemon/proxy/) to pull images.
+
 ## Pre-built binary
 
 The second option is to download a pre-built binary from the [release page
