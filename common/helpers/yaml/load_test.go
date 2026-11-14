@@ -12,12 +12,12 @@ import (
 	"akvorado/common/helpers/yaml"
 )
 
-func TestUnmarshalWithIn(t *testing.T) {
+func TestLoadWithInclude(t *testing.T) {
 	fsys := os.DirFS("testdata")
 	var got any
-	gotPaths, err := yaml.UnmarshalWithInclude(fsys, "base.yaml", &got)
+	gotPaths, err := yaml.LoadWithInclude(fsys, "base.yaml", &got)
 	if err != nil {
-		t.Fatalf("UnmarshalWithInclude() error:\n%+v", err)
+		t.Fatalf("LoadWithInclude() error:\n%+v", err)
 	}
 	expected := map[string]any{
 		"file1": map[string]any{"name": "1.yaml"},
@@ -32,7 +32,7 @@ func TestUnmarshalWithIn(t *testing.T) {
 		}, "el2", "el3"},
 	}
 	if diff := helpers.Diff(got, expected); diff != "" {
-		t.Errorf("UnmarshalWithInclude() (-got, +want):\n%s", diff)
+		t.Errorf("LoadWithInclude() (-got, +want):\n%s", diff)
 	}
 	expectedPaths := []string{
 		"base.yaml",
@@ -45,21 +45,21 @@ func TestUnmarshalWithIn(t *testing.T) {
 	slices.Sort(expectedPaths)
 	slices.Sort(gotPaths)
 	if diff := helpers.Diff(gotPaths, expectedPaths); diff != "" {
-		t.Errorf("UnmarshalWithInclude() paths (-got, +want):\n%s", diff)
+		t.Errorf("LoadWithInclude() paths (-got, +want):\n%s", diff)
 	}
 }
 
-func TestUnmarshalWithIncludeMerge(t *testing.T) {
+func TestLoadWithIncludeMerge(t *testing.T) {
 	fsys := os.DirFS("testdata")
 	var got any
-	if _, err := yaml.UnmarshalWithInclude(fsys, "merge.yaml", &got); err != nil {
-		t.Fatalf("UnmarshalWithInclude() error:\n%+v", err)
+	if _, err := yaml.LoadWithInclude(fsys, "merge.yaml", &got); err != nil {
+		t.Fatalf("LoadWithInclude() error:\n%+v", err)
 	}
 	expected := map[string]any{
 		"name":  "1.yaml",
 		"other": "value",
 	}
 	if diff := helpers.Diff(got, expected); diff != "" {
-		t.Errorf("UnmarshalWithInclude() (-got, +want):\n%s", diff)
+		t.Errorf("LoadWithInclude() (-got, +want):\n%s", diff)
 	}
 }

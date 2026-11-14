@@ -10,7 +10,7 @@ import (
 	"io"
 	"net/http"
 
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 
 	"akvorado/common/helpers"
 )
@@ -48,9 +48,8 @@ func WriteIndentedJSON(w http.ResponseWriter, status int, data any) {
 func WriteYAML(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/yaml; charset=utf-8")
 	w.WriteHeader(status)
-	enc := yaml.NewEncoder(w)
-	enc.Encode(data)
-	enc.Close()
+	out, _ := yaml.Dump(data)
+	w.Write(out)
 }
 
 // BindJSON decodes the JSON request body into target and validates it.

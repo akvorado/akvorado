@@ -12,7 +12,7 @@ import (
 	cmd "akvorado/cmd/helper"
 	"akvorado/common/helpers"
 
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 func TestMetricsYAML(t *testing.T) {
@@ -34,8 +34,8 @@ func TestMetricsYAML(t *testing.T) {
 			Help string `yaml:"help"`
 		} `yaml:"metrics"`
 	}
-	if err := yaml.Unmarshal(buf.Bytes(), &out); err != nil {
-		t.Fatalf("Unmarshal() error:\n%+v", err)
+	if err := yaml.Load(buf.Bytes(), &out); err != nil {
+		t.Fatalf("Load() error:\n%+v", err)
 	}
 	if len(out.Metrics) == 0 {
 		t.Fatal("expected at least one metric")
@@ -72,7 +72,7 @@ func TestMetricsJSON(t *testing.T) {
 		} `json:"metrics"`
 	}
 	if err := json.Unmarshal(buf.Bytes(), &out); err != nil {
-		t.Fatalf("Unmarshal() error:\n%+v", err)
+		t.Fatalf("Load() error:\n%+v", err)
 	}
 	if len(out.Metrics) == 0 {
 		t.Fatal("expected at least one metric")

@@ -387,31 +387,31 @@ func TestMarshalYAML(t *testing.T) {
 			},
 		},
 	}
-	got, err := yaml.Marshal(cfg)
+	got, err := yaml.Dump(cfg)
 	if err != nil {
-		t.Fatalf("Marshal() error:\n%+v", err)
+		t.Fatalf("Dump() error:\n%+v", err)
 	}
 	expected := `inputs:
-    - decapsulationprotocol: none
-      decoder: netflow
-      listen: 192.0.2.11:2055
-      ratelimit: 0
-      receivebuffer: 0
-      timestampsource: netflow-first-switched
-      type: udp
-      usesrcaddrforexporteraddr: false
-      workers: 3
-    - decapsulationprotocol: srv6
-      decoder: sflow
-      listen: 192.0.2.11:6343
-      ratelimit: 0
-      receivebuffer: 0
-      timestampsource: input
-      type: udp
-      usesrcaddrforexporteraddr: true
-      workers: 3
+- decapsulationprotocol: none
+  decoder: netflow
+  listen: 192.0.2.11:2055
+  ratelimit: 0
+  receivebuffer: 0
+  timestampsource: netflow-first-switched
+  type: udp
+  usesrcaddrforexporteraddr: false
+  workers: 3
+- decapsulationprotocol: srv6
+  decoder: sflow
+  listen: 192.0.2.11:6343
+  ratelimit: 0
+  receivebuffer: 0
+  timestampsource: input
+  type: udp
+  usesrcaddrforexporteraddr: true
+  workers: 3
 `
 	if diff := helpers.Diff(strings.Split(string(got), "\n"), strings.Split(expected, "\n")); diff != "" {
-		t.Fatalf("Marshal() (-got, +want):\n%s", diff)
+		t.Fatalf("Dump() (-got, +want):\n%s", diff)
 	}
 }

@@ -6,31 +6,41 @@
 package yaml
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"slices"
 	"strings"
 
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
-// Unmarshal decodes the first document found within the in byte slice and
-// assigns decoded values into the out value.
-func Unmarshal(in []byte, out any) (err error) {
-	return yaml.Unmarshal(in, out)
+// Load decodes the first document found within the in byte slice and assigns
+// decoded values into the out value. An empty input is not an error.
+func Load(in []byte, out any) error {
+	loader, err := yaml.NewLoader(bytes.NewReader(in), yaml.WithSingleDocument())
+	if err != nil {
+		return err
+	}
+	if err := loader.Load(out); err != nil && !errors.Is(err, io.EOF) {
+		return err
+	}
+	return nil
 }
 
-// UnmarshalWithInclude decodes the first document found within the in byte
-// slice and assigns decoded values into the out value. It also accepts the
+// LoadWithInclude decodes the first document found within the in byte slice
+// and assigns decoded values into the out value. It also accepts the
 // "!include" tag to include additional files contained in the provided fs.
-func UnmarshalWithInclude(fsys fs.FS, input string, out any) ([]string, error) {
+func LoadWithInclude(fsys fs.FS, input string, out any) ([]string, error) {
 	var outNode yaml.Node
 	paths := []string{input}
 	in, err := fs.ReadFile(fsys, input)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read %s: %w", input, err)
 	}
-	if err := Unmarshal(in, &outNode); err != nil {
+	if err := Load(in, &outNode); err != nil {
 		return nil, fmt.Errorf("in %s: %w", input, err)
 	}
 
@@ -72,7 +82,7 @@ func UnmarshalWithInclude(fsys fs.FS, input string, out any) ([]string, error) {
 			return nil, fmt.Errorf("at line %d of %s, no content is allowed for !include", current.Line, input)
 		}
 		var outNode yaml.Node
-		morepaths, err := UnmarshalWithInclude(fsys, current.Value, &outNode)
+		morepaths, err := LoadWithInclude(fsys, current.Value, &outNode)
 		if err != nil {
 			return nil, fmt.Errorf("at line %d of %s: %w", current.Line, input, err)
 		}
@@ -82,5 +92,5 @@ func UnmarshalWithInclude(fsys fs.FS, input string, out any) ([]string, error) {
 
 	slices.Sort(paths)
 	paths = slices.Compact(paths)
-	return paths, outNode.Decode(out)
+	return paths, outNode.Load(out)
 }

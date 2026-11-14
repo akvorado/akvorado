@@ -48,8 +48,8 @@ func TestOrchestratorConfig(t *testing.T) {
 			var expectedYAML struct {
 				Paths map[string]any `yaml:"paths"`
 			}
-			if err := yaml.Unmarshal(expected, &expectedYAML); err != nil {
-				t.Fatalf("yaml.Unmarshal(expected) error:\n%+v", err)
+			if err := yaml.Load(expected, &expectedYAML); err != nil {
+				t.Fatalf("yaml.Load(expected) error:\n%+v", err)
 			}
 			root := RootCmd
 			buf := new(bytes.Buffer)
@@ -62,8 +62,8 @@ func TestOrchestratorConfig(t *testing.T) {
 				t.Fatalf("`orchestrator` command error:\n%+v", err)
 			}
 			var gotYAML map[string]any
-			if err := yaml.Unmarshal(buf.Bytes(), &gotYAML); err != nil {
-				t.Fatalf("yaml.Unmarshal(output) error:\n%+v", err)
+			if err := yaml.Load(buf.Bytes(), &gotYAML); err != nil {
+				t.Fatalf("yaml.Load(output) error:\n%+v", err)
 			}
 			for path, expected := range expectedYAML.Paths {
 				var got any

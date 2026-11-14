@@ -164,13 +164,13 @@ func TestSubnetMapUnmarshalHook(t *testing.T) {
 			}
 
 			// Try to unmarshal with YAML
-			buf, err := yaml.Marshal(tree)
+			buf, err := yaml.Dump(tree)
 			if err != nil {
-				t.Fatalf("%syaml.Marshal() error:\n%+v", tc.Pos, err)
+				t.Fatalf("%syaml.Dump() error:\n%+v", tc.Pos, err)
 			}
 			got = map[string]string{}
-			if err := yaml.Unmarshal(buf, &got); err != nil {
-				t.Fatalf("%syaml.Unmarshal() error:\n%+v", tc.Pos, err)
+			if err := yaml.Load(buf, &got); err != nil {
+				t.Fatalf("%syaml.Load() error:\n%+v", tc.Pos, err)
 			}
 			if diff := helpers.Diff(got, tc.YAML); diff != "" {
 				t.Fatalf("%sMarshalYAML() (-got, +want):\n%s", tc.Pos, diff)

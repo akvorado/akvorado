@@ -64,7 +64,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config any)
 			if err != nil {
 				return nil, fmt.Errorf("unable to read configuration file: %w", err)
 			}
-			if err := yaml.Unmarshal(input, &rawConfig); err != nil {
+			if err := yaml.Load(input, &rawConfig); err != nil {
 				return nil, fmt.Errorf("unable to parse YAML configuration file: %w", err)
 			}
 		} else {
@@ -76,7 +76,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config any)
 			if dirname == "" {
 				dirname = "."
 			}
-			paths, err = yaml.UnmarshalWithInclude(os.DirFS(dirname), filename, &rawConfig)
+			paths, err = yaml.LoadWithInclude(os.DirFS(dirname), filename, &rawConfig)
 			for i := range paths {
 				paths[i] = filepath.Clean(filepath.Join(dirname, paths[i]))
 			}
@@ -160,7 +160,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config any)
 		}
 	}
 	if c.Dump {
-		output, err := yaml.Marshal(config)
+		output, err := yaml.Dump(config)
 		if err != nil {
 			return nil, fmt.Errorf("unable to dump configuration: %w", err)
 		}

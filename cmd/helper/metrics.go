@@ -13,7 +13,7 @@ import (
 	"akvorado/cmd/helper/metrics"
 
 	"github.com/spf13/cobra"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -54,12 +54,14 @@ var metricsCmd = &cobra.Command{
 		w := cmd.OutOrStdout()
 		switch metricsFormat {
 		case "yaml":
-			enc := yaml.NewEncoder(w)
-			enc.SetIndent(2)
-			if err := enc.Encode(out); err != nil {
+			dumper, err := yaml.NewDumper(w)
+			if err != nil {
+				return fmt.Errorf("unable to create YAML dumper: %w", err)
+			}
+			if err := dumper.Dump(out); err != nil {
 				return fmt.Errorf("unable to encode YAML: %w", err)
 			}
-			return enc.Close()
+			return dumper.Close()
 		case "json":
 			enc := json.NewEncoder(w)
 			enc.SetIndent("", "  ")

@@ -45,12 +45,12 @@ func TestConfigurationDecode(t *testing.T, cases ConfigurationDecodeCases, optio
 				var configuration any
 				if fromYAML {
 					// Encode and decode with YAML
-					out, err := yaml.Marshal(tc.Configuration())
+					out, err := yaml.Dump(tc.Configuration())
 					if err != nil {
-						t.Fatalf("%syaml.Marshal() error:\n%+v", tc.Pos, err)
+						t.Fatalf("%syaml.Dump() error:\n%+v", tc.Pos, err)
 					}
-					if err := yaml.Unmarshal(out, &configuration); err != nil {
-						t.Fatalf("%syaml.Unmarshal() error:\n%+v", tc.Pos, err)
+					if err := yaml.Load(out, &configuration); err != nil {
+						t.Fatalf("%syaml.Load() error:\n%+v", tc.Pos, err)
 					}
 				} else {
 					// Just use as is

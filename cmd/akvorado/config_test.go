@@ -153,8 +153,8 @@ module2:
 	}
 
 	var gotRaw map[string]helpers.M
-	if err := yaml.Unmarshal(out.Bytes(), &gotRaw); err != nil {
-		t.Fatalf("Unmarshal() error:\n%+v", err)
+	if err := yaml.Load(out.Bytes(), &gotRaw); err != nil {
+		t.Fatalf("Load() error:\n%+v", err)
 	}
 	expectedRaw := map[string]helpers.M{
 		"module1": {
@@ -609,8 +609,8 @@ module2:
 	}
 
 	log.Printf("output:\n%s", out.Bytes())
-	if !bytes.Contains(out.Bytes(), []byte(`stuff: ""`)) {
-		t.Errorf("Dumped configuration should contain `stuff: \"\"`")
+	if !bytes.Contains(out.Bytes(), []byte(`stuff: ''`)) {
+		t.Errorf("Dumped configuration should contain `stuff: ''`")
 	}
 	if !bytes.Contains(out.Bytes(), []byte(`workers: 0`)) {
 		t.Errorf("Dumped configuration should contain `workers: 0`")

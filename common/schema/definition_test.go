@@ -83,8 +83,8 @@ func TestSchemaDump(t *testing.T) {
 		t.Fatalf("ReadFile(%q) error:\n%+v", expectedSchemaPath, err)
 	}
 	var expected []Column
-	if err := yaml.Unmarshal(raw, &expected); err != nil {
-		t.Fatalf("yaml.Unmarshal(%q) error:\n%+v", expectedSchemaPath, err)
+	if err := yaml.Load(raw, &expected); err != nil {
+		t.Fatalf("yaml.Load(%q) error:\n%+v", expectedSchemaPath, err)
 	}
 	// Protobuf fields are internal, derived in finalize() and not serialized.
 	if diff := helpers.Diff(got, expected,
