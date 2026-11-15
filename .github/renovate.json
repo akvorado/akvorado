@@ -186,6 +186,15 @@
       "matchManagers": [
         "gomod"
       ],
+      "groupName": "goldmark",
+      "matchPackageNames": [
+        "/^github\\.com/yuin/goldmark/"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
       "description": "v2 was released by error",
       "matchPackageNames": [
         "github.com/twmb/franz-go/pkg/kmsg"
