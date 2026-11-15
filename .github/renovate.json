@@ -270,6 +270,19 @@
       "matchManagers": [
         "docker-compose"
       ],
+      "groupName": "monitoring",
+      "matchPackageNames": [
+        "grafana/alloy",
+        "grafana/loki",
+        "ghcr.io/google/cadvisor",
+        "/^prom//",
+        "timberio/vector"
+      ]
+    },
+    {
+      "matchManagers": [
+        "docker-compose"
+      ],
       "matchPackageNames": [
         "timberio/vector"
       ],
