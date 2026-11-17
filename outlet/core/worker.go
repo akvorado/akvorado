@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync/atomic"
-	"time"
 
 	"akvorado/common/pb"
 	"akvorado/common/reporter"
@@ -29,8 +28,9 @@ type worker struct {
 }
 
 // newWorker instantiates a new worker and returns a callback function to
-// process an incoming flow and a function to call on shutdown.
-func (c *Component) newWorker(i int, scaleRequestChan chan<- kafkainput.ScaleRequest) (kafkainput.ReceiveFunc, kafkainput.ShutdownFunc) {
+// process an incoming flow, a function to flush the pending batch and a
+// function to call on shutdown.
+func (c *Component) newWorker(i int, scaleRequestChan chan<- kafkainput.ScaleRequest) (kafkainput.ReceiveFunc, kafkainput.FlushFunc, kafkainput.ShutdownFunc) {
 	bf := c.d.Schema.NewFlowMessage()
 	// Encode enriched flows to Protobuf in parallel with the ClickHouse batch
 	// only when the Kafka output is enabled, so the ClickHouse-only path is
@@ -45,28 +45,25 @@ func (c *Component) newWorker(i int, scaleRequestChan chan<- kafkainput.ScaleReq
 		cw:               c.d.ClickHouse.NewWorker(i, bf),
 		scaleRequestChan: scaleRequestChan,
 	}
-	return w.processIncomingFlow, w.shutdown
+	return w.processIncomingFlow, w.cw.Flush, w.shutdown
 }
 
-// shutdown shutdowns the worker, flushing any remaining data and releasing its
-// ClickHouse connections.
+// shutdown releases the ClickHouse connections of the worker. The final batch
+// is flushed before, by the Kafka consumer.
 func (w *worker) shutdown() {
-	w.l.Info().Msg("flush final batch to ClickHouse")
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	w.cw.Flush(ctx)
 	w.cw.Close()
 	w.l.Info().Msg("worker stopped")
 }
 
-// processIncomingFlow processes one incoming flow from Kafka.
-func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
+// processIncomingFlow processes one incoming flow from Kafka. It reports
+// whether the batch, including this flow, was flushed.
+func (w *worker) processIncomingFlow(ctx context.Context, data []byte) (bool, error) {
 	// Raw flow decoding
 	w.c.metrics.rawFlowsReceived.Inc()
 	w.rawFlow.ResetVT()
 	if err := w.rawFlow.UnmarshalVT(data); err != nil {
 		w.c.metrics.rawFlowsErrors.WithLabelValues("cannot decode protobuf")
-		return fmt.Errorf("cannot decode raw flow: %w", err)
+		return false, fmt.Errorf("cannot decode raw flow: %w", err)
 	}
 
 	// Process each decoded flow
@@ -113,9 +110,9 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
 
 		// Finalize and forward to ClickHouse
 		w.c.metrics.flowsForwarded.WithLabelValues(exporter).Inc()
-		status := w.cw.FinalizeAndSend(ctx)
+		w.cw.Finalize()
 		// Export the enriched flow to Kafka, in parallel with ClickHouse, if
-		// enabled. FinalizeAndSend has finalized the flow, so the Protobuf
+		// enabled. Finalize has finalized the flow, so the Protobuf
 		// message reflects the full enriched flow (including the fixed fields
 		// appended during Finalize). Best-effort: a slow/broken Kafka output
 		// must not stall the ClickHouse path.
@@ -124,14 +121,6 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
 				w.c.d.KafkaOutput.Send(exporter, payload)
 			}
 		}
-		switch status {
-		case clickhouse.WorkerStatusOverloaded:
-			w.scaleRequestChan <- kafkainput.ScaleIncrease
-		case clickhouse.WorkerStatusUnderloaded:
-			w.scaleRequestChan <- kafkainput.ScaleDecrease
-		case clickhouse.WorkerStatusSteady:
-			w.scaleRequestChan <- kafkainput.ScaleSteady
-		}
 	}
 
 	// Flow decoding
@@ -139,8 +128,17 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
 	if err != nil {
 		// w.bf.ExporterAddress may not be known yet, so increase raw_flows_errors_total.
 		w.c.metrics.rawFlowsErrors.WithLabelValues("cannot decode payload").Inc()
-		return nil
 	}
 
-	return nil
+	// Flush between records only: a batch never holds part of a record.
+	status, flushed := w.cw.MaybeFlush(ctx)
+	switch status {
+	case clickhouse.WorkerStatusOverloaded:
+		w.scaleRequestChan <- kafkainput.ScaleIncrease
+	case clickhouse.WorkerStatusUnderloaded:
+		w.scaleRequestChan <- kafkainput.ScaleDecrease
+	case clickhouse.WorkerStatusSteady:
+		w.scaleRequestChan <- kafkainput.ScaleSteady
+	}
+	return flushed, nil
 }

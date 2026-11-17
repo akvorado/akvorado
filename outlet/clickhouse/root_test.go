@@ -42,7 +42,8 @@ func TestMock(t *testing.T) {
 				schema.ColumnExporterName: fmt.Sprintf("exporter-%d", i),
 			},
 		})
-		w.FinalizeAndSend(t.Context())
+		w.Finalize()
+		w.MaybeFlush(t.Context())
 
 		// Check if we have anything inserted in the table
 		messagesMutex.Lock()

@@ -35,9 +35,10 @@ func (c *mockComponent) StartWorkers(workerBuilder WorkerBuilderFunc) error {
 		}
 	}()
 	for i := range c.config.MinWorkers {
-		callback, shutdown := workerBuilder(i, ch)
+		callback, flush, shutdown := workerBuilder(i, ch)
 		go func() {
 			defer shutdown()
+			defer flush(context.Background())
 			for {
 				message, ok := <-c.incoming
 				if !ok {

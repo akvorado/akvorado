@@ -8,9 +8,9 @@ import (
 	"errors"
 	"fmt"
 	"runtime/pprof"
+	"slices"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -22,13 +22,17 @@ type worker struct {
 	stop func()
 }
 
-// newClient returns a new Kafka client
-func (c *realComponent) newClient(i int) (*kgo.Client, error) {
+// newClient returns a new Kafka client for the provided consumer.
+func (c *realComponent) newClient(i int, consumer *Consumer) (*kgo.Client, error) {
 	logger := c.r.With().Int("worker", i).Logger()
 	logger.Info().Msg("starting new client")
 
 	kmetrics := kprom.NewMetrics("", kprom.WithStaticLabel(prometheus.Labels{"worker": strconv.Itoa(i)}))
-	kafkaOpts := append(c.kafkaOpts, kgo.WithHooks(kmetrics))
+	kafkaOpts := append(slices.Clone(c.kafkaOpts),
+		kgo.WithHooks(kmetrics),
+		kgo.OnPartitionsRevoked(consumer.onPartitionsRevoked),
+		kgo.OnPartitionsLost(consumer.onPartitionsLost),
+	)
 
 	client, err := kgo.NewClient(kafkaOpts...)
 	if err != nil {
@@ -51,12 +55,13 @@ func (c *realComponent) startOneWorker() error {
 
 	// New consumer
 	i := len(c.workers)
-	client, err := c.newClient(i)
+	callback, flush, shutdown := c.workerBuilder(i, c.workerRequestChan)
+	consumer := c.newConsumer(i, callback, flush)
+	client, err := c.newClient(i, consumer)
 	if err != nil {
+		shutdown()
 		return err
 	}
-	callback, shutdown := c.workerBuilder(i, c.workerRequestChan)
-	consumer := c.newConsumer(i, callback)
 
 	// Goroutine for worker
 	done := make(chan bool)
@@ -71,12 +76,8 @@ func (c *realComponent) startOneWorker() error {
 		defer func() {
 			logger.Info().Msg("stopping worker")
 
-			// Allow a small grace time to commit uncommited work.
-			ctx, cancelCommit := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancelCommit()
-			if err := client.CommitMarkedOffsets(ctx); err != nil {
-				logger.Err(err).Msg("cannot commit marked partition offsets")
-			}
+			// Flush, commit on success, then leave the group.
+			consumer.stop(client)
 			client.CloseAllowingRebalance()
 
 			shutdown()
@@ -129,11 +130,4 @@ func (c *realComponent) stopOneWorker() {
 	c.kafkaMetrics = c.kafkaMetrics[:i]
 
 	c.metrics.workerDecrease.Inc()
-}
-
-// onPartitionsRevoked is called when partitions are revoked. We need to commit.
-func (c *realComponent) onPartitionsRevoked(ctx context.Context, client *kgo.Client, _ map[string][]int32) {
-	if err := client.CommitMarkedOffsets(ctx); err != nil {
-		c.r.Err(err).Msg("cannot commit marked offsets on partition revoked")
-	}
 }

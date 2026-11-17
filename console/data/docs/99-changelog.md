@@ -12,6 +12,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 🩹 *outlet*: commit Kafka offsets only once flows are written to ClickHouse
 - ✨ *console*: add authorization rules to restrict the flows a user can see
 - 🌱 *console*: complete TCP flags in filters
 

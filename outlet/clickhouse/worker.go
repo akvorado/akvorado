@@ -20,8 +20,12 @@ import (
 // Worker represents a worker sending to ClickHouse. It is synchronous (no
 // goroutines) and most functions are bound to a context.
 type Worker interface {
-	FinalizeAndSend(context.Context) WorkerStatus
-	Flush(context.Context)
+	// Finalize adds the current flow to the batch.
+	Finalize()
+	// MaybeFlush also reports whether a batch was written to ClickHouse.
+	MaybeFlush(context.Context) (WorkerStatus, bool)
+	// Flush writes the batch to ClickHouse. The batch is kept on error.
+	Flush(context.Context) error
 	Close()
 }
 
@@ -117,44 +121,51 @@ func (c *realComponent) NewWorker(i int, bf *schema.FlowMessage) Worker {
 	}
 }
 
-// FinalizeAndSend sends data to ClickHouse after finalizing if we have a full
-// batch or exceeded the maximum wait time. See
+// Finalize appends the current flow to the batch.
+func (w *commonWorker) Finalize() {
+	w.bf.Finalize()
+}
+
+// MaybeFlush sends data to ClickHouse if we have a full batch or exceeded the
+// maximum wait time. It should be called between input records, so a batch
+// never holds part of a record. A batch may exceed the maximum batch size by
+// the flows of one record. See
 // https://clickhouse.com/docs/best-practices/selecting-an-insert-strategy for
 // tips on the insert strategy. Notably, we switch to async insert when the
 // batch size is too small.
-func (w *commonWorker) FinalizeAndSend(ctx context.Context) WorkerStatus {
-	w.bf.Finalize()
+func (w *commonWorker) MaybeFlush(ctx context.Context) (WorkerStatus, bool) {
 	now := time.Now()
 	batchSize := w.bf.FlowCount()
 	waitTime := now.Sub(w.last)
-	if batchSize >= int(w.c.config.MaximumBatchSize) || waitTime >= w.c.config.MaximumWaitTime {
+	if batchSize > 0 && (batchSize >= int(w.c.config.MaximumBatchSize) || waitTime >= w.c.config.MaximumWaitTime) {
 		// Record wait time since last send
 		if !w.last.IsZero() {
 			waitTime := now.Sub(w.last)
 			w.c.metrics.waitTime.Observe(waitTime.Seconds())
 		}
-		w.Flush(ctx)
+		flushed := w.Flush(ctx) == nil
 		w.last = time.Now()
 		if uint(batchSize) >= w.c.config.MaximumBatchSize {
 			w.c.metrics.overloaded.Inc()
-			return WorkerStatusOverloaded
+			return WorkerStatusOverloaded, flushed
 		} else if uint(batchSize) <= w.c.config.minimumBatchSize {
 			w.c.metrics.underloaded.Inc()
-			return WorkerStatusUnderloaded
+			return WorkerStatusUnderloaded, flushed
 		}
 		w.c.metrics.steady.Inc()
-		return WorkerStatusSteady
+		return WorkerStatusSteady, flushed
 	}
-	return WorkerStatusIdle
+	return WorkerStatusIdle, false
 }
 
 // Flush sends remaining data to ClickHouse without an additional condition. It
 // should be called before shutting down to flush remaining data. Otherwise,
-// FinalizeAndSend() should be used instead.
-func (w *commonWorker) Flush(ctx context.Context) {
+// MaybeFlush() should be used instead. It returns an error if the batch
+// was not written.
+func (w *commonWorker) Flush(ctx context.Context) error {
 	var useAsync bool
 	if w.bf.FlowCount() == 0 {
-		return
+		return nil
 	}
 	// Async mode if have not a big batch size
 	var settings []ch.Setting
@@ -229,7 +240,9 @@ func (w *commonWorker) Flush(ctx context.Context) {
 	}, backoff.WithBackOff(b), backoff.WithMaxElapsedTime(0)); err != nil {
 		w.logger.Err(err).Int("flows", w.bf.FlowCount()).Msg("batch lost, cannot flush to ClickHouse")
 		w.c.metrics.errors.WithLabelValues("flush").Inc()
+		return err
 	}
+	return nil
 }
 
 // roundRobinWorker spreads a worker's batches across all servers in round-robin

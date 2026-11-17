@@ -38,17 +38,21 @@ type mockWorker struct {
 	bf *schema.FlowMessage
 }
 
-// FinalizeAndSend always "send" the current flows.
-func (w *mockWorker) FinalizeAndSend(ctx context.Context) WorkerStatus {
-	w.Flush(ctx)
-	return WorkerStatusIdle
-}
-
-// Send will record the sent flows for testing purpose.
-func (w *mockWorker) Flush(_ context.Context) {
+// Finalize "sends" the current flow for testing purpose.
+func (w *mockWorker) Finalize() {
 	clone := *w.bf
 	w.c.callback(&clone)
 	w.bf.Clear() // Clear instead of finalizing
+}
+
+// MaybeFlush reports a flush: Finalize already "sent" the flows.
+func (w *mockWorker) MaybeFlush(context.Context) (WorkerStatus, bool) {
+	return WorkerStatusIdle, true
+}
+
+// Flush is a no-op: Finalize already "sent" the flows.
+func (w *mockWorker) Flush(context.Context) error {
+	return nil
 }
 
 // Close is a no-op for the mock worker.

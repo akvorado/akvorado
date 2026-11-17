@@ -215,7 +215,7 @@ func TestCore(t *testing.T) {
 
 		// Use a dedicated worker to process the flows synchronously.
 		scaleRequestChan := make(chan kafkainput.ScaleRequest, 100)
-		receiveFunc, _ := c.newWorker(0, scaleRequestChan)
+		receiveFunc, _, _ := c.newWorker(0, scaleRequestChan)
 
 		// Inject 30 flows with rateLimit=20 for the same reception second: 20
 		// are allowed and 10 are dropped.
