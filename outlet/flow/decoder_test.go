@@ -94,6 +94,8 @@ func TestFlowDecode(t *testing.T) {
 			`netflow_records_total{exporter="::ffff:127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                                     "4",
 			`netflow_records_total{exporter="::ffff:127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                 "1",
 			`netflow_records_total{exporter="::ffff:127.0.0.1",type="TemplateFlowSet",version="9"}`:                                        "1",
+			`netflow_sequence_missing_total{exporter="::ffff:127.0.0.1",version="9"}`:                                                      "143",
+			`netflow_sequence_reordered_total{exporter="::ffff:127.0.0.1",version="9"}`:                                                    "1",
 			`netflow_sets_total{exporter="::ffff:127.0.0.1",type="DataFlowSet",version="9"}`:                                               "2",
 			`netflow_sets_total{exporter="::ffff:127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                                        "1",
 			`netflow_sets_total{exporter="::ffff:127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                    "1",
