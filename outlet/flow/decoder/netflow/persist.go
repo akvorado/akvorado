@@ -25,6 +25,22 @@ func (tk *templateKey) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// MarshalText implements encoding.TextMarshaler for applicationKey.
+func (ak applicationKey) MarshalText() ([]byte, error) {
+	return fmt.Appendf(nil, "%d-%x", ak.version, ak.id), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler for applicationKey.
+func (ak *applicationKey) UnmarshalText(text []byte) error {
+	var id []byte
+	_, err := fmt.Sscanf(string(text), "%d-%x", &ak.version, &id)
+	if err != nil {
+		return fmt.Errorf("invalid application key %q: %w", string(text), err)
+	}
+	ak.id = string(id)
+	return nil
+}
+
 // MarshalText implements encoding.TextMarshaler for samplingRateKey.
 func (srk samplingRateKey) MarshalText() ([]byte, error) {
 	return fmt.Appendf(nil, "%d-%d-%d", srk.version, srk.obsDomainID, srk.samplerID), nil
