@@ -29,6 +29,7 @@ func getNetFlowData(ctx context.Context, flows []generatedFlow, sequenceNumber u
 		ipFlows[etype] = append(ipFlows[etype], &flows[idx])
 	}
 	go func() {
+		defer close(output)
 		for _, etype := range []uint16{constants.ETypeIPv4, constants.ETypeIPv6} {
 			flows := ipFlows[etype]
 			settings := flowSettings[etype]
@@ -82,7 +83,6 @@ func getNetFlowData(ctx context.Context, flows []generatedFlow, sequenceNumber u
 				sequenceNumber++
 			}
 		}
-		defer close(output)
 	}()
 	return output
 }

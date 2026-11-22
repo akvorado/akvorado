@@ -311,6 +311,63 @@ ClickHouse itself for values like AS numbers.
 The reasons behind this design are detailed in [a blog
 post](https://vincent.bernat.ch/en/blog/2023-sql-like-language-filter).
 
+## Demo exporter flow model
+
+The demo exporter does not replay hand-written flow specifications: it samples a
+small [generative model][] (`demoexporter/flowmodel`). One flow is a fixed
+sequence of tokens: the hour of the week, the direction, the boundary of the
+customer-side interface, the protocol and ethernet type, the remote prefix, the
+local prefix, the source and destination ports, the packet size bucket, and the
+packet count bucket. Starting from the hour of the week, the model guesses the
+direction, then the boundary, the protocol and ethernet type, etc.
+
+[generative model]: https://en.wikipedia.org/wiki/Generative_model
+
+The network is a tiny [autoregressive model][]: each token [embedding][] goes
+through a per-slot linear layer and is added to a running context vector, so
+sampling a token costs one small matrix-vector product per field. The context
+goes through two hidden layers and a per-field [softmax][] head predicts the
+next token. The design is close to the [neural language model of Bengio et al.][],
+with flow fields instead of words. With the default dimensions, the model has
+fewer than 100k parameters and is stored as float32 with the metadata as JSON
+embedded in the binary with `go:embed`. The linear algebra kernels force float32
+rounding on each product. The default model generates about 14,000 flows per
+second on one core of an AMD Ryzen 5 5600X.
+
+[autoregressive model]: https://en.wikipedia.org/wiki/Autoregressive_model
+[embedding]: https://en.wikipedia.org/wiki/Embedding_(machine_learning)
+[softmax]: https://en.wikipedia.org/wiki/Softmax_function
+[neural language model of Bengio et al.]: https://www.jmlr.org/papers/volume3/bengio03a/bengio03a.pdf
+
+Training, with `akvorado demo-exporter train`, reads a ClickHouse database. Only
+flows with exactly one external interface are kept, the local side is replaced
+by random prefixes under a configurable prefix, remote prefixes belonging to the
+network or not public are dropped, rare values are left out, and identical token
+sequences are merged into weighted examples, so a few million flows compress
+into some hundred thousand examples. The loss is a weighted [cross-entropy][]
+over all predicted fields, optimized with [Adam][] on the CPU. Training the
+default model took about 15 minutes on an AMD Ryzen 5 5600X (Zen 3, 6 cores). On
+purpose, the model never sees exporter names, interface names, descriptions or
+speeds, AS paths, communities, or the local AS number, and it only reads a
+configurable fraction of the flows. To not read the whole table, queries only
+select a few 5-minute buckets of each hour, the primary key of the flows table,
+and keep a sample of the flows inside them with a hash. The hourly rate profile,
+normalized to an average of 1, and the origin AS of the top remote prefixes are
+the only aggregates stored next to the weights.
+
+[cross-entropy]: https://en.wikipedia.org/wiki/Cross-entropy
+[Adam]: https://arxiv.org/abs/1412.6980
+
+Every instance of a fleet draws the same flows and a mapping configuration
+deterministically assigns each flow to one exporter and one external interface,
+by weight and by remote AS number. An instance stops sampling a flow as soon as
+it knows the flow is for another exporter and only sends the flows assigned to
+itself: together, the instances split the same set of flows and behave like one
+consistent network. The information removed during training comes back through
+this mapping: the SNMP configuration derives from the declared interfaces, and
+the BMP routes are rebuilt from the model prefixes, the neighbor AS number of
+each interface, and the configured local AS number.
+
 ## Other components
 
 The core component is the main processing component in the outlet service. 

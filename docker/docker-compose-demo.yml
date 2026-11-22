@@ -23,15 +23,9 @@ services:
   akvorado-exporter-2:
     <<: *exporter
     command: demo-exporter /etc/akvorado/demo-2.yaml
-    environment:
-      AKVORADO_CFG_DEMOEXPORTER_FLOWS_SEED: 100
   akvorado-exporter-3:
     <<: *exporter
     command: demo-exporter /etc/akvorado/demo-3.yaml
-    environment:
-      AKVORADO_CFG_DEMOEXPORTER_FLOWS_SEED: 200
   akvorado-exporter-4:
     <<: *exporter
     command: demo-exporter /etc/akvorado/demo-4.yaml
-    environment:
-      AKVORADO_CFG_DEMOEXPORTER_FLOWS_SEED: 300

@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"akvorado/common/helpers"
 	"akvorado/common/schema"
 	"akvorado/outlet/networks"
 
@@ -209,7 +210,7 @@ func (c *Component) getASNumber(flowAS, bmpAS, netAS uint32, flowNetMask uint8) 
 			asn = flowAS
 		case ASNProviderFlowExceptPrivate:
 			asn = flowAS
-			if isPrivateAS(asn) {
+			if helpers.IsPrivateAS(asn) {
 				asn = 0
 			}
 		case ASNProviderFlowExceptDefaultRoute:
@@ -221,7 +222,7 @@ func (c *Component) getASNumber(flowAS, bmpAS, netAS uint32, flowNetMask uint8) 
 			asn = bmpAS
 		case ASNProviderRoutingExceptPrivate:
 			asn = bmpAS
-			if isPrivateAS(asn) {
+			if helpers.IsPrivateAS(asn) {
 				asn = 0
 			}
 		case ASNProviderNetworks:
@@ -390,15 +391,4 @@ func (c *Component) classifyInterface(
 	}
 	c.classifierInterfaceCache.Put(t, key, classification)
 	return c.writeInterface(fl, classification, directionIn)
-}
-
-func isPrivateAS(as uint32) bool {
-	// See https://www.iana.org/assignments/iana-as-numbers-special-registry/iana-as-numbers-special-registry.xhtml
-	if as == 0 || as == 23456 {
-		return true
-	}
-	if 64496 <= as && as <= 65551 || 4_200_000_000 <= as {
-		return true
-	}
-	return false
 }

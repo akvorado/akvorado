@@ -1,0 +1,65 @@
+---
+# Fleet of demo exporters sharing the flow model embedded in the binary. Each
+# instance finds its own identity from its hostname. The mapping distributes the
+# generated flows over the exporters and their external interfaces, by share and
+# by remote AS number. Routes from transits get community 64496:100, routes from
+# IX get 64496:200.
+bmp:
+  target: akvorado-outlet:10179
+flows:
+  target: akvorado-inlet:2055
+  rate: 85
+  local-asn: 64496
+  exporters:
+    th2-edge1.example.com:
+      sampling-rate: 100000
+      interfaces:
+        10: {description: "Transit: Telia", boundary: external, asn: 1299, communities: "64496:100"}
+        11: {description: "IX: AMSIX", boundary: external, communities: "64496:200"}
+        20: {description: "core", boundary: internal}
+        21: {description: "core", boundary: internal}
+    th2-edge2.example.com:
+      sampling-rate: 100000
+      interfaces:
+        10: {description: "Transit: Cogent", boundary: external, asn: 174, communities: "64496:100"}
+        11: {description: "IX: DECIX", boundary: external, communities: "64496:200"}
+        20: {description: "core", boundary: internal}
+        21: {description: "core", boundary: internal}
+    dc3-edge1.example.com:
+      sampling-rate: 100000
+      interfaces:
+        10: {description: "Transit: Tata", boundary: external, asn: 6453, communities: "64496:100"}
+        11: {description: "Transit: Lumen", boundary: external, asn: 3356, communities: "64496:100"}
+        20: {description: "core", boundary: internal}
+        21: {description: "core", boundary: internal}
+    dc5-edge2.example.com:
+      sampling-rate: 100000
+      interfaces:
+        10: {description: "IX: FranceIX", boundary: external, communities: "64496:200"}
+        11: {description: "Transit: Cogent", boundary: external, asn: 174, communities: "64496:100"}
+        20: {description: "core", boundary: internal}
+        21: {description: "core", boundary: internal}
+  mapping:
+    # Google peers at AMSIX and DECIX, with a bit of transit fallback.
+    - asn: 15169
+      assign:
+        - {exporter: th2-edge1.example.com, interface: 11, weight: 45}
+        - {exporter: th2-edge2.example.com, interface: 11, weight: 45}
+        - {exporter: th2-edge2.example.com, interface: 10, weight: 10}
+    # Netflix peers at FranceIX.
+    - asn: 2906
+      assign:
+        - {exporter: dc5-edge2.example.com, interface: 10, weight: 90}
+        - {exporter: th2-edge1.example.com, interface: 10, weight: 10}
+    # Akamai peers at DECIX.
+    - asn: 20940
+      assign:
+        - {exporter: th2-edge2.example.com, interface: 11, weight: 80}
+        - {exporter: dc3-edge1.example.com, interface: 10, weight: 20}
+    # The rest is spread over the transits.
+    - assign:
+        - {exporter: th2-edge1.example.com, interface: 10, weight: 30}
+        - {exporter: th2-edge2.example.com, interface: 10, weight: 25}
+        - {exporter: dc3-edge1.example.com, interface: 10, weight: 15}
+        - {exporter: dc3-edge1.example.com, interface: 11, weight: 15}
+        - {exporter: dc5-edge2.example.com, interface: 11, weight: 15}

@@ -35,7 +35,7 @@ clickhouse:
   orchestrator-url: http://akvorado-orchestrator:8080
   prometheus-endpoint: /metrics
   asns:
-    64501: ACME Corporation
+    64496: ACME Corporation
 
 inlet: !include "inlet.yaml"
 outlet: !include "outlet.yaml"

@@ -8,7 +8,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"net"
-	"net/netip"
 	"os"
 	"testing"
 	"testing/synctest"
@@ -18,6 +17,30 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 )
+
+// readHeaders reads the NetFlow packet headers already received.
+func readHeaders(t *testing.T, receiver *net.UDPConn) []nfv9Header {
+	t.Helper()
+	receiver.SetReadDeadline(time.Now().Add(200 * time.Millisecond))
+	got := []nfv9Header{}
+	for {
+		payload := make([]byte, 9000)
+		_, err := receiver.Read(payload)
+		if err != nil {
+			if errors.Is(err, os.ErrDeadlineExceeded) {
+				break
+			}
+			t.Fatalf("Read() error:\n%+v", err)
+		}
+		header := nfv9Header{}
+		if err := binary.Read(bytes.NewBuffer(payload), binary.BigEndian, &header); err != nil {
+			t.Errorf("binary.Read() error:\n%+v", err)
+		} else {
+			got = append(got, header)
+		}
+	}
+	return got
+}
 
 func TestReceiveFlows(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
@@ -31,25 +54,14 @@ func TestReceiveFlows(t *testing.T) {
 		}
 		defer receiver.Close()
 
-		// Flow generator
+		// Flow generator. The rate guarantees at least one flow.
 		r := reporter.NewMock(t)
-		config := DefaultConfiguration()
+		config := testConfiguration(t)
 		config.Target = receiver.LocalAddr().String()
-		config.Flows = []FlowConfiguration{
-			{
-				PerSecond:  1,
-				InIfIndex:  []int{10},
-				OutIfIndex: []int{20},
-				PeakHour:   21 * time.Hour,
-				Multiplier: 1,
-				SrcNet:     netip.MustParsePrefix("192.0.2.0/24"),
-				DstNet:     netip.MustParsePrefix("203.0.113.0/24"),
-				SrcAS:      []uint32{65201},
-				DstAS:      []uint32{65202},
-				SrcPort:    []uint16{443},
-				Protocol:   []string{"tcp"},
-				Size:       1400,
-			},
+		config.Rate = 2.5
+		// Send every flow to this instance.
+		config.Mapping = []MappingRuleConfiguration{
+			{Assign: []AssignConfiguration{{Exporter: "exporter1", Interface: 10, Weight: 1}}},
 		}
 		c, err := New(r, config, Dependencies{
 			Daemon: daemon.NewMock(t),
@@ -60,45 +72,31 @@ func TestReceiveFlows(t *testing.T) {
 		helpers.StartStop(t, c)
 		time.Sleep(1 * time.Second)
 
-		receiver.SetReadDeadline(time.Now().Add(200 * time.Millisecond))
-		got := []nfv9Header{}
-		for {
-			payload := make([]byte, 9000)
-			_, err := receiver.Read(payload)
-			if err != nil {
-				if errors.Is(err, os.ErrDeadlineExceeded) {
-					break
-				}
-				t.Fatalf("Read() error:\n%+v", err)
+		got := readHeaders(t, receiver)
+		if len(got) < 2 {
+			t.Fatalf("Read() got %d packets, expected at least 2", len(got))
+		}
+		// The first packet holds the templates.
+		expected := nfv9Header{
+			Version:        9,
+			Count:          4,
+			SystemUptime:   1,
+			UnixSeconds:    uint32(time.Now().Unix()),
+			SequenceNumber: 1,
+		}
+		if diff := helpers.Diff(got[0], expected); diff != "" {
+			t.Fatalf("Read() first packet (-got, +want):\n%s", diff)
+		}
+		// The others hold data.
+		records := uint16(0)
+		for _, header := range got[1:] {
+			if diff := helpers.Diff(header.Version, uint16(9)); diff != "" {
+				t.Fatalf("Read() data packet version (-got, +want):\n%s", diff)
 			}
-			header := nfv9Header{}
-			if err := binary.Read(bytes.NewBuffer(payload), binary.BigEndian, &header); err != nil {
-				t.Errorf("binary.Read() error:\n%+v", err)
-			} else {
-				got = append(got, header)
-			}
+			records += header.Count
 		}
-		if len(got) != 2 {
-			t.Errorf("Read() got %d packets, expected 2", len(got))
-		}
-		// We only check the headers. Decoding is already tested in nfdata_test.go.
-		expected := []nfv9Header{
-			{
-				Version:        9,
-				Count:          4,
-				SystemUptime:   1,
-				UnixSeconds:    uint32(time.Now().Unix()),
-				SequenceNumber: 1,
-			}, {
-				Version:        9,
-				Count:          1,
-				SystemUptime:   1,
-				UnixSeconds:    uint32(time.Now().Unix()),
-				SequenceNumber: 2,
-			},
-		}
-		if diff := helpers.Diff(got, expected); diff != "" {
-			t.Fatalf("Read() (-got, +want):\n%s", diff)
+		if records == 0 {
+			t.Fatalf("Read() no flow record received")
 		}
 	})
 }
@@ -115,27 +113,6 @@ func TestRedial(t *testing.T) {
 			}
 			return receiver
 		}
-		readHeaders := func(receiver *net.UDPConn) []nfv9Header {
-			receiver.SetReadDeadline(time.Now().Add(200 * time.Millisecond))
-			got := []nfv9Header{}
-			for {
-				payload := make([]byte, 9000)
-				_, err := receiver.Read(payload)
-				if err != nil {
-					if errors.Is(err, os.ErrDeadlineExceeded) {
-						break
-					}
-					t.Fatalf("Read() error:\n%+v", err)
-				}
-				header := nfv9Header{}
-				if err := binary.Read(bytes.NewBuffer(payload), binary.BigEndian, &header); err != nil {
-					t.Errorf("binary.Read() error:\n%+v", err)
-				} else {
-					got = append(got, header)
-				}
-			}
-			return got
-		}
 
 		receiver1 := listen()
 		defer receiver1.Close()
@@ -144,23 +121,12 @@ func TestRedial(t *testing.T) {
 
 		// Flow generator
 		r := reporter.NewMock(t)
-		config := DefaultConfiguration()
+		config := testConfiguration(t)
 		config.Target = receiver1.LocalAddr().String()
-		config.Flows = []FlowConfiguration{
-			{
-				PerSecond:  1,
-				InIfIndex:  []int{10},
-				OutIfIndex: []int{20},
-				PeakHour:   21 * time.Hour,
-				Multiplier: 1,
-				SrcNet:     netip.MustParsePrefix("192.0.2.0/24"),
-				DstNet:     netip.MustParsePrefix("203.0.113.0/24"),
-				SrcAS:      []uint32{65201},
-				DstAS:      []uint32{65202},
-				SrcPort:    []uint16{443},
-				Protocol:   []string{"tcp"},
-				Size:       1400,
-			},
+		config.Rate = 2.5
+		// Send every flow to this instance.
+		config.Mapping = []MappingRuleConfiguration{
+			{Assign: []AssignConfiguration{{Exporter: "exporter1", Interface: 10, Weight: 1}}},
 		}
 		c, err := New(r, config, Dependencies{
 			Daemon: daemon.NewMock(t),
@@ -172,8 +138,8 @@ func TestRedial(t *testing.T) {
 
 		// The initial target receives flows.
 		time.Sleep(1 * time.Second)
-		if got := readHeaders(receiver1); len(got) != 2 {
-			t.Fatalf("readHeaders(receiver1) got %d packets, expected 2", len(got))
+		if got := readHeaders(t, receiver1); len(got) < 2 {
+			t.Fatalf("readHeaders(receiver1) got %d packets, expected at least 2", len(got))
 		}
 
 		// Move the target. redial() reloads c.target on its next run
@@ -181,7 +147,7 @@ func TestRedial(t *testing.T) {
 		newTarget := receiver2.LocalAddr().String()
 		c.target.Store(&newTarget)
 		time.Sleep(30 * time.Second)
-		if got := readHeaders(receiver2); len(got) == 0 {
+		if got := readHeaders(t, receiver2); len(got) == 0 {
 			t.Fatal("readHeaders(receiver2) got no packets, expected flows after redial")
 		}
 	})

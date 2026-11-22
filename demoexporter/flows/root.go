@@ -15,6 +15,7 @@ import (
 
 	"akvorado/common/daemon"
 	"akvorado/common/reporter"
+	"akvorado/demoexporter/flowmodel"
 )
 
 // Component represents the flows component.
@@ -24,6 +25,11 @@ type Component struct {
 	t      tomb.Tomb
 	config Configuration
 	target atomic.Pointer[string] // make testing easier
+
+	sampler      *flowmodel.Sampler
+	metadata     *flowmodel.Metadata
+	mapping      *compiledMapping
+	samplingRate int
 
 	metrics struct {
 		sent   *reporter.CounterVec
@@ -44,6 +50,33 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 		config: config,
 	}
 	c.target.Store(&config.Target)
+
+	exporter, ok := config.Exporters[config.Exporter]
+	if !ok {
+		names := make([]string, 0, len(config.Exporters))
+		for name := range config.Exporters {
+			names = append(names, name)
+		}
+		return nil, fmt.Errorf("exporter %q is not in the fleet %v", config.Exporter, names)
+	}
+	c.samplingRate = exporter.SamplingRate
+	var err error
+	if c.mapping, err = newMapping(&config); err != nil {
+		return nil, err
+	}
+
+	model, err := flowmodel.LoadFromPath(config.Model)
+	if err != nil {
+		return nil, err
+	}
+	c.metadata = &model.Metadata
+	if c.sampler, err = model.NewSampler(flowmodel.SamplerOptions{
+		Rate:              config.Rate,
+		LocalASN:          config.LocalASN,
+		MaxFlowsPerSecond: config.MaxFlowsPerSecond,
+	}); err != nil {
+		return nil, err
+	}
 
 	c.metrics.sent = c.r.CounterVec(
 		reporter.CounterOpts{
@@ -81,6 +114,7 @@ func (c *Component) Start() error {
 		defer conn.Close()
 		ctx := c.t.Context(context.Background())
 		elapsedSeconds := 0
+		last := start.Truncate(time.Second)
 		ticker := time.NewTicker(time.Second)
 		defer ticker.Stop()
 		// redial re-resolves the target and swaps the connection when the
@@ -123,14 +157,24 @@ func (c *Component) Start() error {
 					redial()
 					transmit("template",
 						getNetFlowTemplates(ctx, sequenceNumber,
-							c.config.SamplingRate,
+							c.samplingRate,
 							start, now))
 				}
 				elapsedSeconds++
-				flows := generateFlows(c.config.Flows, c.config.Seed, now)
-				transmit("data",
-					getNetFlowData(ctx, flows, sequenceNumber,
-						start, now))
+				// Each second is generated once, even when a tick is
+				// early or late. All the instances of a fleet need
+				// this. When too late or when the clock goes backward,
+				// skip some seconds.
+				now = now.Truncate(time.Second)
+				if now.Sub(last) > 5*time.Second || now.Before(last) {
+					last = now.Add(-time.Second)
+				}
+				for last.Before(now) {
+					last = last.Add(time.Second)
+					transmit("data",
+						getNetFlowData(ctx, c.generate(last), sequenceNumber,
+							start, last))
+				}
 			}
 		}
 	})

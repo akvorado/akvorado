@@ -5,14 +5,23 @@ package snmp
 
 // Configuration describes the configuration for the SNMP component.
 type Configuration struct {
-	// Name defines the system name for the exporter (for SNMP)
-	Name string `validate:"required"`
-	// Interfaces describe the interfaces attached to the
-	// exporter. This is a mapping from ifIndex to their
-	// description.
-	Interfaces map[int]string `validate:"min=1,dive,keys,min=1,endkeys,min=3"`
+	// Name is the system name of the exporter.
+	Name string `mapstructure:"-" yaml:"-"`
+	// Interfaces describe the interfaces attached to the exporter, indexed by
+	// ifIndex. The demo exporter service takes them from the flows component.
+	Interfaces map[int]InterfaceConfiguration `mapstructure:"-" yaml:"-"`
 	// Listen specify the IP address the SNMP server should be bound to.
 	Listen string `validate:"required,listen"`
+}
+
+// InterfaceConfiguration describes one interface of the exporter.
+type InterfaceConfiguration struct {
+	// Name is the interface name.
+	Name string
+	// Description is the interface description.
+	Description string `validate:"required,min=3"`
+	// Speed is the interface speed in Mbps.
+	Speed uint
 }
 
 // DefaultConfiguration represents the default configuration for the SNMP component.

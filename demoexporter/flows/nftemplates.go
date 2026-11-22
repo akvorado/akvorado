@@ -107,6 +107,7 @@ func getNetFlowTemplates(ctx context.Context, sequenceNumber uint32, sampling in
 	output := make(chan []byte, 16)
 	uptime := uint32(now.Sub(start).Seconds())
 	go func() {
+		defer close(output)
 		buf := new(bytes.Buffer)
 		if err := binary.Write(buf, binary.BigEndian, nfv9Header{
 			Version:        9,
@@ -175,7 +176,6 @@ func getNetFlowTemplates(ctx context.Context, sequenceNumber uint32, sampling in
 		case <-ctx.Done():
 			return
 		}
-		defer close(output)
 	}()
 	return output
 }

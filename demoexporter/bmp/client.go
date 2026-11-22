@@ -33,7 +33,7 @@ func (c *Component) startBMPClient(ctx context.Context) {
 	peerHeader := bmp.NewBMPPeerHeader(
 		bmp.BMP_PEER_TYPE_GLOBAL, 0, 0,
 		c.config.PeerIP,
-		uint32(c.config.PeerASN),
+		c.config.PeerASN,
 		netip.MustParseAddr("2.2.2.2"),
 		0)
 	pkt, err := bmp.NewBMPInitiation([]bmp.BMPInfoTLVInterface{
@@ -44,25 +44,11 @@ func (c *Component) startBMPClient(ctx context.Context) {
 		panic(err)
 	}
 	buf.Write(pkt)
-	om1, err := bgp.NewBGPOpenMessage(c.config.LocalASN, 30, netip.MustParseAddr("1.1.1.1"),
-		[]bgp.OptionParameterInterface{
-			bgp.NewOptionParameterCapability([]bgp.ParameterCapabilityInterface{
-				bgp.NewCapMultiProtocol(bgp.RF_IPv4_UC),
-				bgp.NewCapMultiProtocol(bgp.RF_IPv6_UC),
-			}),
-		},
-	)
+	om1, err := openMessage(c.config.LocalASN, netip.MustParseAddr("1.1.1.1"))
 	if err != nil {
 		panic(err)
 	}
-	om2, err := bgp.NewBGPOpenMessage(c.config.PeerASN, 30, netip.MustParseAddr("2.2.2.2"),
-		[]bgp.OptionParameterInterface{
-			bgp.NewOptionParameterCapability([]bgp.ParameterCapabilityInterface{
-				bgp.NewCapMultiProtocol(bgp.RF_IPv4_UC),
-				bgp.NewCapMultiProtocol(bgp.RF_IPv6_UC),
-			}),
-		},
-	)
+	om2, err := openMessage(c.config.PeerASN, netip.MustParseAddr("2.2.2.2"))
 	if err != nil {
 		panic(err)
 	}
@@ -119,13 +105,6 @@ func (c *Component) startBMPClient(ctx context.Context) {
 				}
 				attrs = append(attrs, bgp.NewPathAttributeCommunities(comms))
 			}
-			if route.LargeCommunities != nil {
-				comms := make([]*bgp.LargeCommunity, len(route.LargeCommunities))
-				for idx, comm := range route.LargeCommunities {
-					comms[idx] = (*bgp.LargeCommunity)(&comm)
-				}
-				attrs = append(attrs, bgp.NewPathAttributeLargeCommunities(comms))
-			}
 			pkt, err = bmp.NewBMPRouteMonitoring(*peerHeader,
 				bgp.NewBGPUpdateMessage(nil, attrs, nil)).Serialize()
 			if err != nil {
@@ -177,4 +156,22 @@ func (c *Component) startBMPClient(ctx context.Context) {
 	case <-done:
 	case <-ctx.Done():
 	}
+}
+
+// openMessage builds a BGP OPEN message for the given AS number.
+func openMessage(asn uint32, id netip.Addr) (*bgp.BGPMessage, error) {
+	// A 4-byte AS number uses AS_TRANS in the 2-byte field.
+	myAS := uint16(23456)
+	if asn <= 0xffff {
+		myAS = uint16(asn)
+	}
+	return bgp.NewBGPOpenMessage(myAS, 30, id,
+		[]bgp.OptionParameterInterface{
+			bgp.NewOptionParameterCapability([]bgp.ParameterCapabilityInterface{
+				bgp.NewCapMultiProtocol(bgp.RF_IPv4_UC),
+				bgp.NewCapMultiProtocol(bgp.RF_IPv6_UC),
+				bgp.NewCapFourOctetASNumber(asn),
+			}),
+		},
+	)
 }

@@ -12,11 +12,11 @@ import (
 func TestDefaultConfiguration(t *testing.T) {
 	config := DefaultConfiguration()
 	config.Name = "demo"
-	config.Interfaces = map[int]string{
-		1: "Transit: Cogent",
-		2: "Core",
-		3: "Core",
-		6: "PNI: Netflix",
+	config.Interfaces = map[int]InterfaceConfiguration{
+		1: {Description: "Transit: Cogent", Speed: 10000},
+		2: {Description: "Core", Speed: 100000},
+		3: {Description: "Core", Speed: 100000},
+		6: {Description: "PNI: Netflix", Speed: 10000, Name: "Hu0/0/0/6"},
 	}
 	if err := helpers.Validate.Struct(config); err != nil {
 		t.Fatalf("validate.Struct() error:\n%+v", err)
