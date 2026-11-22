@@ -5,11 +5,11 @@
 /orchestrator/clickhouse/data/tcp.csv
 /orchestrator/clickhouse/data/udp.csv
 /console/filter/parser.go
-/common/schema/definition_gen.go
-/common/embed/data/embed.zip
-
 /console/data/frontend/
 /console/data/docs/53-metrics.md
+/common/schema/definition_gen.go
+/common/embed/data/embed.zip
+/config/demo-exporter-train.yaml
 
 *~
 __pycache__/
@@ -29,6 +29,7 @@ __pycache__/
 /common/remotedatasource/paginationtype_enumer.go
 /common/remotedatasource/parsertype_enumer.go
 /console/homepagetopwidget_enumer.go
+/demoexporter/flows/matchdirection_enumer.go
 /outlet/clickhouse/serverselectionalgorithm_enumer.go
 /outlet/core/asnprovider_enumer.go
 /outlet/core/netprovider_enumer.go

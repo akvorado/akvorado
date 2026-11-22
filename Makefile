@@ -38,7 +38,8 @@ GENERATED_GO = \
 	common/kafka/saslmechanism_enumer.go \
 	common/remotedatasource/parsertype_enumer.go \
 	common/remotedatasource/paginationtype_enumer.go \
-	outlet/clickhouse/serverselectionalgorithm_enumer.go
+	outlet/clickhouse/serverselectionalgorithm_enumer.go \
+	demoexporter/flows/matchdirection_enumer.go
 GENERATED_TEST_GO = \
 	common/clickhousedb/mocks/mock_driver.go
 GENERATED = \
@@ -162,6 +163,9 @@ common/remotedatasource/paginationtype_enumer.go: common/remotedatasource/config
 outlet/clickhouse/serverselectionalgorithm_enumer.go: outlet/clickhouse/config.go
 	$(call log,generate enums for ServerSelectionAlgorithm…)
 	$Q $(ENUMER) -type=ServerSelectionAlgorithm -text -transform=kebab -trimprefix=ServerSelection outlet/clickhouse/config.go
+demoexporter/flows/matchdirection_enumer.go: demoexporter/flows/config.go
+	$(call log,generate enums for MatchDirection…)
+	$Q $(ENUMER) -type=MatchDirection -text -transform=kebab -trimprefix=MatchDirection demoexporter/flows/config.go
 
 common/schema/definition_gen.go: common/schema/definition.go common/schema/definition_gen.sh
 	$(call log,generate column definitions…)

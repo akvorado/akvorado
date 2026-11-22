@@ -1548,58 +1548,77 @@ database:
 
 ## Demo exporter service
 
-For testing purpose, it is possible to generate flows using the demo
-exporter service. It features a NetFlow generator, a simple SNMP
-agent and a BMP exporter.
+For testing purpose, it is possible to generate flows using the demo exporter
+service. It features a NetFlow generator, a simple SNMP agent and a BMP
+exporter. Flows come from a small generative model, either the one embedded in
+the binary or one trained on a real network with `akvorado demo-exporter train`.
+See the [usage section](51-usage.md#demo-exporter-service) for the training and
+the [internals section](81-internals.md#demo-exporter-flow-model) for how the
+model works.
 
 > [!NOTE]
 > The demo exporter is not enabled by default. You need to run `docker compose
 > --profile demo up -d`.
 
 ```yaml
+hostname: exporter1.example.com
 snmp:
-  name: exporter1.example.com
-  interfaces:
-    10: "Transit: Telia"
-    11: "IX: AMSIX"
-    20: "core"
-    21: "core"
   listen: :161
 bmp:
   target: 127.0.0.1:10179
-  routes:
-    - prefixes: 192.0.2.0/24,2a01:db8:cafe:1::/64
-      aspath: 64501
-      communities: 65401:10,65401:12
 flows:
-  samplingrate: 50000
   target: 127.0.0.1:2055
-  flows:
-    - per-second: 0.2
-      in-if-index: 10
-      out-if-index: 20
-      peak-hour: 16h
-      multiplier: 3
-      src-port: 0
-      dst-port: 80
-      protocol: tcp
-      size: 1300
-      dst-net: 192.0.2.0/24
-      dst-as: 64501
-      src-net: 198.38.120.0/23
-      src-as: 2906
+  exporters:
+    exporter1.example.com:
+      sampling-rate: 100000
+      interfaces:
+        10: {description: "Transit: Telia", boundary: external, asn: 1299, speed: 100000}
+        11: {description: "IX: AMSIX", boundary: external}
+        20: {description: "core", boundary: internal}
+  mapping:
+    - asn: 15169
+      assign:
+        - {exporter: exporter1.example.com, interface: 11}
+    - assign:
+        - {exporter: exporter1.example.com, interface: 10}
 ```
 
-In the `snmp` section, all fields are mandatory. The `interfaces`
-section maps interface indexes to their descriptions. In the `bmp`
-session, for each set of prefixes, the `aspath` is mandatory, but the
-`communities` are optional. In the `flows` section, all fields are
-mandatory. Have a look at the provided `akvorado.yaml` configuration
-file for a more complete example. As generating many flows is quite
-verbose, it may be useful to rely on [YAML anchors][] to avoid
-repeating a lot of stuff.
+The `hostname` is the name of the emulated exporter, one of the keys
+of `flows.exporters`. It is mandatory.
 
-[YAML anchors]: https://www.linode.com/docs/guides/yaml-anchors-aliases-overrides-extensions/
+The SNMP agent exposes the interfaces of the emulated exporter from
+the `flows` section. The BMP routes are rebuilt from the flow model
+and the `flows` section.
+
+The `flows` section accepts the following keys:
+
+- `model` is the path to a trained flow model. When empty, the model
+  embedded in the binary is used.
+- `target` is the address the NetFlow packets are sent to.
+- `seed` alters the generated flows. Instances sharing the same seed,
+  the same configuration and the same CPU architecture split the same
+  set of flows between them, so together they behave like one
+  consistent network.
+- `rate` is the average number of flows per second for the whole
+  fleet. The model only gives the shape of the traffic over the week.
+- `max-flows-per-second` caps the number of generated flows for the
+  whole fleet.
+- `local-asn` is the AS number of the emulated network, used for the
+  customer side of the flows and for the BMP session.
+- `exporters` describes the whole fleet of exporters. Each exporter
+  has a `sampling-rate` and a set of `interfaces` with a
+  `description`, a `boundary`, and optionally a `name`, a `speed`, an
+  `asn` (the AS number of the neighbor behind an external interface),
+  and `communities`.
+- `mapping` distributes the flows over the fleet. Each rule can match
+  the remote AS number (`asn`) and the `direction`
+  (`inbound`/`outbound`), and assigns the matched flows to weighted
+  external interfaces. The first matching rule wins.
+
+Everything but the hostname is shared by all the instances of a
+fleet, so it is convenient to put it in a common file merged with
+`<<: !include`, as done in the provided `demo.yaml`.
+
 [clickhouse documentation]: https://clickhouse.com/docs/en/engines/table-engines/integrations/kafka/#table_engine-kafka-creating-a-table
 
 ## Common configuration settings

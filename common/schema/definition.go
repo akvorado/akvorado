@@ -66,6 +66,13 @@ func (ib *InterfaceBoundary) UnmarshalText(input []byte) error {
 	return errUnknownInterfaceBoundary
 }
 
+// PacketSizeBucketBounds are the exclusive upper bounds of the buckets
+// of the PacketSizeBucket column. A last bucket gets the larger sizes.
+var PacketSizeBucketBounds = [...]uint64{
+	64, 128, 256, 512, 768, 1024, 1280, 1501,
+	2048, 3072, 4096, 8192, 10240, 16384, 32768, 65536,
+}
+
 // Direction identifies the direction of the flow.
 type Direction uint
 
@@ -415,13 +422,9 @@ END`,
 				Depends:        []ColumnKey{ColumnPacketSize},
 				ClickHouseType: "LowCardinality(String)",
 				ClickHouseAlias: func() string {
-					boundaries := []int{
-						64, 128, 256, 512, 768, 1024, 1280, 1501,
-						2048, 3072, 4096, 8192, 10240, 16384, 32768, 65536,
-					}
 					conditions := []string{}
-					last := 0
-					for _, boundary := range boundaries {
+					last := uint64(0)
+					for _, boundary := range PacketSizeBucketBounds {
 						conditions = append(conditions, fmt.Sprintf("PacketSize < %d, '%d-%d'",
 							boundary, last, boundary-1))
 						last = boundary

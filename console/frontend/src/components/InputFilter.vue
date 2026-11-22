@@ -35,8 +35,7 @@
     <template v-if="expression !== ''" #nomatch="{ query }">
       <div class="flex items-center justify-between gap-2">
         <span class="grow truncate">
-          Save as “<span class="truncate">{{ query }}</span
-          >”...
+          Save as “<span class="truncate">{{ query }}</span>”...
         </span>
         <div class="flex shrink-0 items-center gap-1">
           <InputButton

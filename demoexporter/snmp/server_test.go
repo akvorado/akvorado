@@ -16,9 +16,9 @@ import (
 func TestSNMPServer(t *testing.T) {
 	config := Configuration{
 		Name: "demo",
-		Interfaces: map[int]string{
-			1: "transit: cogent",
-			2: "pni: netflix",
+		Interfaces: map[int]InterfaceConfiguration{
+			1: {Description: "transit: cogent"},
+			2: {Description: "pni: netflix"},
 		},
 		Listen: ":0",
 	}

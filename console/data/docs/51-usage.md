@@ -129,11 +129,68 @@ gets the web interface.
 ## Demo exporter service
 
 The demo exporter service simulates a NetFlow exporter, a simple SNMP agent, and
-a BMP exporter.
+a BMP exporter. The flows come from a small generative model embedded in the
+binary. You can train your own from the flows of a real network stored in
+ClickHouse.
 
 > [!NOTE]
 > The demo exporter is not enabled by default. You need to run `docker compose
 > --profile demo up -d`.
+
+### Training a flow model
+
+`akvorado demo-exporter train train.yaml` trains a model from a ClickHouse
+database. The model stays small, trains in a few minutes on a CPU, and anonymize
+data:
+
+- only flows crossing the edge of the network are used: entering on an external
+  interface and leaving on a non-external one, or the opposite,
+- local prefixes, on the side of the other interface, are replaced by random
+  prefixes of the same length under the `anonymization` prefixes,
+- remote prefixes are only kept when they are public, not more specific than a
+  /24 or a /48, with a public origin AS number, not seen as a local prefix, and
+  outside `exclude-asns` and `exclude-prefixes`,
+- prefixes, protocols, and ports seen in fewer than `min-count` sampled flows
+  are left out,
+- interface names, descriptions and speeds, AS paths, communities, forwarding
+  status, and your AS number are never read: only the boundary of the
+  customer-side interface is kept. Exporter names are only used to select
+  flows with the optional `exporters` key,
+- training uses a fraction of the flows and only the shape of the hourly traffic
+  is stored, not its volume.
+
+```yaml
+clickhouse:
+  servers:
+    - clickhouse:9000
+  database: default
+start: 2026-08-01T00:00:00Z
+end: 2026-08-08T00:00:00Z
+fraction: 0.1
+exclude-asns:
+  - 64496
+  - 64497
+exclude-prefixes: 198.51.100.0/24,2001:db8::/32
+anonymization:
+  ipv4-prefix: 98.0.0.0/8
+  ipv6-prefix: 3fff::/20
+output: custom.model
+```
+
+List the AS numbers of your network and of its group in `exclude-asns`, and your
+address space in `exclude-prefixes`. The model remembers the top remote prefixes
+with their origin AS numbers, the protocols, the ports, the packet sizes, and
+the hourly traffic pattern.
+
+Use `akvorado demo-exporter inspect custom.model` to review what a model
+contains before sharing it, with a few generated flows (`--flows` sets how
+many). Without argument, it inspects the default model.
+
+The `model` and `train` sections tune the model size and the training loop and
+can usually be left to their defaults. Exporter identities and interfaces are
+not part of the model: they are reintroduced at generation time by the `mapping`
+section of the flows configuration, which distributes traffic shares over a
+fleet of synthetic exporters, by percentage and by remote AS number.
 
 ## Other commands
 

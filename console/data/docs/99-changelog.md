@@ -12,6 +12,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 💥 *demo-exporter*: replace the spec-based flow generation with a generative neural network
 - ✨ *console*: add authorization rules to restrict the flows a user can see
 - 🩹 *orchestrator*: do not recreate dictionaries when ClickHouse hides their URL or password
 - 🩹 *console*: do not offer to save an empty filter

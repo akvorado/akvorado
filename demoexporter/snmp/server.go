@@ -33,31 +33,39 @@ func (c *Component) startSNMPServer() error {
 		},
 	)
 	count := 0
-	for idx, description := range c.config.Interfaces {
+	for idx, iface := range c.config.Interfaces {
 		i := idx
-		d := description
+		name := iface.Name
+		if name == "" {
+			name = fmt.Sprintf("Gi0/0/0/%d", i)
+		}
+		speed := iface.Speed
+		if speed == 0 {
+			speed = 10000
+		}
+		description := iface.Description
 		oids[4*count+1] = c.newOID(fmt.Sprintf("1.3.6.1.2.1.2.2.1.2.%d", i),
 			gosnmp.OctetString,
 			func() (any, error) {
-				return fmt.Sprintf("Gi0/0/0/%d", i), nil
+				return name, nil
 			},
 		)
 		oids[4*count+2] = c.newOID(fmt.Sprintf("1.3.6.1.2.1.31.1.1.1.1.%d", i),
 			gosnmp.OctetString,
 			func() (any, error) {
-				return fmt.Sprintf("Gi0/0/0/%d", i), nil
+				return name, nil
 			},
 		)
 		oids[4*count+3] = c.newOID(fmt.Sprintf("1.3.6.1.2.1.31.1.1.1.15.%d", i),
 			gosnmp.Gauge32,
 			func() (any, error) {
-				return uint(10000), nil
+				return speed, nil
 			},
 		)
 		oids[4*count+4] = c.newOID(fmt.Sprintf("1.3.6.1.2.1.31.1.1.1.18.%d", i),
 			gosnmp.OctetString,
 			func() (any, error) {
-				return d, nil
+				return description, nil
 			},
 		)
 		count++

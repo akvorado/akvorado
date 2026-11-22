@@ -80,6 +80,10 @@ func init() {
 }
 
 func demoExporterStart(r *reporter.Reporter, config DemoExporterConfiguration, checkOnly bool) error {
+	// The fleet configuration is shared between the instances, each
+	// one identifies itself with its hostname.
+	config.SNMP.Name = config.DemoExporter.Hostname
+	config.Flows.Exporter = config.DemoExporter.Hostname
 	daemonComponent, err := daemon.New(r)
 	if err != nil {
 		return fmt.Errorf("unable to initialize daemon component: %w", err)
@@ -90,6 +94,16 @@ func demoExporterStart(r *reporter.Reporter, config DemoExporterConfiguration, c
 	if err != nil {
 		return fmt.Errorf("unable to initialize HTTP component: %w", err)
 	}
+	flowsComponent, err := flows.New(r, config.Flows, flows.Dependencies{
+		Daemon: daemonComponent,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to initialize flows component: %w", err)
+	}
+	// The fleet configuration also describes the interfaces and the routes.
+	config.SNMP.Interfaces = flowsComponent.SNMPInterfaces()
+	config.BMP.Routes = flowsComponent.BMPRoutes()
+	config.BMP.LocalASN = config.Flows.LocalASN
 	snmpComponent, err := snmp.New(r, config.SNMP, snmp.Dependencies{
 		Daemon: daemonComponent,
 	})
@@ -102,14 +116,9 @@ func demoExporterStart(r *reporter.Reporter, config DemoExporterConfiguration, c
 	if err != nil {
 		return fmt.Errorf("unable to initialize BMP component: %w", err)
 	}
-	flowsComponent, err := flows.New(r, config.Flows, flows.Dependencies{
-		Daemon: daemonComponent,
-	})
-	if err != nil {
-		return fmt.Errorf("unable to initialize flows component: %w", err)
-	}
 	demoExporterComponent, err := demoexporter.New(r, config.DemoExporter, demoexporter.Dependencies{
 		SNMP:  snmpComponent,
+		BMP:   bmpComponent,
 		Flows: flowsComponent,
 	})
 	if err != nil {
