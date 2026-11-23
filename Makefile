@@ -375,7 +375,7 @@ docker: ; @ ## Build Docker image
 		--build-arg NODE_VERSION=$$(cat console/frontend/.nvmrc) \
 		-t quay.io/akvorado/akvorado:main -
 docker-dev: TARGETOS=linux
-docker-dev: all ; @ ## Build development Docker image
+docker-dev: bin/$(basename $(MODULE)) ; @ ## Build development Docker image
 	$(call log,build development Docker image…)
 	$Q docker build -f docker/Dockerfile.dev $(DOCKER_BUILD_ARGS) \
 		--build-arg VERSION=$(VERSION) -t quay.io/akvorado/akvorado:main .
