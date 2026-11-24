@@ -32,7 +32,7 @@
         />
       </div>
     </template>
-    <template #nomatch="{ query }">
+    <template v-if="expression !== ''" #nomatch="{ query }">
       <div class="flex items-center justify-between gap-2">
         <span class="grow truncate">
           Save as “<span class="truncate">{{ query }}</span
@@ -147,10 +147,14 @@ const addFilter = async ({
   shared,
 }: Pick<SavedFilter, "description" | "shared">) => {
   try {
-    await fetch(`api/v0/console/filter/saved`, {
+    const response = await fetch(`api/v0/console/filter/saved`, {
       method: "POST",
       body: JSON.stringify({ description, shared, content: expression.value }),
     });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      console.error("cannot save filter:", data.message ?? response.statusText);
+    }
   } finally {
     refreshSavedFilters();
   }
