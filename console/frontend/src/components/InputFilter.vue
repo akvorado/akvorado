@@ -20,8 +20,8 @@
             v-if="shared && user != currentUser?.login"
             class="ml-0 block text-xs italic text-gray-500 dark:text-gray-400 sm:max-lg:ml-1 sm:max-lg:inline"
           >
-            <span v-if="user == '__system'">Shared by {{ user }}</span>
-            <span v-else>System filter</span>
+            <span v-if="user == '__system'">System filter</span>
+            <span v-else>Shared by {{ user }}</span>
           </span>
         </div>
         <TrashIcon
