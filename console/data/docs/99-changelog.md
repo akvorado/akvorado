@@ -16,6 +16,7 @@ identified with a specific icon:
 - 🌱 *console*: complete TCP flags in filters
 - 🩹 *orchestrator*: do not recreate dictionaries when ClickHouse hides their URL or password
 - 🩹 *console*: do not offer to save an empty filter
+- 🌱 *docker*: update Grafana to 13.3
 
 ## 2026.10.1 - 2026-10-25
 

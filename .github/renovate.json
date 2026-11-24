@@ -273,6 +273,7 @@
       "groupName": "monitoring",
       "matchPackageNames": [
         "grafana/alloy",
+        "grafana/grafana",
         "grafana/loki",
         "ghcr.io/google/cadvisor",
         "/^prom//",
