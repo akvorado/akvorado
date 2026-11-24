@@ -463,6 +463,12 @@ func (s *CreateDictionaryStatement) Setting(name string, value Expr) *CreateDict
 	return s
 }
 
+// Comment sets the comment of the dictionary.
+func (s *CreateDictionaryStatement) Comment(text string) *CreateDictionaryStatement {
+	s.dictionary.Comment = &parser.StringLiteral{Literal: stringEscaper.Replace(text)}
+	return s
+}
+
 // DictionaryAttribute is one attribute of a dictionary.
 type DictionaryAttribute struct {
 	node *parser.DictionaryAttribute

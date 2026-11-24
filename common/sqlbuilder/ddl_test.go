@@ -137,13 +137,15 @@ func TestCreateDictionary(t *testing.T) {
 		Lifetime(0, 3600).
 		Layout("HASHED").
 		Setting("format_csv_allow_single_quotes", sb.Uint(0)).
+		Comment("it's a comment").
 		String()
 	expected := `CREATE DICTIONARY akvorado.asns (asn UInt32 INJECTIVE, name String DEFAULT 'None')
 PRIMARY KEY asn
 SOURCE(HTTP(URL 'http://127.0.0.1:8080/asns.csv' FORMAT 'CSVWithNames' CREDENTIALS(user 'alfred' password 'it\'s a secret')))
 LIFETIME(MIN 0 MAX 3600)
 LAYOUT(HASHED())
-SETTINGS(format_csv_allow_single_quotes = 0)`
+SETTINGS(format_csv_allow_single_quotes = 0)
+COMMENT 'it\'s a comment'`
 	if diff := helpers.Diff(got, sb.Normalize(t, expected)); diff != "" {
 		t.Errorf("CreateDictionary() (-got, +want):\n%s", diff)
 	}

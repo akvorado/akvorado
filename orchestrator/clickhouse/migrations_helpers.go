@@ -5,6 +5,7 @@ package clickhouse
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -192,35 +193,59 @@ func (c *Component) localTable(table string) string {
 // createDictionary creates the provided dictionary.
 func (c *Component) createDictionary(ctx context.Context, name, layout string, attributes []sb.DictionaryAttribute, keys []sb.Expr) error {
 	url := fmt.Sprintf("%s/api/v0/orchestrator/clickhouse/%s.csv", c.config.OrchestratorURL, name)
-	source := []sb.SourceParam{
-		sb.Param("URL", sb.String(url)),
-		sb.Param("FORMAT", sb.String("CSVWithNames")),
-	}
+	user, password := "", ""
 	if c.config.OrchestratorBasicAuth != nil {
-		source = append(source, sb.ParamGroup("CREDENTIALS",
-			sb.Param("user", sb.String(c.config.OrchestratorBasicAuth.Username)),
-			sb.Param("password", sb.String(c.config.OrchestratorBasicAuth.Password))))
+		user = c.config.OrchestratorBasicAuth.Username
+		password = c.config.OrchestratorBasicAuth.Password
 	}
-	createQuery := sb.CreateDictionary(c.table(name)).
-		Attributes(attributes...).
-		PrimaryKey(keys...).
-		Source("HTTP", source...).
-		Lifetime(0, 3600).
-		Layout(strings.ToUpper(layout)).
-		Setting("format_csv_allow_single_quotes", sb.Uint(0))
+	comment := dictionaryComment(url, user, password)
+	build := func(url, password string) *sb.CreateDictionaryStatement {
+		source := []sb.SourceParam{
+			sb.Param("URL", sb.String(url)),
+			sb.Param("FORMAT", sb.String("CSVWithNames")),
+		}
+		if c.config.OrchestratorBasicAuth != nil {
+			source = append(source, sb.ParamGroup("CREDENTIALS",
+				sb.Param("USER", sb.String(user)),
+				sb.Param("PASSWORD", sb.String(password))))
+		}
+		return sb.CreateDictionary(c.table(name)).
+			Attributes(attributes...).
+			PrimaryKey(keys...).
+			Source("HTTP", source...).
+			Lifetime(0, 3600).
+			Layout(strings.ToUpper(layout)).
+			Setting("format_csv_allow_single_quotes", sb.Uint(0)).
+			Comment(comment)
+	}
+	createQuery := build(url, password)
 
-	// Check if dictionary exists and create it if not
-	if ok, err := c.tableAlreadyExists(ctx, name, "create_table_query", createQuery); err != nil {
-		return err
-	} else if ok {
-		c.r.Info().Msgf("dictionary %s already exists, skip migration", name)
-		return errSkipStep
+	// ClickHouse hides the password. ClickHouse 26.3, 26.8 and 26.9 also hide
+	// the URL. The comment tells if they changed.
+	for _, target := range []statement{
+		createQuery,
+		build(url, "[HIDDEN]"),
+		build("[HIDDEN]", "[HIDDEN]"),
+	} {
+		if ok, err := c.tableAlreadyExists(ctx, name, "create_table_query", target); err != nil {
+			return err
+		} else if ok {
+			c.r.Info().Msgf("dictionary %s already exists, skip migration", name)
+			return errSkipStep
+		}
 	}
 	c.r.Info().Msgf("create dictionary %s", name)
 	if err := c.d.ClickHouse.ExecOnCluster(ctx, createQuery.OrReplace()); err != nil {
 		return fmt.Errorf("cannot create dictionary %s: %w", name, err)
 	}
 	return nil
+}
+
+// dictionaryComment returns the comment of a dictionary reading from the
+// provided source.
+func dictionaryComment(url, user, password string) string {
+	digest := sha256.Sum256([]byte(fmt.Sprintf("%s\x00%s\x00%s", url, user, password)))
+	return fmt.Sprintf("source %x", digest[:8])
 }
 
 // createExportersTable creates the exporters table. This table is always local.

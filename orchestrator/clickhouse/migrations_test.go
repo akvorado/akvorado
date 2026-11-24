@@ -106,6 +106,11 @@ func dropAllTables(t *testing.T, ch *clickhousedb.Component) {
 	}
 }
 
+var (
+	dictionaryURLRegexp     = regexp.MustCompile(`^CREATE DICTIONARY .* SOURCE\(HTTP\(URL '([^']*)'`)
+	dictionaryCommentRegexp = regexp.MustCompile(`COMMENT 'source [0-9a-f]+'`)
+)
+
 func loadTables(t *testing.T, ch *clickhousedb.Component, sch *schema.Component, tables []tableWithSchema) {
 	ctx := clickhouse.Context(t.Context(), clickhouse.WithSettings(clickhouse.Settings{
 		"allow_suspicious_low_cardinality_types": 1,
@@ -117,6 +122,11 @@ func loadTables(t *testing.T, ch *clickhousedb.Component, sch *schema.Component,
 		tables[i].Schema = strings.ReplaceAll(tables[i].Schema, "default.", dbName+".")
 		tables[i].Schema = strings.ReplaceAll(tables[i].Schema, "'default'", "'"+dbName+"'")
 		tables[i].Schema = strings.ReplaceAll(tables[i].Schema, "http://127.0.0.1:0", dictionaryServerURL())
+		// The comment of a dictionary depends on its URL
+		if url := dictionaryURLRegexp.FindStringSubmatch(tables[i].Schema); url != nil {
+			tables[i].Schema = dictionaryCommentRegexp.ReplaceAllString(tables[i].Schema,
+				fmt.Sprintf("COMMENT '%s'", dictionaryComment(url[1], "", "")))
+		}
 	}
 
 	// Sort in a way we respect the dependencies.
@@ -656,6 +666,62 @@ func TestNoTTL(t *testing.T) {
 	})
 }
 
+func TestDictionarySourceChange(t *testing.T) {
+	r := reporter.NewMock(t)
+	chComponent := clickhousedb.SetupClickHouse(t, r, false)
+	dropAllTables(t, chComponent)
+	otherURL := func(cfg *Configuration) {
+		cfg.OrchestratorURL = fmt.Sprintf("%s/other", cfg.OrchestratorURL)
+	}
+	withAuth := func(cfg *Configuration) {
+		cfg.OrchestratorBasicAuth = &ConfigurationBasicAuth{Username: "alfred", Password: "secret"}
+	}
+	otherPassword := func(cfg *Configuration) {
+		cfg.OrchestratorBasicAuth = &ConfigurationBasicAuth{Username: "alfred", Password: "other"}
+	}
+	checkApplied := func(t *testing.T, r *reporter.Reporter, expected string) {
+		t.Helper()
+		gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps_total")
+		if diff := helpers.Diff(gotMetrics, map[string]string{"applied_steps_total": expected}); diff != "" {
+			t.Fatalf("Metrics (-got, +want):\n%s", diff)
+		}
+	}
+
+	t.Run("create", func(t *testing.T) {
+		startTestComponent(t, r, chComponent, nil)
+	})
+
+	t.Run("idempotent", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		startTestComponent(t, r, chComponent, nil)
+		checkApplied(t, r, "0")
+	})
+
+	t.Run("change URL", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		startTestComponentWithConfig(t, r, chComponent, nil, otherURL)
+		checkApplied(t, r, "5")
+	})
+
+	t.Run("add credentials", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		startTestComponentWithConfig(t, r, chComponent, nil, withAuth)
+		checkApplied(t, r, "5")
+	})
+
+	t.Run("idempotent with credentials", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		startTestComponentWithConfig(t, r, chComponent, nil, withAuth)
+		checkApplied(t, r, "0")
+	})
+
+	t.Run("change password", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		startTestComponentWithConfig(t, r, chComponent, nil, otherPassword)
+		checkApplied(t, r, "5")
+	})
+}
+
 // newSchemaWithOnlyIndexes creates a schema with exactly the given indexes,
 // clearing all defaults first via NoIndexes.
 func newSchemaWithOnlyIndexes(t *testing.T, indexes map[schema.ColumnKey]schema.SkipIndexType) *schema.Component {
@@ -855,6 +921,9 @@ AND name LIKE $3`, "flows", ch.d.ClickHouse.DatabaseName(), "%DimensionAttribute
 		if err := dictCreate.Scan(&got); err != nil {
 			t.Fatalf("Scan() error:\n%+v", err)
 		}
+		url := fmt.Sprintf("%s/api/v0/orchestrator/clickhouse/custom_dict_test.csv", ch.config.OrchestratorURL)
+		// Some versions of ClickHouse hide the URL
+		got = strings.Replace(got, "URL '[HIDDEN]'", fmt.Sprintf("URL '%s'", url), 1)
 		expected := fmt.Sprintf(`CREATE DICTIONARY %s.custom_dict_test
 (
     `+"`SrcAddr`"+` String,
@@ -862,11 +931,12 @@ AND name LIKE $3`, "flows", ch.d.ClickHouse.DatabaseName(), "%DimensionAttribute
     `+"`csv_col_default`"+` String DEFAULT 'Hello World'
 )
 PRIMARY KEY SrcAddr
-SOURCE(HTTP(URL '%s/api/v0/orchestrator/clickhouse/custom_dict_test.csv' FORMAT 'CSVWithNames'))
+SOURCE(HTTP(URL '%s' FORMAT 'CSVWithNames'))
 LIFETIME(MIN 0 MAX 3600)
 LAYOUT(COMPLEX_KEY_HASHED())
-SETTINGS(format_csv_allow_single_quotes = 0)`, dbName, ch.config.OrchestratorURL)
-		if diff := helpers.Diff(got, expected); diff != "" {
+SETTINGS(format_csv_allow_single_quotes = 0)
+COMMENT '%s'`, dbName, url, dictionaryComment(url, "", ""))
+		if diff := helpers.Diff(sb.Normalize(t, got), sb.Normalize(t, expected)); diff != "" {
 			t.Fatalf("Unexpected state:\n%s", diff)
 		}
 	}) && t.Run("remove", func(t *testing.T) {
