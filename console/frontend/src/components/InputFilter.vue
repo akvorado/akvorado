@@ -13,7 +13,7 @@
     label="Saved filters"
   >
     <template #item="{ description, shared, user, id }">
-      <div class="flex w-full items-center justify-between">
+      <div class="flex w-full items-center justify-between gap-2">
         <div class="grow truncate">
           {{ description }}
           <span
@@ -26,7 +26,7 @@
         </div>
         <TrashIcon
           v-if="user == currentUser?.login"
-          class="inline h-4 w-4 shrink cursor-pointer hover:text-blue-700 dark:hover:text-white"
+          class="inline h-4 w-4 shrink-0 cursor-pointer hover:text-blue-700 dark:hover:text-white"
           @click.stop.prevent="deleteFilter(id)"
           @mousedown.stop.prevent=""
         />
@@ -38,7 +38,7 @@
           Save as “<span class="truncate">{{ query }}</span
           >”...
         </span>
-        <div class="flex shrink items-center gap-1">
+        <div class="flex shrink-0 items-center gap-1">
           <InputButton
             type="alternative"
             size="small"
