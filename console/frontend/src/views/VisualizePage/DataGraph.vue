@@ -6,6 +6,7 @@
     :is="component"
     :theme="isDark ? 'dark' : undefined"
     :data="data"
+    v-bind="component === DataGraphLine ? { hiddenSeries } : {}"
     autoresize
   />
 </template>
@@ -21,6 +22,7 @@ const { isDark } = inject(ThemeKey)!;
 
 const props = defineProps<{
   data: GraphLineHandlerResult | GraphSankeyHandlerResult | null;
+  hiddenSeries?: number[];
 }>();
 
 const component = computed(() => {

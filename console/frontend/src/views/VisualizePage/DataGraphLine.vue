@@ -23,13 +23,16 @@ import {
   useTimeSeriesGraph,
   graphic,
   rowName,
+  seriesId,
   type ECOption,
 } from "./useTimeSeriesGraph";
 
 const props = defineProps<{
   data: GraphLineHandlerResult;
   highlight: number | null;
+  hiddenSeries?: number[];
 }>();
+const isHidden = (idx: number) => !!props.hiddenSeries?.includes(idx);
 const emit = defineEmits<{
   "update:timeRange": [range: [Date, Date]];
 }>();
@@ -52,8 +55,10 @@ const graph = computed((): ECOption => {
         ),
       ];
       if (data.graphType === "stacked100") {
-        // Normalize values between 0 and 1 (or -1 and 0)
-        const [, ...values] = result;
+        // Normalize values between 0 and 1 (or -1 and 0), without the
+        // hidden series.
+        const [, ...all] = result;
+        const values = all.map((v, idx) => (isHidden(idx) ? 0 : v));
         const positiveSum = values.reduce(
           (prev, cur) => (cur > 0 ? prev + cur : prev),
           0,
@@ -204,10 +209,11 @@ const graph = computed((): ECOption => {
         .map((row, idx) => {
           const isOther = row.some((name) => name === "Other"),
             color = isOther ? dataColorGrey : dataColor;
-          if (data.graphType === "lines" && isOther) {
+          if ((data.graphType === "lines" && isOther) || isHidden(idx)) {
             return undefined;
           }
           let serie: LineSeriesOption = {
+            id: seriesId(idx),
             type: "line",
             symbol: "none",
             itemStyle: {
@@ -350,6 +356,7 @@ const graph = computed((): ECOption => {
       series: data.rows
         .map((row, idx) => {
           const serie: LineSeriesOption = {
+            id: seriesId(idx),
             type: "line",
             symbol: "none",
             xAxisIndex: uniqRowIndex(row),
@@ -382,7 +389,7 @@ const graph = computed((): ECOption => {
           };
           return serie;
         })
-        .filter((s) => s.xAxisIndex! >= 0),
+        .filter((s, idx) => s.xAxisIndex! >= 0 && !isHidden(idx)),
     };
   }
   return {};

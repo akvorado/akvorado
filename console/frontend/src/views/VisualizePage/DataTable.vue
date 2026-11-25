@@ -86,20 +86,32 @@
             v-for="row in sortedRows"
             :key="row.index"
             class="border-b border-gray-200 odd:bg-white even:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 odd:dark:bg-gray-800 even:dark:bg-gray-700"
+            :class="{ 'text-gray-400 dark:text-gray-500': isHidden(row.index) }"
             @pointerenter="highlight(row.index)"
             @pointerleave="highlight(null)"
           >
             <th scope="row">
               <div v-if="row.color" class="px-6 py-2 text-right font-medium">
-                <div
-                  class="w-5 cursor-pointer rounded"
+                <button
+                  type="button"
+                  class="block w-5 cursor-pointer rounded border-2"
                   :style="{
-                    backgroundColor: row.color,
+                    backgroundColor: isHidden(row.index)
+                      ? 'transparent'
+                      : row.color,
+                    borderColor: row.color,
                     printColorAdjust: 'exact',
                   }"
+                  :title="
+                    isHidden(row.index)
+                      ? 'Show this series in the graph'
+                      : 'Hide this series in the graph'
+                  "
+                  :aria-pressed="!isHidden(row.index)"
+                  @click="emit('toggle', row.index)"
                 >
                   &nbsp;
-                </div>
+                </button>
               </div>
             </th>
             <td
@@ -140,10 +152,13 @@ const serverConfiguration = inject(ServerConfigKey)!;
 
 const props = defineProps<{
   data: GraphLineHandlerResult | GraphSankeyHandlerResult | null;
+  hidden?: number[];
 }>();
 const emit = defineEmits<{
   highlighted: [index: number | null];
+  toggle: [index: number];
 }>();
+const isHidden = (index: number) => !!props.hidden?.includes(index);
 
 const highlight = (index: number | null) => {
   if (
@@ -154,7 +169,8 @@ const highlight = (index: number | null) => {
     emit("highlighted", null);
     return;
   }
-  emit("highlighted", index);
+  // A hidden series has nothing to highlight.
+  emit("highlighted", index !== null && isHidden(index) ? null : index);
 };
 const axes = computed(() => {
   if (!props.data) return null;
@@ -216,6 +232,30 @@ const table = computed(
     }));
     const dimensionCells = (row: string[]): Cell[] =>
       row.map((r) => ({ value: r, raw: r }));
+    // The share of each row is relative to the sum of the rows of the
+    // displayed axis, including "Other". It is meaningless for percentages.
+    const shareColumns =
+      unit === "%"
+        ? []
+        : [{ name: "Share", unit: "%", classNames: "text-right" }];
+    const shareCells = (values: number[]) => {
+      const sum = values.reduce(
+        (acc, v, idx) =>
+          data.axis[idx] === displayedAxis.value ? acc + v : acc,
+        0,
+      );
+      return (idx: number): Cell[] => {
+        if (unit === "%") return [];
+        const share = sum > 0 ? (100 * values[idx]) / sum : 0;
+        return [
+          {
+            value: `${share.toFixed(1)}%`,
+            raw: share,
+            classNames: "text-right tabular-nums",
+          },
+        ];
+      };
+    };
     if (
       data.graphType === "stacked" ||
       data.graphType === "stacked100" ||
@@ -226,6 +266,7 @@ const table = computed(
       const uniqRows = uniqWith(data.rows, isEqual),
         uniqRowIndex = (row: string[]) =>
           findIndex(uniqRows, (orow) => isEqual(row, orow));
+      const share = shareCells(data.average);
       const statColumn = (name: string) => ({
         name,
         unit,
@@ -238,6 +279,7 @@ const table = computed(
           statColumn("Max"),
           statColumn("Last"),
           statColumn("Average"),
+          ...shareColumns,
           statColumn("~95th"),
           ...(data.total
             ? [
@@ -263,8 +305,9 @@ const table = computed(
                   data.max[idx],
                   data.last[idx],
                   data.average[idx],
-                  data["95th"][idx],
                 ].map(statCell),
+                ...share(idx),
+                statCell(data["95th"][idx]),
                 ...(data.total
                   ? [
                       {
@@ -284,15 +327,21 @@ const table = computed(
           .filter(({ index }) => data.axis[index] == displayedAxis.value),
       };
     } else if (data.graphType === "sankey") {
+      const share = shareCells(data.xps);
       return {
         columns: [
           ...dimensionColumns,
           { name: "Average", unit, classNames: "text-right" },
+          ...shareColumns,
         ],
         rows: (data.rows ?? [])
           .map((row, idx) => ({
             index: idx,
-            values: [...dimensionCells(row), statCell(data.xps[idx])],
+            values: [
+              ...dimensionCells(row),
+              statCell(data.xps[idx]),
+              ...share(idx),
+            ],
           }))
           .filter(({ index }) => data.axis[index] === displayedAxis.value),
       };
