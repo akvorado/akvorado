@@ -2,7 +2,7 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
 
 <template>
-  <v-chart :option="option" />
+  <v-chart :option="option" @click="selectItem" />
 </template>
 
 <script lang="ts" setup>
@@ -10,6 +10,7 @@ import { inject, computed } from "vue";
 import { formatXps, dataColor, dataColorGrey } from "@/utils";
 import { ThemeKey } from "@/components/ThemeProvider.vue";
 import type { GraphSankeyHandlerResult } from ".";
+import type { RowSelection } from "./RowActionsMenu.vue";
 import { use, type ComposeOption } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { SankeyChart, type SankeySeriesOption } from "echarts/charts";
@@ -25,6 +26,42 @@ type ECOption = ComposeOption<SankeySeriesOption | TooltipComponentOption>;
 const props = defineProps<{
   data: GraphSankeyHandlerResult;
 }>();
+const emit = defineEmits<{
+  select: [selection: RowSelection];
+}>();
+
+// Node IDs are "Dimension: value". A link selects the values of its two nodes.
+const selectItem = (params: unknown) => {
+  const { dataType, data, event } = params as {
+    dataType?: string;
+    data?: { id?: string; source?: string; target?: string };
+    event?: { event: MouseEvent };
+  };
+  if (!event || !data) return;
+  const ids =
+    dataType === "node"
+      ? [data.id]
+      : dataType === "edge"
+        ? [data.source, data.target]
+        : [];
+  const dimensions: string[] = [],
+    values: string[] = [];
+  for (const id of ids) {
+    if (!id) return;
+    const [dimension, ...rest] = id.split(": ");
+    const value = rest.join(": ");
+    if (value === "Other") return;
+    dimensions.push(dimension);
+    values.push(value);
+  }
+  if (dimensions.length === 0) return;
+  emit("select", {
+    dimensions,
+    values,
+    x: event.event.clientX,
+    y: event.event.clientY,
+  });
+};
 
 const { isDark } = inject(ThemeKey)!;
 

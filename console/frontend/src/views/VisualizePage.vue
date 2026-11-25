@@ -17,6 +17,10 @@
           <InfoBox v-if="errorMessage" kind="error">
             <strong>Unable to fetch data!&nbsp;</strong>{{ errorMessage }}
           </InfoBox>
+          <InfoBox v-if="rowFilterError" kind="error">
+            <strong>Unable to filter on this row!&nbsp;</strong
+            >{{ rowFilterError }}
+          </InfoBox>
           <ResizeRow
             :slider-width="10"
             :height="graphHeight"
@@ -28,6 +32,7 @@
             <DataGraph
               :data="fetchedData"
               :highlight="highlightedSerie"
+              @select="(selection: RowSelection) => (selectedRow = selection)"
               @update:time-range="updateTimeRange"
             />
           </ResizeRow>
@@ -35,15 +40,23 @@
             :data="fetchedData"
             class="my-2 break-inside-avoid-page"
             @highlighted="(n) => (highlightedSerie = n)"
+            @select="(selection) => (selectedRow = selection)"
           />
         </div>
       </LoadingOverlay>
+      <RowActionsMenu
+        :selection="selectedRow"
+        @close="selectedRow = null"
+        @include="filterRow(false)"
+        @exclude="filterRow(true)"
+        @show-by="(dimension) => filterRow(false, dimension)"
+      />
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, computed } from "vue";
+import { ref, watch, computed, inject } from "vue";
 import { useFetch, type AfterFetchContext } from "@vueuse/core";
 import { useRouter, useRoute } from "vue-router";
 import { ResizeRow } from "vue-resizer";
@@ -53,6 +66,12 @@ import LoadingOverlay from "@/components/LoadingOverlay.vue";
 import RequestSummary from "./VisualizePage/RequestSummary.vue";
 import DataTable from "./VisualizePage/DataTable.vue";
 import DataGraph from "./VisualizePage/DataGraph.vue";
+import {
+  default as RowActionsMenu,
+  type RowSelection,
+} from "./VisualizePage/RowActionsMenu.vue";
+import { ServerConfigKey } from "@/components/ServerConfigProvider.vue";
+import { reverseDimension } from "@/utils";
 import {
   default as OptionsPanel,
   type ModelType,
@@ -83,6 +102,61 @@ const updateTimeRange = ([start, end]: [Date, Date]) => {
     humanStart: start.toISOString(),
     humanEnd: end.toISOString(),
   };
+};
+
+// Actions on a row selected in the table or in the graph: add its values to
+// the filter, optionally changing the dimensions, then query again.
+const serverConfiguration = inject(ServerConfigKey)!;
+const selectedRow = ref<RowSelection | null>(null);
+const rowFilterError = ref("");
+const filterRow = async (exclude: boolean, showBy?: string) => {
+  const selection = selectedRow.value;
+  selectedRow.value = null;
+  if (state.value === null || selection === null) return;
+  const current = state.value;
+  rowFilterError.value = "";
+  const response = await fetch("api/v0/console/filter/row", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      dimensions: selection.dimensions,
+      values: selection.values,
+      exclude,
+      filter: current.filter,
+      "truncate-v4": current["truncate-v4"],
+      "truncate-v6": current["truncate-v6"],
+    }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    rowFilterError.value =
+      data.message ?? `Server returned an error: ${response.status}`;
+    return;
+  }
+  if (state.value !== current) return;
+  if (!showBy) {
+    updateState({ ...current, filter: data.filter });
+    return;
+  }
+  // The selected dimensions, in either direction, are replaced by the new one.
+  const known = serverConfiguration.value?.dimensions ?? [];
+  const dimensions = [
+    ...current.dimensions.filter(
+      (dimension) =>
+        !selection.dimensions.includes(dimension) &&
+        !selection.dimensions.includes(reverseDimension(dimension, known)),
+    ),
+    showBy,
+  ];
+  updateState({
+    ...current,
+    filter: data.filter,
+    dimensions,
+    graphType:
+      current.graphType === "sankey" && dimensions.length < 2
+        ? "stacked"
+        : current.graphType,
+  });
 };
 
 // Main state

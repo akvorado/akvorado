@@ -7,14 +7,17 @@
     :option="option"
     :update-options="{ notMerge: true }"
     @brush-end="updateTimeRange"
+    @click="selectSerie"
   />
 </template>
 
 <script lang="ts" setup>
 import { inject, computed, toRef } from "vue";
-import { formatXps, dataColor, dataColorGrey } from "@/utils";
+import { formatXps, dataColor, dataColorGrey, reverseDimension } from "@/utils";
 import { ThemeKey } from "@/components/ThemeProvider.vue";
+import { ServerConfigKey } from "@/components/ServerConfigProvider.vue";
 import type { GraphLineHandlerResult } from ".";
+import type { RowSelection } from "./RowActionsMenu.vue";
 import { uniqWith, isEqual, findIndex } from "lodash-es";
 import type { TooltipCallbackDataParams } from "echarts/types/src/component/tooltip/TooltipView.d.ts";
 import type { LineSeriesOption } from "echarts/charts";
@@ -32,9 +35,40 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{
   "update:timeRange": [range: [Date, Date]];
+  select: [selection: RowSelection];
 }>();
 
 const { isDark } = inject(ThemeKey)!;
+const serverConfiguration = inject(ServerConfigKey)!;
+
+// Series IDs are the index of the row they display, as some rows do not get a
+// series.
+const serieId = (idx: number) => `row-${idx}`;
+const selectSerie = (params: unknown) => {
+  const { seriesIndex, event } = params as {
+    seriesIndex?: number;
+    event?: { event: MouseEvent };
+  };
+  const series = graph.value.series as LineSeriesOption[] | undefined;
+  const seriesId = String(series?.[seriesIndex ?? -1]?.id ?? "");
+  const idx = Number(seriesId.replace(/^row-/, "") || NaN);
+  const data = props.data;
+  if (!event || isNaN(idx) || !data.rows[idx]) return;
+  // The previous period and the "Other" rows cannot be filtered on.
+  const axis = data.axis[idx];
+  const values = data.rows[idx];
+  if (![1, 2].includes(axis) || values.length === 0) return;
+  if (values.includes("Other")) return;
+  const known = serverConfiguration.value?.dimensions ?? [];
+  emit("select", {
+    dimensions: data.dimensions.map((dimension) =>
+      axis === 2 ? reverseDimension(dimension, known) : dimension,
+    ),
+    values,
+    x: event.event.clientX,
+    y: event.event.clientY,
+  });
+};
 
 const graph = computed((): ECOption => {
   const theme = isDark.value ? "dark" : "light";
@@ -208,8 +242,10 @@ const graph = computed((): ECOption => {
             return undefined;
           }
           let serie: LineSeriesOption = {
+            id: serieId(idx),
             type: "line",
             symbol: "none",
+            triggerLineEvent: true,
             itemStyle: {
               color: color(uniqRowIndex(row), false, theme),
             },
@@ -350,8 +386,10 @@ const graph = computed((): ECOption => {
       series: data.rows
         .map((row, idx) => {
           const serie: LineSeriesOption = {
+            id: serieId(idx),
             type: "line",
             symbol: "none",
+            triggerLineEvent: true,
             xAxisIndex: uniqRowIndex(row),
             yAxisIndex: uniqRowIndex(row),
             itemStyle: {

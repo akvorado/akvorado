@@ -101,7 +101,12 @@ Below the graph, a data table displays per-series statistics including minimum,
 maximum, last, average, 95th percentile, and total values. For rate-based units
 (bits per second, packets per second, flows per second), the total column shows
 the accumulated value over the selected time range (in bytes for bit-based
-units, in packets or flows for the others).
+units, in packets or flows for the others). The button at the start of each
+row, or a click on a series of the graph (or a node or a link of a Sankey
+graph), opens a menu to add a condition to the filter to only keep these values
+or to exclude them. *Show by…* also replaces the matching dimensions with
+another one to drill down. This is not possible for *Other* or for dimensions
+displayed as a list, like AS paths and communities.
 
 The URL contains the encoded parameters and can be shared with
 others. However, the stability of the options is not currently

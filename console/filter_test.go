@@ -736,3 +736,90 @@ LIMIT 20`)).
 		},
 	})
 }
+
+func TestFilterRowHandler(t *testing.T) {
+	_, h, _, _ := NewMock(t, DefaultConfiguration())
+	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
+		{
+			Description: "include",
+			URL:         "/api/v0/console/filter/row",
+			JSONInput: helpers.M{
+				"dimensions": []string{"SrcAS", "ExporterName"},
+				"values":     []string{"2906: Netflix", "edge1"},
+			},
+			JSONOutput: helpers.M{"filter": `SrcAS = AS2906 AND ExporterName = "edge1"`},
+		}, {
+			Description: "include with a filter",
+			URL:         "/api/v0/console/filter/row",
+			JSONInput: helpers.M{
+				"filter":     "InIfBoundary = external OR InIfBoundary = internal",
+				"dimensions": []string{"SrcAS"},
+				"values":     []string{"2906: Netflix"},
+			},
+			JSONOutput: helpers.M{
+				"filter": "(InIfBoundary = external OR InIfBoundary = internal) AND SrcAS = AS2906",
+			},
+		}, {
+			Description: "include with a filter ending with a comment",
+			URL:         "/api/v0/console/filter/row",
+			JSONInput: helpers.M{
+				"filter":     "InIfBoundary = external -- transit",
+				"dimensions": []string{"SrcAS"},
+				"values":     []string{"2906: Netflix"},
+			},
+			JSONOutput: helpers.M{
+				"filter": "(InIfBoundary = external -- transit\n) AND SrcAS = AS2906",
+			},
+		}, {
+			Description: "exclude one dimension",
+			URL:         "/api/v0/console/filter/row",
+			JSONInput: helpers.M{
+				"dimensions":  []string{"SrcAddr"},
+				"values":      []string{"192.0.2.0"},
+				"exclude":     true,
+				"truncate-v4": 24,
+			},
+			JSONOutput: helpers.M{"filter": "NOT SrcAddr << 192.0.2.0/24"},
+		}, {
+			Description: "exclude several dimensions",
+			URL:         "/api/v0/console/filter/row",
+			JSONInput: helpers.M{
+				"filter":     "InIfBoundary = external",
+				"dimensions": []string{"SrcAS", "DstPort"},
+				"values":     []string{"2906: Netflix", "443/https"},
+				"exclude":    true,
+			},
+			JSONOutput: helpers.M{
+				"filter": "(InIfBoundary = external) AND NOT (SrcAS = AS2906 AND DstPort = 443)",
+			},
+		}, {
+			Description: "value mismatch",
+			URL:         "/api/v0/console/filter/row",
+			JSONInput: helpers.M{
+				"dimensions": []string{"SrcAS", "DstPort"},
+				"values":     []string{"2906: Netflix"},
+			},
+			StatusCode: 400,
+			JSONOutput: helpers.M{"message": "Expecting one value per dimension"},
+		}, {
+			Description: "unsupported dimension",
+			URL:         "/api/v0/console/filter/row",
+			JSONInput: helpers.M{
+				"dimensions": []string{"DstASPath"},
+				"values":     []string{"64500 64501"},
+			},
+			StatusCode: 400,
+			JSONOutput: helpers.M{"message": "Cannot filter on DstASPath values"},
+		}, {
+			Description: "invalid current filter",
+			URL:         "/api/v0/console/filter/row",
+			JSONInput: helpers.M{
+				"filter":     `InIfName = "`,
+				"dimensions": []string{"SrcAS"},
+				"values":     []string{"2906: Netflix"},
+			},
+			StatusCode: 400,
+			JSONOutput: helpers.M{"message": "at line 1, position 13: string literal not terminated"},
+		},
+	})
+}

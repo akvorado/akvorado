@@ -160,3 +160,60 @@ func TestReverseDirection(t *testing.T) {
 		t.Fatalf("Reverse() (-got, +want):\n%s", diff)
 	}
 }
+
+func TestQueryColumnToFilter(t *testing.T) {
+	sch := schema.NewMock(t).EnableAllColumns()
+	cases := []struct {
+		Column     string
+		Value      string
+		TruncateV4 int
+		TruncateV6 int
+		Expected   string
+		Error      bool
+	}{
+		{Column: "SrcAS", Value: "2906: Netflix", Expected: "SrcAS = AS2906"},
+		{Column: "Dst2ndAS", Value: "0: ???", Expected: "Dst2ndAS = AS0"},
+		{Column: "SrcAS", Value: "Netflix", Error: true},
+		{Column: "DstPort", Value: "443/https", Expected: "DstPort = 443"},
+		{Column: "SrcPort", Value: "51234", Expected: "SrcPort = 51234"},
+		{Column: "InIfSpeed", Value: "10000", Expected: "InIfSpeed = 10000"},
+		{Column: "TCPFlags", Value: "SA", Error: true},
+		{Column: "SrcAddr", Value: "192.0.2.10", Expected: "SrcAddr = 192.0.2.10"},
+		{Column: "SrcAddr", Value: "192.0.2.0", TruncateV4: 24, TruncateV6: 64, Expected: "SrcAddr << 192.0.2.0/24"},
+		{Column: "DstAddr", Value: "2001:db8::", TruncateV4: 24, TruncateV6: 64, Expected: "DstAddr << 2001:db8::/64"},
+		{Column: "SrcAddr", Value: "192.0.2.10", TruncateV4: 32, TruncateV6: 128, Expected: "SrcAddr = 192.0.2.10"},
+		{Column: "ExporterAddress", Value: "192.0.2.1", TruncateV4: 24, Expected: "ExporterAddress = 192.0.2.1"},
+		{Column: "SrcAddr", Value: "nothing", Error: true},
+		{Column: "DstNetPrefix", Value: "192.0.2.0/24", Expected: "DstNetPrefix = 192.0.2.0/24"},
+		{Column: "SrcMAC", Value: "00:11:22:33:44:55", Expected: "SrcMAC = 00:11:22:33:44:55"},
+		{Column: "InIfBoundary", Value: "external", Expected: "InIfBoundary = external"},
+		{Column: "EType", Value: "IPv6", Expected: "EType = IPv6"},
+		{Column: "EType", Value: "???", Error: true},
+		{Column: "Proto", Value: "TCP", Expected: `Proto = "TCP"`},
+		{Column: "Proto", Value: "???", Error: true},
+		{Column: "ExporterName", Value: "edge1", Expected: `ExporterName = "edge1"`},
+		{Column: "InIfDescription", Value: `Transit "A" \ B`, Expected: `InIfDescription = "Transit \"A\" \\ B"`},
+		{Column: "InIfDescription", Value: "two\nlines", Error: true},
+		{Column: "DstASPath", Value: "64500 64501", Error: true},
+		{Column: "DstCommunities", Value: "64500:1", Error: true},
+		{Column: "PacketSizeBucket", Value: "64-127", Error: true},
+	}
+	for _, tc := range cases {
+		qc := query.NewColumn(tc.Column)
+		if err := qc.Validate(sch); err != nil {
+			t.Fatalf("Validate(%q) error:\n%+v", tc.Column, err)
+		}
+		got, err := qc.ToFilter(sch, tc.Value, tc.TruncateV4, tc.TruncateV6)
+		if err != nil && !tc.Error {
+			t.Errorf("ToFilter(%q, %q) error:\n%+v", tc.Column, tc.Value, err)
+			continue
+		}
+		if err == nil && tc.Error {
+			t.Errorf("ToFilter(%q, %q) did not error", tc.Column, tc.Value)
+			continue
+		}
+		if diff := helpers.Diff(got, tc.Expected); diff != "" {
+			t.Errorf("ToFilter(%q, %q) (-got, +want):\n%s", tc.Column, tc.Value, diff)
+		}
+	}
+}
