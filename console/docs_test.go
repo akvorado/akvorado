@@ -356,6 +356,25 @@ func TestServeDocsIndexWithURLPrefix(t *testing.T) {
 	}
 }
 
+func TestServeLLMsTxt(t *testing.T) {
+	_, h, _, _ := NewMock(t, DefaultConfiguration())
+
+	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
+		{
+			Description: "browser gets the index too",
+			URL:         "/llms.txt",
+			Header:      http.Header{"Accept": []string{"text/html"}},
+			ContentType: "text/markdown; charset=utf-8",
+			FirstLines: []string{
+				"# Akvorado documentation",
+				"",
+				"- [Introduction](/docs/intro)",
+				"- **Tutorials**",
+			},
+		},
+	})
+}
+
 func TestServeImages(t *testing.T) {
 	for _, live := range []bool{false, true} {
 		name := "livefs"

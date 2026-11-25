@@ -13,10 +13,11 @@ identified with a specific icon:
 ## Unreleased
 
 - ✨ *console*: add authorization rules to restrict the flows a user can see
-- 🌱 *console*: complete TCP flags in filters
 - 🩹 *orchestrator*: do not recreate dictionaries when ClickHouse hides their URL or password
 - 🩹 *console*: do not offer to save an empty filter
 - 🌱 *docker*: update Grafana to 13.3
+- 🌱 *console*: complete TCP flags in filters
+- 🌱 *docs*: serve the documentation index on `/llms.txt`
 
 ## 2026.10.1 - 2026-10-25
 

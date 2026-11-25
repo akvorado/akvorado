@@ -59,6 +59,19 @@ scenes.
 The [changelog](99-changelog.md) lists the changes of each version. Read it
 before every upgrade.
 
+## Using an LLM
+
+An AI assistant can read this documentation. Give it the URL of the
+documentation of your own *Akvorado* instance or use
+[demo.akvorado.net/docs](https://demo.akvorado.net/docs), if your instance is
+not accessible. For example:
+
+```text
+Read the Akvorado documentation at https://akvorado.example.net/docs and
+tell me what to check: my routers send flows, but the interface names are
+empty in the console.
+```
+
 ## Getting help
 
 > [!IMPORTANT]

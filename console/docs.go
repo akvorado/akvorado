@@ -316,6 +316,19 @@ func writeMarkdownDocument(w http.ResponseWriter, markdown []byte) {
 	w.Write(markdownLinkRegexp.ReplaceAll(markdown, []byte("](${2}${3})")))
 }
 
+// llmsTxtHandlerFunc answers with the index of the documentation, at the
+// location where LLM tools look for it.
+func (c *Component) llmsTxtHandlerFunc(w http.ResponseWriter, _ *http.Request) {
+	index := c.documentIndex()
+	if index == nil {
+		http.Error(w, "documentation not available", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", fmt.Sprintf("%s; charset=utf-8", docsTypeMarkdown))
+	w.Header().Set("Cache-Control", "max-age=300, public")
+	w.Write(index)
+}
+
 // documentFromPath returns the document a URL of the web interface points to.
 // An empty name is for the index. The second value is false when the URL is not
 // a documentation page.

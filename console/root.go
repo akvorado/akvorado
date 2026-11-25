@@ -107,6 +107,7 @@ func (c *Component) Start() error {
 	c.d.HTTP.AddHandler("/", http.HandlerFunc(c.defaultHandlerFunc))
 	c.d.HTTP.AddHandler("/assets/", http.StripPrefix("/assets/", http.HandlerFunc(c.staticAssetsHandlerFunc)))
 	c.d.HTTP.AddHandler("/assets/docs/", http.StripPrefix("/assets/docs/", http.HandlerFunc(c.docAssetsHandlerFunc)))
+	c.d.HTTP.AddHandler("/llms.txt", http.HandlerFunc(c.llmsTxtHandlerFunc))
 	// Dynamic assets
 	endpoint := c.d.HTTP.APIRouter.Group("/api/v0/console",
 		c.d.Auth.UserAuthentication(), c.withFlowsTables(), c.authorization())
