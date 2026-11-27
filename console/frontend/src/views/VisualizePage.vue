@@ -56,7 +56,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, computed, inject } from "vue";
+import { ref, watch, computed } from "vue";
 import { useFetch, type AfterFetchContext } from "@vueuse/core";
 import { useRouter, useRoute } from "vue-router";
 import { ResizeRow } from "vue-resizer";
@@ -70,8 +70,6 @@ import {
   default as RowActionsMenu,
   type RowSelection,
 } from "./VisualizePage/RowActionsMenu.vue";
-import { ServerConfigKey } from "@/components/ServerConfigProvider.vue";
-import { reverseDimension } from "@/utils";
 import {
   default as OptionsPanel,
   type ModelType,
@@ -106,7 +104,6 @@ const updateTimeRange = ([start, end]: [Date, Date]) => {
 
 // Actions on a row selected in the table or in the graph: add its values to
 // the filter, optionally changing the dimensions, then query again.
-const serverConfiguration = inject(ServerConfigKey)!;
 const selectedRow = ref<RowSelection | null>(null);
 const rowFilterError = ref("");
 const filterRow = async (exclude: boolean, showBy?: string) => {
@@ -138,13 +135,10 @@ const filterRow = async (exclude: boolean, showBy?: string) => {
     updateState({ ...current, filter: data.filter });
     return;
   }
-  // The selected dimensions, in either direction, are replaced by the new one.
-  const known = serverConfiguration.value?.dimensions ?? [];
+  // The selected dimensions are replaced by the new one.
   const dimensions = [
     ...current.dimensions.filter(
-      (dimension) =>
-        !selection.dimensions.includes(dimension) &&
-        !selection.dimensions.includes(reverseDimension(dimension, known)),
+      (dimension) => !selection.dimensions.includes(dimension),
     ),
     showBy,
   ];

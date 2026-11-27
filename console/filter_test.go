@@ -779,7 +779,7 @@ func TestFilterRowHandler(t *testing.T) {
 				"exclude":     true,
 				"truncate-v4": 24,
 			},
-			JSONOutput: helpers.M{"filter": "NOT SrcAddr << 192.0.2.0/24"},
+			JSONOutput: helpers.M{"filter": "NOT SrcAddr = 192.0.2.0/24"},
 		}, {
 			Description: "exclude several dimensions",
 			URL:         "/api/v0/console/filter/row",

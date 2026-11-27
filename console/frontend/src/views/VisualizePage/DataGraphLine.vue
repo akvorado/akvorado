@@ -13,9 +13,8 @@
 
 <script lang="ts" setup>
 import { inject, computed, toRef } from "vue";
-import { formatXps, dataColor, dataColorGrey, reverseDimension } from "@/utils";
+import { formatXps, dataColor, dataColorGrey } from "@/utils";
 import { ThemeKey } from "@/components/ThemeProvider.vue";
-import { ServerConfigKey } from "@/components/ServerConfigProvider.vue";
 import type { GraphLineHandlerResult } from ".";
 import type { RowSelection } from "./RowActionsMenu.vue";
 import { uniqWith, isEqual, findIndex } from "lodash-es";
@@ -39,16 +38,13 @@ const emit = defineEmits<{
 }>();
 
 const { isDark } = inject(ThemeKey)!;
-const serverConfiguration = inject(ServerConfigKey)!;
 
-// Series IDs are the index of the row they display, as some rows do not get a
-// series.
-const serieId = (idx: number) => `row-${idx}`;
 const selectSerie = (params: unknown) => {
   const { seriesIndex, event } = params as {
     seriesIndex?: number;
     event?: { event: MouseEvent };
   };
+  // Series IDs are "row-<index>", as some rows do not get a series.
   const series = graph.value.series as LineSeriesOption[] | undefined;
   const seriesId = String(series?.[seriesIndex ?? -1]?.id ?? "");
   const idx = Number(seriesId.replace(/^row-/, "") || NaN);
@@ -59,11 +55,9 @@ const selectSerie = (params: unknown) => {
   const values = data.rows[idx];
   if (![1, 2].includes(axis) || values.length === 0) return;
   if (values.includes("Other")) return;
-  const known = serverConfiguration.value?.dimensions ?? [];
+  // The filter applies to the forward direction, even for the reverse axis.
   emit("select", {
-    dimensions: data.dimensions.map((dimension) =>
-      axis === 2 ? reverseDimension(dimension, known) : dimension,
-    ),
+    dimensions: data.dimensions,
     values,
     x: event.event.clientX,
     y: event.event.clientY,
@@ -242,7 +236,7 @@ const graph = computed((): ECOption => {
             return undefined;
           }
           let serie: LineSeriesOption = {
-            id: serieId(idx),
+            id: `row-${idx}`,
             type: "line",
             symbol: "none",
             triggerLineEvent: true,
@@ -386,7 +380,7 @@ const graph = computed((): ECOption => {
       series: data.rows
         .map((row, idx) => {
           const serie: LineSeriesOption = {
-            id: serieId(idx),
+            id: `row-${idx}`,
             type: "line",
             symbol: "none",
             triggerLineEvent: true,

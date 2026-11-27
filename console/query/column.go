@@ -244,7 +244,7 @@ func (qc Column) ToFilter(sch *schema.Component, value string, truncateV4, trunc
 			}
 		}
 		if bits < addr.BitLen() {
-			return fmt.Sprintf("%s << %s", name, netip.PrefixFrom(addr, bits).Masked()), nil
+			return fmt.Sprintf("%s = %s", name, netip.PrefixFrom(addr, bits).Masked()), nil
 		}
 		return fmt.Sprintf("%s = %s", name, addr), nil
 	case "prefix":
@@ -284,7 +284,7 @@ func quoteFilterString(value string) (string, error) {
 		return "", errors.New("string with a line break")
 	}
 	escaped := strings.NewReplacer(`\`, `\\`, `"`, `\"`).Replace(value)
-	return `"` + escaped + `"`, nil
+	return fmt.Sprintf(`"%s"`, escaped), nil
 }
 
 // DictionaryLookup looks up the name matching a key in a ClickHouse dictionary.

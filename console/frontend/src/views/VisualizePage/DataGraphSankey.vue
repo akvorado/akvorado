@@ -7,8 +7,9 @@
 
 <script lang="ts" setup>
 import { inject, computed } from "vue";
-import { formatXps, dataColor, dataColorGrey } from "@/utils";
+import { formatXps, dataColor, dataColorGrey, reverseDimension } from "@/utils";
 import { ThemeKey } from "@/components/ThemeProvider.vue";
+import { ServerConfigKey } from "@/components/ServerConfigProvider.vue";
 import type { GraphSankeyHandlerResult } from ".";
 import type { RowSelection } from "./RowActionsMenu.vue";
 import { use, type ComposeOption } from "echarts/core";
@@ -30,14 +31,21 @@ const emit = defineEmits<{
   select: [selection: RowSelection];
 }>();
 
+const serverConfiguration = inject(ServerConfigKey)!;
+
 // Node IDs are "Dimension: value". A link selects the values of its two nodes.
 const selectItem = (params: unknown) => {
-  const { dataType, data, event } = params as {
+  const { seriesIndex, dataType, data, event } = params as {
+    seriesIndex?: number;
     dataType?: string;
     data?: { id?: string; source?: string; target?: string };
     event?: { event: MouseEvent };
   };
   if (!event || !data) return;
+  // The second half of a bidirectional graph is labeled with reversed
+  // dimensions, but the filter applies to the forward direction.
+  const reverse = props.data?.bidirectional && seriesIndex === 1;
+  const known = serverConfiguration.value?.dimensions ?? [];
   const ids =
     dataType === "node"
       ? [data.id]
@@ -51,7 +59,7 @@ const selectItem = (params: unknown) => {
     const [dimension, ...rest] = id.split(": ");
     const value = rest.join(": ");
     if (value === "Other") return;
-    dimensions.push(dimension);
+    dimensions.push(reverse ? reverseDimension(dimension, known) : dimension);
     values.push(value);
   }
   if (dimensions.length === 0) return;

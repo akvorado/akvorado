@@ -126,7 +126,14 @@ const selectRow = (values: string[], event: MouseEvent) => {
   ).getBoundingClientRect();
   // The menu opens below the button, or above it in the lower half.
   const y = top > window.innerHeight / 2 ? top : bottom;
-  emit("select", { dimensions: dimensions.value, values, x: left, y });
+  // The reverse axis displays reversed dimensions, but the filter applies to
+  // the forward direction.
+  emit("select", {
+    dimensions: props.data?.dimensions ?? [],
+    values,
+    x: left,
+    y,
+  });
 };
 // "Other" folds everything outside the top values: it cannot be expressed as a
 // filter.

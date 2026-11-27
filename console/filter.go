@@ -134,7 +134,7 @@ func (c *Component) filterRowHandlerFunc(w http.ResponseWriter, req *http.Reques
 		if len(conditions) > 1 {
 			condition = fmt.Sprintf("(%s)", condition)
 		}
-		condition = "NOT " + condition
+		condition = fmt.Sprintf("NOT %s", condition)
 	}
 	if current := strings.TrimSpace(input.Filter); current != "" {
 		// A comment on the last line would swallow the closing parenthesis.
@@ -145,7 +145,10 @@ func (c *Component) filterRowHandlerFunc(w http.ResponseWriter, req *http.Reques
 		condition = fmt.Sprintf("(%s) AND %s", current, condition)
 	}
 	if _, err := filter.Parse("", []byte(condition),
-		filter.GlobalStore("meta", &filter.Meta{Schema: c.d.Schema})); err != nil {
+		filter.GlobalStore("meta", &filter.Meta{
+			Schema:   c.d.Schema,
+			Database: c.d.ClickHouseDB.DatabaseName(),
+		})); err != nil {
 		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": filter.HumanError(err)})
 		return
 	}
