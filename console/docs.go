@@ -72,9 +72,9 @@ var (
 	// web interface.
 	docParser = parser.New(
 		parser.WithExtensions(
-			extension.TableParser,
-			extension.TypographerParser,
-			highlighting.Parser,
+			extension.NewTableParser(),
+			extension.NewTypographerParser(),
+			highlighting.NewParser(),
 			admonitionParser,
 		),
 		parser.WithAutoHeadingID(),
@@ -84,7 +84,7 @@ var (
 	)
 	docRenderer = html.New(
 		html.WithExtensions(
-			extension.TableHTMLRenderer,
+			extension.NewTableHTMLRenderer(),
 			highlighting.NewHTMLRenderer(
 				highlighting.WithCustomStyle(draculaStyle),
 			),
