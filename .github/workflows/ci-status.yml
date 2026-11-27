@@ -1,0 +1,41 @@
+---
+name: CI status
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+
+permissions: {}
+
+jobs:
+  status:
+    name: Report CI status
+    runs-on: ubuntu-latest
+    if: >-
+      github.repository_owner == 'akvorado' &&
+      github.event.workflow_run.event == 'pull_request'
+    steps:
+      - uses: actions/create-github-app-token@v3.3.0
+        id: app-token
+        with:
+          client-id: ${{ secrets.AKVORADO_APP_ID }}
+          private-key: ${{ secrets.AKVORADO_APP_KEY }}
+      - name: Set commit status
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          URL: ${{ github.event.workflow_run.html_url }}
+        run: |
+          if [ "$CONCLUSION" = success ]; then
+            state=success
+          else
+            state=failure
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$SHA" \
+            -f state="$state" \
+            -f context="CI OK" \
+            -f description="CI run: $CONCLUSION" \
+            -f target_url="$URL"
