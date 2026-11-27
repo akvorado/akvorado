@@ -56,4 +56,16 @@ export function reverseDimension(name: string, known: readonly string[]) {
   return name;
 }
 
+// Serialize rows as CSV (RFC 4180). Strings starting with a character
+// interpreted as a formula by spreadsheets are prefixed with a quote to
+// prevent CSV injection, as dimension values can come from the network.
+export function toCSV(rows: readonly (readonly (string | number)[])[]) {
+  const escape = (value: string | number) => {
+    if (typeof value === "number") return String(value);
+    const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+    return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+  };
+  return rows.map((row) => row.map(escape).join(",")).join("\r\n") + "\r\n";
+}
+
 export { dataColor, dataColorGrey } from "./palette.js";

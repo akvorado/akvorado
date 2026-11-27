@@ -101,7 +101,10 @@ Below the graph, a data table displays per-series statistics including minimum,
 maximum, last, average, 95th percentile, and total values. For rate-based units
 (bits per second, packets per second, flows per second), the total column shows
 the accumulated value over the selected time range (in bytes for bit-based
-units, in packets or flows for the others).
+units, in packets or flows for the others). The *share* column is the part of
+each row in the average of all the rows. Columns can be sorted by clicking on
+their header and the table can be downloaded as CSV. Clicking on the color of a
+row hides or shows its series in the graph.
 
 The URL contains the encoded parameters and can be shared with
 others. However, the stability of the options is not currently

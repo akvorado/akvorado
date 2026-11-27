@@ -20,6 +20,7 @@ export type GraphLineHandlerInput = GraphSankeyHandlerInput & {
 export type GraphSankeyHandlerOutput = {
   rows: string[][];
   xps: number[];
+  share?: number[];
   axis: number[];
   "axis-names": Record<number, string>;
   nodes: { name: string; axis: number }[];
@@ -42,6 +43,7 @@ export type GraphLineHandlerOutput = {
   max: number[];
   last: number[];
   "95th": number[];
+  share?: number[];
 };
 export type GraphSankeyHandlerResult = GraphSankeyHandlerOutput & {
   graphType: Extract<GraphType, "sankey">;

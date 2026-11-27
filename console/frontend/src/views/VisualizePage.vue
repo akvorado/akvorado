@@ -28,13 +28,16 @@
             <DataGraph
               :data="fetchedData"
               :highlight="highlightedSerie"
+              :hidden-series="hiddenSeries"
               @update:time-range="updateTimeRange"
             />
           </ResizeRow>
           <DataTable
             :data="fetchedData"
             class="my-2 break-inside-avoid-page"
+            :hidden="hiddenSeries"
             @highlighted="(n) => (highlightedSerie = n)"
+            @toggle="toggleSerie"
           />
         </div>
       </LoadingOverlay>
@@ -72,6 +75,16 @@ const props = defineProps<{ routeState?: string }>();
 
 const graphHeight = ref(500);
 const highlightedSerie = ref<number | null>(null);
+
+// Series hidden from the graph, by row index. They are kept while the rows do
+// not change, notably when the graph is refreshed.
+const hiddenSeries = ref<number[]>([]);
+const toggleSerie = (index: number) => {
+  if (highlightedSerie.value === index) highlightedSerie.value = null;
+  hiddenSeries.value = hiddenSeries.value.includes(index)
+    ? hiddenSeries.value.filter((i) => i !== index)
+    : [...hiddenSeries.value, index];
+};
 
 const updateTimeRange = ([start, end]: [Date, Date]) => {
   if (state.value === null) return;
@@ -147,6 +160,12 @@ const encodedState = computed(() => encodeState(state.value));
 const fetchedData = ref<
   GraphLineHandlerResult | GraphSankeyHandlerResult | null
 >(null);
+watch(
+  () => fetchedData.value?.rows,
+  (rows, previous) => {
+    if (!isEqual(rows, previous)) hiddenSeries.value = [];
+  },
+);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const orderedJSONPayload = <T extends Record<string, any>>(input: T): T => {
   return Object.keys(input)

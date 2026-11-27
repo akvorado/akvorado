@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 import { describe, expect, it } from "vitest";
-import { formatXps, compareFields, reverseDimension } from "./index";
+import { formatXps, compareFields, reverseDimension, toCSV } from "./index";
 
 describe("formatXps", () => {
   it("formats small values without suffix", () => {
@@ -122,5 +122,28 @@ describe("reverseDimension", () => {
   it("keeps dimensions whose opposite is unknown", () => {
     expect(reverseDimension("SrcNetName", known)).toBe("SrcNetName");
     expect(reverseDimension("SrcAS", [])).toBe("SrcAS");
+  });
+});
+
+describe("toCSV", () => {
+  it("joins fields and rows", () => {
+    expect(
+      toCSV([
+        ["SrcAS", "Max (bps)"],
+        ["64500: Example", 1500.5],
+      ]),
+    ).toBe("SrcAS,Max (bps)\r\n64500: Example,1500.5\r\n");
+  });
+
+  it("quotes fields with special characters", () => {
+    expect(toCSV([["a,b", 'say "hi"', "two\nlines"]])).toBe(
+      '"a,b","say ""hi""","two\nlines"\r\n',
+    );
+  });
+
+  it("neutralizes formulas in strings only", () => {
+    expect(toCSV([["=1+1", "@cmd", "+33", -5]])).toBe(
+      "'=1+1,'@cmd,'+33,-5\r\n",
+    );
   });
 });

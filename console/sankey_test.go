@@ -399,6 +399,12 @@ func TestSankeyHandler(t *testing.T) {
 					621,
 					159,
 				},
+				"share": []float64{
+					11.55, 11.31, 9.07, 8.64, 7.17, 7.15,
+					5.58, 5.19, 4.77, 4.75, 4.33, 3.68,
+					3.48, 3.13, 2.96, 2.67,
+					1.62, 1.16, 0.86, 0.74, 0.19,
+				},
 				"axis": []int{
 					1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 					1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -567,6 +573,7 @@ func TestSankeyHandlerBidirectional(t *testing.T) {
 					{"AS100", "Other"},
 				},
 				"xps":        []int{9000, 7000, 5000, 3000, 8000, 4000, 2000},
+				"share":      []float64{37.5, 29.17, 20.83, 12.5, 57.14, 28.57, 14.29},
 				"axis":       []int{1, 1, 1, 1, 2, 2, 2},
 				"axis-names": map[int]string{1: "Direct", 2: "Reverse"},
 				"nodes": []helpers.M{

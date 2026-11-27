@@ -69,6 +69,10 @@ export { graphic };
 
 export const rowName = (row: string[]) => row.join(" — ") || "Total";
 
+// Series are identified by the index of the row they display, as some rows do
+// not get a series.
+export const seriesId = (index: number) => `row-${index}`;
+
 const commonGraph: ECOption = {
   backgroundColor: "transparent",
   animationDuration: 500,
@@ -133,10 +137,11 @@ export function useTimeSeriesGraph(
   watch(
     () => [highlight.value, data.value] as const,
     ([index]) => {
-      chartComponent.value?.dispatchAction({
-        type: "highlight",
-        seriesIndex: index,
-      });
+      chartComponent.value?.dispatchAction(
+        index === null
+          ? { type: "highlight", seriesIndex: index }
+          : { type: "highlight", seriesId: seriesId(index) },
+      );
     },
   );
 
