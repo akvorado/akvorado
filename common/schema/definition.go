@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"akvorado/common/helpers/bimap"
+	"akvorado/common/pb"
 
 	"github.com/bits-and-blooms/bitset"
 	"google.golang.org/protobuf/encoding/protowire"
@@ -225,6 +226,7 @@ const (
 	ColumnSrcOuterAddr
 	ColumnDstOuterAddr
 	ColumnIPOuterTos
+	ColumnDecapProto
 
 	// ColumnLast points to after the last static column, custom dictionaries
 	// (dynamic columns) come after ColumnLast
@@ -557,6 +559,13 @@ END`,
 				ClickHouseCodec:    "ZSTD(1)",
 			},
 			{Key: ColumnIPOuterTos, Disabled: true, Group: ColumnGroupOuter, ParserType: "uint", ClickHouseType: "UInt8"},
+			{
+				Key:            ColumnDecapProto,
+				Disabled:       true,
+				Group:          ColumnGroupOuter,
+				ParserType:     "string",
+				ClickHouseType: fmt.Sprintf("Enum8('none' = %d, 'ipip' = %d, 'gre' = %d, 'vxlan' = %d, 'srv6' = %d)", pb.RawFlow_DECAP_NONE, pb.RawFlow_DECAP_IPIP, pb.RawFlow_DECAP_GRE, pb.RawFlow_DECAP_VXLAN, pb.RawFlow_DECAP_SRV6),
+			},
 		},
 	}.finalize()
 }
