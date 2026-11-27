@@ -10,7 +10,9 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 2026.11.0-beta.1 - 2026-11-27
+
+This beta release is published to be deployed on `demo.akvorado.net`.
 
 - 💥 *demo-exporter*: replace the spec-based flow generation with a generative neural network
 - ✨ *console*: add authorization rules to restrict the flows a user can see
