@@ -14,7 +14,8 @@ jobs:
     permissions:
       pull-requests: read
     if: |
-      !startsWith(github.event.head_commit.message, 'build: update Nix dependency hashes') ||
+      !(startsWith(github.event.head_commit.message, 'build: update Nix dependency hashes') ||
+        startsWith(github.event.head_commit.message, 'build: update PGO profile')) ||
        github.ref_type == 'tag'
     steps:
       - name: Detect package ecosystem from changed files
