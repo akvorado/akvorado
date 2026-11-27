@@ -16,7 +16,7 @@ require (
 	github.com/cenkalti/backoff/v7 v7.0.3
 	github.com/cilium/ebpf v0.22.0
 	github.com/eapache/go-resiliency v1.7.0
-	github.com/expr-lang/expr v1.18.0
+	github.com/expr-lang/expr v1.18.1
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/gaissmai/bart v0.30.0
 	github.com/georgeyanev/go-sctp v1.1.2
