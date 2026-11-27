@@ -6,7 +6,12 @@
 package query
 
 import (
+	"errors"
 	"fmt"
+	"net"
+	"net/netip"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"akvorado/common/constants"
@@ -194,6 +199,92 @@ func (qc Column) ToSQLSelect(sch *schema.Component, database string) sb.Expr {
 		}
 		return self
 	}
+}
+
+var filterKeyword = regexp.MustCompile(`^[A-Za-z0-9]+$`)
+
+// ToFilter returns a filter condition matching a value displayed by
+// ToSQLSelect. The truncation lengths are the ones used for the query
+// returning the value: a truncated address is matched as a subnet.
+func (qc Column) ToFilter(sch *schema.Component, value string, truncateV4, truncateV6 int) (string, error) {
+	key := qc.Key()
+	name := qc.String()
+	col, _ := sch.LookupColumnByKey(key)
+	unsupported := fmt.Errorf("cannot filter on %s values", name)
+	invalid := fmt.Errorf("cannot filter on %s value %q", name, value)
+	switch key {
+	case schema.ColumnTCPFlags:
+		return "", unsupported
+	case schema.ColumnSrcPort, schema.ColumnDstPort:
+		value, _, _ = strings.Cut(value, "/")
+	}
+	switch col.ParserType {
+	case "asn":
+		asn, _, _ := strings.Cut(value, ":")
+		if _, err := strconv.ParseUint(asn, 10, 32); err != nil {
+			return "", invalid
+		}
+		return fmt.Sprintf("%s = AS%s", name, asn), nil
+	case "uint":
+		if _, err := strconv.ParseUint(value, 10, 64); err != nil {
+			return "", invalid
+		}
+		return fmt.Sprintf("%s = %s", name, value), nil
+	case "ip":
+		addr, err := netip.ParseAddr(value)
+		if err != nil {
+			return "", invalid
+		}
+		bits := addr.BitLen()
+		if col.ConsoleTruncateIP {
+			if addr.Is4() && truncateV4 > 0 {
+				bits = truncateV4
+			} else if addr.Is6() && truncateV6 > 0 {
+				bits = truncateV6
+			}
+		}
+		if bits < addr.BitLen() {
+			return fmt.Sprintf("%s = %s", name, netip.PrefixFrom(addr, bits).Masked()), nil
+		}
+		return fmt.Sprintf("%s = %s", name, addr), nil
+	case "prefix":
+		prefix, err := netip.ParsePrefix(value)
+		if err != nil {
+			return "", invalid
+		}
+		return fmt.Sprintf("%s = %s", name, prefix), nil
+	case "mac":
+		if _, err := net.ParseMAC(value); err != nil {
+			return "", invalid
+		}
+		return fmt.Sprintf("%s = %s", name, value), nil
+	case "boundary", "direction", "etype":
+		if !filterKeyword.MatchString(value) {
+			return "", invalid
+		}
+		return fmt.Sprintf("%s = %s", name, value), nil
+	case "proto", "string":
+		// Unknown protocols are all displayed the same way.
+		if col.ParserType == "proto" && value == "???" {
+			return "", invalid
+		}
+		quoted, err := quoteFilterString(value)
+		if err != nil {
+			return "", invalid
+		}
+		return fmt.Sprintf("%s = %s", name, quoted), nil
+	}
+	return "", unsupported
+}
+
+// quoteFilterString quotes a string for the filter language. A string literal
+// cannot span several lines.
+func quoteFilterString(value string) (string, error) {
+	if strings.ContainsAny(value, "\r\n") {
+		return "", errors.New("string with a line break")
+	}
+	escaped := strings.NewReplacer(`\`, `\\`, `"`, `\"`).Replace(value)
+	return fmt.Sprintf(`"%s"`, escaped), nil
 }
 
 // DictionaryLookup looks up the name matching a key in a ClickHouse dictionary.

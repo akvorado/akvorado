@@ -38,6 +38,9 @@
               scope="col"
               :class="{ 'px-6 py-2': table.rows.some((r) => r.color) }"
             ></th>
+            <th scope="col" class="print:hidden">
+              <span class="sr-only">Actions</span>
+            </th>
             <th
               v-for="column in table.columns"
               :key="column.name"
@@ -70,6 +73,18 @@
                 </div>
               </div>
             </th>
+            <td class="whitespace-nowrap py-2 print:hidden">
+              <button
+                v-if="row.filterable"
+                type="button"
+                title="Filter on this row"
+                aria-haspopup="menu"
+                class="cursor-pointer rounded p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-700 dark:hover:bg-gray-600 dark:hover:text-gray-100"
+                @click="selectRow(row.dimensions, $event)"
+              >
+                <DotsVerticalIcon class="h-4 w-4" aria-hidden="true" />
+              </button>
+            </td>
             <td
               v-for="(value, idx) in row.values"
               :key="idx"
@@ -87,11 +102,13 @@
 
 <script lang="ts" setup>
 import { computed, inject, ref } from "vue";
+import { DotsVerticalIcon } from "@heroicons/vue/solid";
 import { uniqWith, isEqual, findIndex, takeWhile, toPairs } from "lodash-es";
 import { formatXps, dataColor, dataColorGrey, reverseDimension } from "@/utils";
 import { ThemeKey } from "@/components/ThemeProvider.vue";
 import { ServerConfigKey } from "@/components/ServerConfigProvider.vue";
 import type { GraphLineHandlerResult, GraphSankeyHandlerResult } from ".";
+import type { RowSelection } from "./RowActionsMenu.vue";
 const { isDark } = inject(ThemeKey)!;
 const serverConfiguration = inject(ServerConfigKey)!;
 
@@ -100,7 +117,28 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{
   highlighted: [index: number | null];
+  select: [selection: RowSelection];
 }>();
+
+const selectRow = (values: string[], event: MouseEvent) => {
+  const { left, top, bottom } = (
+    event.currentTarget as HTMLElement
+  ).getBoundingClientRect();
+  // The menu opens below the button, or above it in the lower half.
+  const y = top > window.innerHeight / 2 ? top : bottom;
+  // The reverse axis displays reversed dimensions, but the filter applies to
+  // the forward direction.
+  emit("select", {
+    dimensions: props.data?.dimensions ?? [],
+    values,
+    x: left,
+    y,
+  });
+};
+// "Other" folds everything outside the top values: it cannot be expressed as a
+// filter.
+const isFilterable = (row: string[]) =>
+  row.length > 0 && !row.includes("Other");
 
 const highlight = (index: number | null) => {
   if (
@@ -150,6 +188,8 @@ const table = computed(
     columns: { name: string; classNames?: string }[];
     rows: {
       values: { value: string; classNames?: string }[];
+      dimensions: string[];
+      filterable: boolean;
       color?: string;
     }[];
   } | null => {
@@ -196,6 +236,8 @@ const table = computed(
                 ? dataColorGrey
                 : dataColor;
               return {
+                dimensions: row,
+                filterable: isFilterable(row),
                 values: [
                   // Dimensions
                   ...row.map((r) => ({ value: r })),
@@ -239,6 +281,8 @@ const table = computed(
         ],
         rows: data.rows
           ?.map((row, idx) => ({
+            dimensions: row,
+            filterable: isFilterable(row),
             values: [
               // Dimensions
               ...row.map((r) => ({ value: r })),

@@ -88,6 +88,73 @@ func (c *Component) filterValidateHandlerFunc(w http.ResponseWriter, req *http.R
 	})
 }
 
+// filterRowHandlerInput describes the input of the /filter/row endpoint.
+type filterRowHandlerInput struct {
+	Filter         string         `json:"filter"`
+	Dimensions     []query.Column `json:"dimensions" validate:"min=1"`
+	Values         []string       `json:"values"`
+	Exclude        bool           `json:"exclude"`
+	TruncateAddrV4 int            `json:"truncate-v4" validate:"min=0,max=32"`
+	TruncateAddrV6 int            `json:"truncate-v6" validate:"min=0,max=128"`
+}
+
+// filterRowHandlerOutput describes the output of the /filter/row endpoint.
+type filterRowHandlerOutput struct {
+	Filter string `json:"filter"`
+}
+
+// filterRowHandlerFunc adds to a filter the conditions to include or exclude a
+// row of a graph, given the values displayed for each dimension.
+func (c *Component) filterRowHandlerFunc(w http.ResponseWriter, req *http.Request) {
+	var input filterRowHandlerInput
+	if err := httpserver.BindJSON(req, &input); err != nil {
+		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
+		return
+	}
+	if len(input.Values) != len(input.Dimensions) {
+		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": "Expecting one value per dimension"})
+		return
+	}
+	if err := query.Columns(input.Dimensions).Validate(c.d.Schema); err != nil {
+		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
+		return
+	}
+	conditions := make([]string, len(input.Dimensions))
+	for i, qc := range input.Dimensions {
+		condition, err := qc.ToFilter(c.d.Schema, input.Values[i],
+			input.TruncateAddrV4, input.TruncateAddrV6)
+		if err != nil {
+			httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
+			return
+		}
+		conditions[i] = condition
+	}
+	condition := strings.Join(conditions, " AND ")
+	if input.Exclude {
+		if len(conditions) > 1 {
+			condition = fmt.Sprintf("(%s)", condition)
+		}
+		condition = fmt.Sprintf("NOT %s", condition)
+	}
+	if current := strings.TrimSpace(input.Filter); current != "" {
+		// A comment on the last line would swallow the closing parenthesis.
+		lines := strings.Split(current, "\n")
+		if strings.Contains(lines[len(lines)-1], "--") {
+			current += "\n"
+		}
+		condition = fmt.Sprintf("(%s) AND %s", current, condition)
+	}
+	if _, err := filter.Parse("", []byte(condition),
+		filter.GlobalStore("meta", &filter.Meta{
+			Schema:   c.d.Schema,
+			Database: c.d.ClickHouseDB.DatabaseName(),
+		})); err != nil {
+		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": filter.HumanError(err)})
+		return
+	}
+	httpserver.WriteJSON(w, http.StatusOK, filterRowHandlerOutput{Filter: condition})
+}
+
 // filterCompleteHandlerInput describes the input of the /filter/complete endpoint.
 type filterCompleteHandlerInput struct {
 	What     string `json:"what" validate:"required,oneof=column operator value"`

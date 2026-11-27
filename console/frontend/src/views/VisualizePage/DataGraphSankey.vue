@@ -2,14 +2,16 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
 
 <template>
-  <v-chart :option="option" />
+  <v-chart :option="option" @click="selectItem" />
 </template>
 
 <script lang="ts" setup>
 import { inject, computed } from "vue";
-import { formatXps, dataColor, dataColorGrey } from "@/utils";
+import { formatXps, dataColor, dataColorGrey, reverseDimension } from "@/utils";
 import { ThemeKey } from "@/components/ThemeProvider.vue";
+import { ServerConfigKey } from "@/components/ServerConfigProvider.vue";
 import type { GraphSankeyHandlerResult } from ".";
+import type { RowSelection } from "./RowActionsMenu.vue";
 import { use, type ComposeOption } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { SankeyChart, type SankeySeriesOption } from "echarts/charts";
@@ -25,6 +27,49 @@ type ECOption = ComposeOption<SankeySeriesOption | TooltipComponentOption>;
 const props = defineProps<{
   data: GraphSankeyHandlerResult;
 }>();
+const emit = defineEmits<{
+  select: [selection: RowSelection];
+}>();
+
+const serverConfiguration = inject(ServerConfigKey)!;
+
+// Node IDs are "Dimension: value". A link selects the values of its two nodes.
+const selectItem = (params: unknown) => {
+  const { seriesIndex, dataType, data, event } = params as {
+    seriesIndex?: number;
+    dataType?: string;
+    data?: { id?: string; source?: string; target?: string };
+    event?: { event: MouseEvent };
+  };
+  if (!event || !data) return;
+  // The second half of a bidirectional graph is labeled with reversed
+  // dimensions, but the filter applies to the forward direction.
+  const reverse = props.data?.bidirectional && seriesIndex === 1;
+  const known = serverConfiguration.value?.dimensions ?? [];
+  const ids =
+    dataType === "node"
+      ? [data.id]
+      : dataType === "edge"
+        ? [data.source, data.target]
+        : [];
+  const dimensions: string[] = [],
+    values: string[] = [];
+  for (const id of ids) {
+    if (!id) return;
+    const [dimension, ...rest] = id.split(": ");
+    const value = rest.join(": ");
+    if (value === "Other") return;
+    dimensions.push(reverse ? reverseDimension(dimension, known) : dimension);
+    values.push(value);
+  }
+  if (dimensions.length === 0) return;
+  emit("select", {
+    dimensions,
+    values,
+    x: event.event.clientX,
+    y: event.event.clientY,
+  });
+};
 
 const { isDark } = inject(ThemeKey)!;
 

@@ -123,6 +123,7 @@ func (c *Component) Start() error {
 	endpoint.POST("/graph/table-interval", c.getTableAndIntervalHandlerFunc)
 	endpoint.POST("/graph/reverse", c.graphReverseHandlerFunc)
 	endpoint.POST("/filter/validate", c.filterValidateHandlerFunc)
+	endpoint.POST("/filter/row", c.filterRowHandlerFunc)
 	endpoint.POST("/filter/complete", c.filterCompleteHandlerFunc, c.d.HTTP.CacheByRequestBody(time.Minute))
 	endpoint.GET("/filter/saved", c.filterSavedListHandlerFunc)
 	endpoint.DELETE("/filter/saved/{id}", c.filterSavedDeleteHandlerFunc)
