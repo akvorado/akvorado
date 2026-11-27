@@ -10,10 +10,13 @@ jobs:
     name: Update dependency hashes
     runs-on: ubuntu-latest
     if: github.repository_owner == 'akvorado'
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0        # All history needed
+          persist-credentials: false
       - name: Check for changes
         id: check-changes
         if: github.event_name == 'schedule'
@@ -35,6 +38,7 @@ jobs:
         if: github.event_name != 'schedule' || steps.check-changes.outputs.should_run == 'true'
         run: nix run .#update
       - name: Set up git identity
+        id: identity
         if: github.event_name != 'schedule' || steps.check-changes.outputs.should_run == 'true'
         uses: $/.github/actions/identity
         with:
@@ -42,6 +46,9 @@ jobs:
           private-key: ${{ secrets.AKVORADO_APP_KEY }}
       - name: Push update
         if: github.event_name != 'schedule' || steps.check-changes.outputs.should_run == 'true'
+        env:
+          TOKEN: ${{ steps.identity.outputs.token }}
         run: |
           git add flake.lock nix
-          ! git commit -m "build: update Nix dependency hashes" || git push
+          ! git commit -m "build: update Nix dependency hashes" || \
+            git push "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main
