@@ -42,6 +42,7 @@ type graphLineHandlerOutput struct {
 	Max                  []int          `json:"max"`             // row → max xps
 	Last                 []int          `json:"last"`            // row → last xps
 	NinetyFivePercentile []int          `json:"95th"`            // row → 95th xps
+	Share                []float64      `json:"share,omitempty"` // row → % of the average of the axis
 }
 
 // reverseDirection reverts the direction of a provided input. It does not
@@ -444,6 +445,10 @@ func (c *Component) graphLineHandlerFunc(w http.ResponseWriter, req *http.Reques
 					math.Round(float64(points[j])*(1-fraction) + float64(points[j+1])*fraction))
 			}
 		}
+	}
+
+	if computeTotal {
+		output.Share = axisShares(output.Average, output.Axis)
 	}
 
 	for _, axis := range output.Axis {

@@ -232,30 +232,20 @@ const table = computed(
     }));
     const dimensionCells = (row: string[]): Cell[] =>
       row.map((r) => ({ value: r, raw: r }));
-    // The share of each row is relative to the sum of the rows of the
-    // displayed axis, including "Other". It is meaningless for percentages.
-    const shareColumns =
-      unit === "%"
-        ? []
-        : [{ name: "Share", unit: "%", classNames: "text-right" }];
-    const shareCells = (values: number[]) => {
-      const sum = values.reduce(
-        (acc, v, idx) =>
-          data.axis[idx] === displayedAxis.value ? acc + v : acc,
-        0,
-      );
-      return (idx: number): Cell[] => {
-        if (unit === "%") return [];
-        const share = sum > 0 ? (100 * values[idx]) / sum : 0;
-        return [
-          {
-            value: `${share.toFixed(1)}%`,
-            raw: share,
-            classNames: "text-right tabular-nums",
-          },
-        ];
-      };
-    };
+    // The server does not compute shares for percentages.
+    const shareColumns = data.share
+      ? [{ name: "Share", unit: "%", classNames: "text-right" }]
+      : [];
+    const share = (idx: number): Cell[] =>
+      data.share
+        ? [
+            {
+              value: `${data.share[idx].toFixed(1)}%`,
+              raw: data.share[idx],
+              classNames: "text-right tabular-nums",
+            },
+          ]
+        : [];
     if (
       data.graphType === "stacked" ||
       data.graphType === "stacked100" ||
@@ -266,7 +256,6 @@ const table = computed(
       const uniqRows = uniqWith(data.rows, isEqual),
         uniqRowIndex = (row: string[]) =>
           findIndex(uniqRows, (orow) => isEqual(row, orow));
-      const share = shareCells(data.average);
       const statColumn = (name: string) => ({
         name,
         unit,
@@ -327,7 +316,6 @@ const table = computed(
           .filter(({ index }) => data.axis[index] == displayedAxis.value),
       };
     } else if (data.graphType === "sankey") {
-      const share = shareCells(data.xps);
       return {
         columns: [
           ...dimensionColumns,

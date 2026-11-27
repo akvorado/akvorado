@@ -4,6 +4,7 @@
 package console
 
 import (
+	"math"
 	"net/http"
 	"time"
 
@@ -41,6 +42,22 @@ func reverseUnits(units string) string {
 		return "inl2%"
 	}
 	return units
+}
+
+// axisShares returns, for each row, its percentage of the sum of the rows of
+// the same axis, rounded to two decimals.
+func axisShares(values []int, axis []int) []float64 {
+	sums := map[int]int{}
+	for i, v := range values {
+		sums[axis[i]] += v
+	}
+	shares := make([]float64, len(values))
+	for i, v := range values {
+		if sum := sums[axis[i]]; sum > 0 {
+			shares[i] = math.Round(10000*float64(v)/float64(sum)) / 100
+		}
+	}
+	return shares
 }
 
 // truncateIP cuts an address down to the network of the requested prefix

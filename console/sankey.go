@@ -26,8 +26,9 @@ type graphSankeyHandlerInput struct {
 type graphSankeyHandlerOutput struct {
 	// Unprocessed data for table view
 	Rows      [][]string     `json:"rows"`
-	Xps       []int          `json:"xps"`  // row → xps
-	Axis      []int          `json:"axis"` // row → axis
+	Xps       []int          `json:"xps"`             // row → xps
+	Share     []float64      `json:"share,omitempty"` // row → % of the xps of the axis
+	Axis      []int          `json:"axis"`            // row → axis
 	AxisNames map[int]string `json:"axis-names"`
 	// Processed data for sankey graph
 	Nodes []sankeyNode `json:"nodes"`
@@ -260,6 +261,11 @@ func (c *Component) graphSankeyHandlerFunc(w http.ResponseWriter, req *http.Requ
 		}
 		return output.Links[i].Xps > output.Links[j].Xps
 	})
+
+	// Shares of percentages are meaningless.
+	if !strings.HasSuffix(input.Units, "%") {
+		output.Share = axisShares(output.Xps, output.Axis)
+	}
 
 	for _, axis := range output.Axis {
 		switch axis {

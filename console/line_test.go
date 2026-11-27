@@ -1100,6 +1100,9 @@ func TestGraphLineHandler(t *testing.T) {
 						820,
 						1720,
 					},
+					"share": []float64{
+						58.83, 9.41, 7.06, 6.46, 5.88, 12.36,
+					},
 					"total": []int{
 						600000,
 						96000,
@@ -1241,6 +1244,10 @@ func TestGraphLineHandler(t *testing.T) {
 						82,
 						172,
 					},
+					"share": []float64{
+						58.83, 9.41, 7.06, 6.46, 5.88, 12.36,
+						58.83, 9.36, 7.07, 6.54, 5.83, 12.37,
+					},
 					"total": []int{
 						600000,
 						96000,
@@ -1349,6 +1356,10 @@ func TestGraphLineHandler(t *testing.T) {
 						820,
 						1720,
 						7800,
+					},
+					"share": []float64{
+						58.83, 9.41, 7.06, 6.46, 5.88, 12.36,
+						100,
 					},
 					"total": []int{
 						600000,
@@ -1554,6 +1565,9 @@ func TestGraphLineHandler(t *testing.T) {
 						820,
 						1720,
 					},
+					"share": []float64{
+						58.83, 7.06, 6.46, 9.41, 5.88, 12.36,
+					},
 					"total": []int{
 						600000,
 						72000,
@@ -1695,6 +1709,10 @@ func TestGraphLineHandler(t *testing.T) {
 						82,
 						172,
 					},
+					"share": []float64{
+						58.83, 7.06, 6.46, 9.41, 5.88, 12.36,
+						58.83, 7.07, 6.54, 9.36, 5.83, 12.37,
+					},
 					"total": []int{
 						600000,
 						72000,
@@ -1803,6 +1821,10 @@ func TestGraphLineHandler(t *testing.T) {
 						820,
 						1720,
 						7800,
+					},
+					"share": []float64{
+						58.83, 7.06, 6.46, 9.41, 5.88, 12.36,
+						100,
 					},
 					"total": []int{
 						600000,
