@@ -38,5 +38,5 @@ jobs:
           TOKEN: ${{ steps.identity.outputs.token }}
         run: |
           git add default.pgo
-          ! git commit -m "build: update PGO profile" || \
+          ! git commit -m "build: update PGO profile" -m "[skip ci]" || \
             git push "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main

@@ -50,5 +50,5 @@ jobs:
           TOKEN: ${{ steps.identity.outputs.token }}
         run: |
           git add flake.lock nix
-          ! git commit -m "build: update Nix dependency hashes" || \
+          ! git commit -m "build: update Nix dependency hashes" -m "[skip ci]" || \
             git push "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main

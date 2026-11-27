@@ -13,10 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: read
-    if: |
-      !(startsWith(github.event.head_commit.message, 'build: update Nix dependency hashes') ||
-        startsWith(github.event.head_commit.message, 'build: update PGO profile')) ||
-       github.ref_type == 'tag'
     steps:
       - name: Detect package ecosystem from changed files
         if: github.actor == 'renovate[bot]' && github.event_name == 'pull_request'
