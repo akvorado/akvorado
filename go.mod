@@ -66,7 +66,7 @@ require (
 	google.golang.org/grpc v1.85.0
 	google.golang.org/protobuf v1.36.12
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
-	modernc.org/sqlite v1.60.1
+	modernc.org/sqlite v1.63.0
 )
 
 require (
@@ -126,7 +126,7 @@ require (
 	github.com/mgechev/revive v1.17.1 // indirect
 	github.com/mna/pigeon v1.3.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/ncruces/go-strftime v1.0.0 // indirect
+	github.com/ncruces/go-strftime v1.1.0 // indirect
 	github.com/openconfig/grpctunnel v0.1.0 // indirect
 	github.com/pascaldekloe/name v1.0.1 // indirect
 	github.com/paulmach/orb v0.14.0 // indirect
@@ -176,7 +176,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/gotestsum v1.13.0 // indirect
 	honnef.co/go/tools v0.8.2 // indirect
-	modernc.org/libc v1.77.1 // indirect
+	modernc.org/libc v1.80.1 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
 )
