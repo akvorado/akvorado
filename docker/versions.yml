@@ -49,6 +49,6 @@ services:
   postgres:
     image: postgres:18 # \d+
   mysql:
-    image: mariadb:12 # \d+
+    image: mariadb:13 # \d+
   mock-oauth2-server:
     image: ghcr.io/navikt/mock-oauth2-server:3.0.0 # \d+\.\d+\.\d+
